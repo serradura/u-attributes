@@ -49,7 +49,7 @@ module Micro
           undefineds.each_with_object({}) { |name, memo| memo[name] = nil }
 
         yield(
-          normalized_params.merge!(nil_params).merge!(__attributes_defaults)
+          nil_params.merge!(__attributes_defaults).merge!(normalized_params)
         )
       end
     end

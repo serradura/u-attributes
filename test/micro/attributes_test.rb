@@ -7,6 +7,28 @@ class Micro::AttributesTest < Minitest::Test
 
   # ---
 
+  class Biz
+    include Micro::Attributes
+
+    attribute :a
+    attributes :b, :c
+
+    def initialize(a, b, c='_c')
+      @a, @b = a, b
+      @c = c
+    end
+  end
+
+  def test_custom_constructor
+    object = Biz.new('a', nil)
+
+    assert_equal('a', object.a)
+    assert_equal('_c', object.c)
+    assert_nil(object.b)
+  end
+
+  # ---
+
   class Bar
     include Micro::Attributes.to_initialize
 
@@ -72,28 +94,6 @@ class Micro::AttributesTest < Minitest::Test
 
   # ---
 
-  class Biz
-    include Micro::Attributes
-
-    attribute :a
-    attributes :b, :c
-
-    def initialize(a, b, c='_c')
-      @a, @b = a, b
-      @c = c
-    end
-  end
-
-  def test_custom_constructor
-    object = Biz.new('a', nil)
-
-    assert_equal('a', object.a)
-    assert_equal('_c', object.c)
-    assert_nil(object.b)
-  end
-
-  # ---
-
   def test_getting_attributes
     bar = Bar.new(a: 'a')
     foo = Foo.new(a: 'a')
@@ -137,6 +137,16 @@ class Micro::AttributesTest < Minitest::Test
 
   # ---
 
+  def test_the_constructor_argument_validation
+    [Bar, Foo, Baz, Foz].each do |klass|
+      assert_raises(ArgumentError, 'argument must be a Hash') { klass.new(1) }
+      assert_raises(ArgumentError, 'argument must be a Hash') { klass.new(1) }
+      assert_raises(ArgumentError, 'argument must be a Hash') { klass.new(1) }
+    end
+  end
+
+  # ---
+
   def test_private_class_methods
     [Bar, Foo, Baz, Foz].each do |klass|
       assert_raises(NoMethodError) { klass.__attribute }
@@ -163,16 +173,16 @@ class Micro::AttributesTest < Minitest::Test
   # ---
 
   def test_build_new_instance_after_set_many_attributes
-    bar1 = Bar.new(a: 'a')
-    bar2 = bar1.with_attributes(a: 'A', b: :bb)
-    bar3 = bar1.with_attributes(a: '@', b: 'Bb')
+    baz1 = Baz.new(c: 'CC')
+    baz2 = baz1.with_attributes(a: 'A', b: :bb)
+    baz3 = baz1.with_attributes(a: '@', b: 'Bb')
 
-    assert_equal({'a' => 'a', 'b' => nil}, bar1.attributes)
-    assert_equal({'a' => 'A', 'b' => :bb}, bar2.attributes)
-    assert_equal({'a' => '@', 'b' => 'Bb'}, bar3.attributes)
+    assert_equal({'a' => nil, 'b' => "B", "c"=>"CC"}, baz1.attributes)
+    assert_equal({'a' => 'A', 'b' => :bb, "c"=>"CC"}, baz2.attributes)
+    assert_equal({'a' => '@', 'b' => 'Bb', "c"=>"CC"}, baz3.attributes)
 
-    refute_same bar1, bar2
-    refute_same bar1, bar3
+    refute_same baz1, baz2
+    refute_same baz1, baz3
   end
 
   # ---

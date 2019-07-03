@@ -32,9 +32,18 @@ module Micro
           base.send(:include, Micro::Attributes)
 
           base.class_eval(<<-RUBY)
-            def initialize(params); self.attributes = params; end
-            def with_attribute(key, val); self.class.new(attributes.merge(key => val)); end
-            def with_attributes(params); self.class.new(attributes.merge(params)); end
+            def initialize(arg)
+              raise ArgumentError, 'argument must be a Hash' unless arg.is_a?(Hash)
+              self.attributes = arg
+            end
+
+            def with_attribute(key, val)
+              self.class.new(attributes.merge(key => val))
+            end
+
+            def with_attributes(arg)
+              self.class.new(attributes.merge(arg))
+            end
           RUBY
         end
       end
