@@ -1,8 +1,6 @@
 # Micro::Attributes
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/micro/attributes`. To experiment with that code, run `bin/console` for an interactive prompt.
-
-TODO: Delete this and the text above, and describe your gem
+This gem allows defining read-only attributes, that is, your objects will have only getters to access their attributes data.
 
 ## Installation
 
@@ -22,7 +20,121 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+### How to require?
+```ruby
+# Bundler will do it automatically, but if you desire to do a manual require.
+# Use one of the following options:
+
+require 'micro/attributes'
+
+# or
+
+require 'u-attributes'
+```
+
+### How to define attributes?
+```ruby
+
+# By default you must to define the class constructor.
+
+class Person
+  include Micro::Attributes
+
+  attribute :name
+  attribute :age
+
+  def initialize(name: 'John Doe', age:)
+    @name, @age = name, age
+  end
+end
+
+person = Person.new(age: 21)
+
+puts person.name # John Doe
+puts person.age  # 21
+
+# By design, the attributes expose only reader methods (getters).
+# If you try to call a setter, you will see a NoMethodError.
+#
+# person.name = 'Rodrigo'
+# NoMethodError (undefined method `name=' for #<Person:0x0000... @name="John Doe", @age=21>)
+```
+
+### How to define multiple attributes?
+
+```ruby
+
+# Use .attributes with a list of attribute names.
+
+class Person
+  include Micro::Attributes
+
+  attributes :name, :age
+
+  def initialize(name, age)
+    @name, @age = name, age
+  end
+end
+
+person = Person.new('Serradura', 32)
+
+puts person.name # Serradura
+puts person.age  # 32
+```
+
+### How to define attributes with a constructor to assign them?
+A: Use `Micro::Attributes.to_initialize`
+
+```ruby
+class Person
+  include Micro::Attributes.to_initialize
+
+  attributes :age, name: 'John Doe' # Use a hash to define a default value
+
+  # attribute name: 'John Doe'
+  # attribute :age
+end
+
+person = Person.new(age: 18)
+
+puts person.name # John Doe
+puts person.age  # 18
+
+##############################################
+# Assigning new values to get a new instance #
+##############################################
+
+another_person = person.with_attribute(:age, 21)
+
+puts another_person.name           # John Doe
+puts another_person.age            # 21
+puts another_person.equal?(person) # false
+
+# Use #with_attributes to assign multiple attributes
+other_person = person.with_attributes(name: 'Serradura', age: 32)
+
+puts other_person.name           # Serradura
+puts other_person.age            # 32
+puts other_person.equal?(person) # false
+
+# If you pass a value different of a Hash, an ArgumentError will be raised.
+#
+# Person.new(1)
+# ArgumentError (argument must be a Hash)
+
+#########################################################
+# Inheritance will preserve the parent class attributes #
+#########################################################
+class Subclass < Person
+  attribute :foo
+end
+
+instance = Subclass.new({})
+
+puts instance.name              # John Doe
+puts instance.respond_to?(:age) # true
+puts instance.respond_to?(:foo) # true
+```
 
 ## Development
 
