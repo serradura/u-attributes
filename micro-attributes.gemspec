@@ -10,6 +10,7 @@ Gem::Specification.new do |spec|
   spec.email         = ["rodrigo.serradura@gmail.com"]
 
   spec.summary       = %q{Define read-only attributes}
+  spec.description   = %q{This gem allows defining read-only attributes, that is, your objects will have only getters to access their attributes data.}
   spec.homepage      = "https://github.com/serradura/u-attributes"
   spec.license       = "MIT"
 
