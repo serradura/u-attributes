@@ -125,6 +125,7 @@ puts other_person.equal?(person) # false
 #########################################################
 # Inheritance will preserve the parent class attributes #
 #########################################################
+
 class Subclass < Person
   attribute :foo
 end
