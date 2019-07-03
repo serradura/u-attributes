@@ -39,7 +39,7 @@ module Micro
         args.flatten.each { |arg| attribute(arg) }
       end
 
-      def attributes_to_set(arg)
+      def attributes_data(arg)
         normalized_params = arg.keys.each_with_object({}) do |key, memo|
           memo[key.to_s] = arg[key]
         end

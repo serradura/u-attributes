@@ -7,10 +7,22 @@ module Micro
   module Attributes
     def self.included(base)
       base.extend Macros
+
       base.class_eval do
         private_class_method :__attribute
         private_class_method :__attributes
         private_class_method :__attributes_defaults
+      end
+
+      def base.inherited(subclass)
+        self.attributes_data({}) do |data|
+          values = data.each_with_object(a: [], h: {}) do |(k, v), m|
+            v.nil? ? m[:a] << k : m[:h][k] = v
+          end
+
+          subclass.attributes(values[:a])
+          subclass.attributes(values[:h])
+        end
       end
     end
 
@@ -33,7 +45,7 @@ module Micro
     end
 
     def attributes=(params)
-      self.class.attributes_to_set(params) do |data|
+      self.class.attributes_data(params) do |data|
         data.each do |name, value|
           instance_variable_set("@#{name}", data[name]) if attribute?(name)
         end
@@ -48,7 +60,7 @@ module Micro
           memo[name] = instance_variable_get(iv_name) if is_defined
         end
 
-      self.class.attributes_to_set(state) { |data| data }
+      self.class.attributes_data(state) { |data| data }
     end
 
     protected :attributes=

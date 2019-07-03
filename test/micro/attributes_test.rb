@@ -171,7 +171,27 @@ class Micro::AttributesTest < Minitest::Test
     assert_equal({'a' => 'A', 'b' => :bb}, bar2.attributes)
     assert_equal({'a' => '@', 'b' => 'Bb'}, bar3.attributes)
 
-    refute bar1 == bar2
-    refute bar1 == bar3
+    refute_same bar1, bar2
+    refute_same bar1, bar3
+  end
+
+  # ---
+
+  class Base
+    include Micro::Attributes.to_initialize
+
+    attributes :e, f: 'ƒ'
+  end
+
+  class Sub < Base
+  end
+
+  def test_inheritance
+    assert_equal ['e', 'f'], Sub.attributes
+
+    object = Sub.new(e: '£')
+
+    assert_equal('£', object.e)
+    assert_equal('ƒ', object.f)
   end
 end
