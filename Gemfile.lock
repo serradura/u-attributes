@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    u-attributes (0.1.0)
+    u-attributes (0.2.0)
 
 GEM
   remote: https://rubygems.org/
@@ -20,11 +20,10 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  bundler (~> 2.0)
   minitest (~> 5.0)
   rake (~> 10.0)
   simplecov
   u-attributes!
 
 BUNDLED WITH
-   2.0.1
+   1.17.3
