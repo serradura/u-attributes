@@ -3,10 +3,6 @@
 module Micro
   module Attributes
     module Macros
-      def __attributes_defaults
-        @__attributes_defaults ||= {}
-      end
-
       def __attributes
         @__attributes ||= Set.new
       end
@@ -24,13 +20,18 @@ module Micro
         return true
       end
 
-      def attribute(arg)
-        return __attribute(arg.to_s) unless arg.is_a?(Hash)
+      def __attributes_data
+        @__attributes_data ||= {}
+      end
 
-        arg.each do |key, value|
-          name = key.to_s
-          __attributes_defaults[name] = value if __attribute(name)
-        end
+      def __attribute_data(name, value)
+        __attributes_data[name] = value if __attribute(name)
+      end
+
+      def attribute(arg)
+        return __attribute_data(arg.to_s, nil) unless arg.is_a?(Hash)
+
+        arg.each { |key, value| __attribute_data(key.to_s, value) }
       end
 
       def attributes(*args)
@@ -40,17 +41,10 @@ module Micro
       end
 
       def attributes_data(arg)
-        normalized_params = arg.keys.each_with_object({}) do |key, memo|
-          memo[key.to_s] = arg[key]
-        end
+        normalized_arg =
+          arg.keys.each_with_object({}) { |key, memo| memo[key.to_s] = arg[key] }
 
-        undefineds = (self.attributes - normalized_params.keys)
-        nil_params =
-          undefineds.each_with_object({}) { |name, memo| memo[name] = nil }
-
-        yield(
-          nil_params.merge!(__attributes_defaults).merge!(normalized_params)
-        )
+        yield(__attributes_data.merge(normalized_arg))
       end
     end
   end

@@ -140,8 +140,6 @@ class Micro::AttributesTest < Minitest::Test
   def test_the_constructor_argument_validation
     [Bar, Foo, Baz, Foz].each do |klass|
       assert_raises(ArgumentError, 'argument must be a Hash') { klass.new(1) }
-      assert_raises(ArgumentError, 'argument must be a Hash') { klass.new(1) }
-      assert_raises(ArgumentError, 'argument must be a Hash') { klass.new(1) }
     end
   end
 
@@ -149,9 +147,17 @@ class Micro::AttributesTest < Minitest::Test
 
   def test_private_class_methods
     [Bar, Foo, Baz, Foz].each do |klass|
+      assert klass.respond_to?(:__attribute, true)
       assert_raises(NoMethodError) { klass.__attribute }
+
+      assert klass.respond_to?(:__attributes, true)
       assert_raises(NoMethodError) { klass.__attributes }
-      assert_raises(NoMethodError) { klass.__attributes_defaults }
+
+      assert klass.respond_to?(:__attribute_data, true)
+      assert_raises(NoMethodError) { klass.__attribute_data }
+
+      assert klass.respond_to?(:__attributes_data, true)
+      assert_raises(NoMethodError) { klass.__attributes_data }
     end
   end
 

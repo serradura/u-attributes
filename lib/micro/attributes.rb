@@ -11,17 +11,13 @@ module Micro
       base.class_eval do
         private_class_method :__attribute
         private_class_method :__attributes
-        private_class_method :__attributes_defaults
+        private_class_method :__attribute_data
+        private_class_method :__attributes_data
       end
 
       def base.inherited(subclass)
         self.attributes_data({}) do |data|
-          values = data.each_with_object(a: [], h: {}) do |(k, v), m|
-            v.nil? ? m[:a] << k : m[:h][k] = v
-          end
-
-          subclass.attributes(values[:a])
-          subclass.attributes(values[:h])
+          data.each { |k, v| subclass.attribute(v.nil? ? k : {k => v}) }
         end
       end
     end
@@ -33,7 +29,6 @@ module Micro
 
           base.class_eval(<<-RUBY)
             def initialize(arg)
-              raise ArgumentError, 'argument must be a Hash' unless arg.is_a?(Hash)
               self.attributes = arg
             end
 
@@ -53,8 +48,10 @@ module Micro
       self.class.attribute?(name)
     end
 
-    def attributes=(params)
-      self.class.attributes_data(params) do |data|
+    def attributes=(arg)
+      raise ArgumentError, 'argument must be a Hash' unless arg.is_a?(Hash)
+
+      self.class.attributes_data(arg) do |data|
         data.each do |name, value|
           instance_variable_set("@#{name}", data[name]) if attribute?(name)
         end
@@ -64,9 +61,9 @@ module Micro
     def attributes
       state =
         self.class.attributes.each_with_object({}) do |name, memo|
-          iv_name = "@#{name}"
-          is_defined = instance_variable_defined?(iv_name)
-          memo[name] = instance_variable_get(iv_name) if is_defined
+          if instance_variable_defined?(iv_name = "@#{name}")
+            memo[name] = instance_variable_get(iv_name)
+          end
         end
 
       self.class.attributes_data(state) { |data| data }
