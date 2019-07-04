@@ -1,4 +1,4 @@
-# Micro::Attributes
+# μ-attributes (Micro::Attributes)
 
 This gem allows defining read-only attributes, that is, your objects will have only getters to access their attributes data.
 
@@ -59,9 +59,9 @@ puts person.age  # 21
 # person.name = 'Rodrigo'
 # NoMethodError (undefined method `name=' for #<Person:0x0000... @name="John Doe", @age=21>)
 
-####################
+#------------------#
 # self.attributes= #
-####################
+#------------------#
 
 # This protected method is added to make easier the assignment in a constructor.
 
@@ -126,13 +126,22 @@ puts person.age  # 18
 # Assigning new values to get a new instance #
 ##############################################
 
+#-------------------#
+# #with_attribute() #
+#-------------------#
+
 another_person = person.with_attribute(:age, 21)
 
 puts another_person.name           # John Doe
 puts another_person.age            # 21
 puts another_person.equal?(person) # false
 
-# Use #with_attributes to assign multiple attributes
+#--------------------#
+# #with_attributes() #
+#--------------------#
+#
+# Use it to assign multiple attributes
+
 other_person = person.with_attributes(name: 'Serradura', age: 32)
 
 puts other_person.name           # Serradura
@@ -157,6 +166,54 @@ instance = Subclass.new({})
 puts instance.name              # John Doe
 puts instance.respond_to?(:age) # true
 puts instance.respond_to?(:foo) # true
+```
+
+# How to query the attributes?
+```ruby
+class Person
+  include Micro::Attributes
+
+  attributes :age, name: 'John Doe'
+
+  def initialize(options)
+    self.attributes = options
+  end
+end
+
+#---------------#
+# .attributes() #
+#---------------#
+
+p Person.attributes # ["name", "age"]
+
+#---------------#
+# .attribute?() #
+#---------------#
+
+puts Person.attribute?(:name)  # true
+puts Person.attribute?('name') # true
+puts Person.attribute?('foo') # false
+puts Person.attribute?(:foo)  # false
+
+# ---
+
+person = Person.new(age: 20)
+
+#---------------#
+# #attribute?() #
+#---------------#
+
+puts person.attribute?(:name)  # true
+puts person.attribute?('name') # true
+puts person.attribute?('foo') # false
+puts person.attribute?(:foo)  # false
+
+#---------------#
+# #attributes() #
+#---------------#
+
+p person.attributes                   # {"age"=>20, "name"=>"John Doe"}
+p Person.new(name: 'John').attributes # {"age"=>nil, "name"=>"John"}
 ```
 
 ## Development
