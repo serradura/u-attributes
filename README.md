@@ -168,7 +168,8 @@ puts instance.respond_to?(:age) # true
 puts instance.respond_to?(:foo) # true
 ```
 
-# How to query the attributes?
+### How to query the attributes?
+
 ```ruby
 class Person
   include Micro::Attributes
