@@ -163,6 +163,19 @@ class Micro::AttributesTest < Minitest::Test
 
   # ---
 
+  def test_attributes_data
+    [Bar, Foo, Baz, Foz].each do |klass|
+      assert_raises(ArgumentError, 'argument must be a Hash') do
+        klass.attributes_data(1)
+      end
+
+      assert klass.attributes_data({}).is_a?(Hash)
+      refute klass.attributes_data({}).empty?
+    end
+  end
+
+  # ---
+
   def test_build_new_instance_after_set_one_attribute
     bar1 = Bar.new(a: 'a')
     bar2 = bar1.with_attribute(:a, 'A')

@@ -41,10 +41,10 @@ module Micro
       end
 
       def attributes_data(arg)
-        normalized_arg =
-          arg.keys.each_with_object({}) { |key, memo| memo[key.to_s] = arg[key] }
-
-        yield(__attributes_data.merge(normalized_arg))
+        __attributes_data.merge(
+          Utils.hash_argument!(arg)
+               .each_with_object({}) { |(key, val), memo| memo[key.to_s] = val }
+        )
       end
     end
   end

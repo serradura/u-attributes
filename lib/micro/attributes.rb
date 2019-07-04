@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "micro/attributes/version"
+require "micro/attributes/utils"
 require "micro/attributes/macros"
 
 module Micro
@@ -16,8 +17,8 @@ module Micro
       end
 
       def base.inherited(subclass)
-        self.attributes_data({}) do |data|
-          data.each { |k, v| subclass.attribute(v.nil? ? k : {k => v}) }
+        self.attributes_data({}).each do |name, value|
+          subclass.attribute(value.nil? ? name : {name => value})
         end
       end
     end
@@ -49,12 +50,8 @@ module Micro
     end
 
     def attributes=(arg)
-      raise ArgumentError, 'argument must be a Hash' unless arg.is_a?(Hash)
-
-      self.class.attributes_data(arg) do |data|
-        data.each do |name, value|
-          instance_variable_set("@#{name}", data[name]) if attribute?(name)
-        end
+      self.class.attributes_data(Utils.hash_argument!(arg)).each do |name, value|
+        instance_variable_set("@#{name}", value) if attribute?(name)
       end
     end
 
@@ -66,7 +63,7 @@ module Micro
           end
         end
 
-      self.class.attributes_data(state) { |data| data }
+      self.class.attributes_data(state)
     end
 
     protected :attributes=
