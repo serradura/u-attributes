@@ -7,7 +7,7 @@ This gem allows defining read-only attributes, that is, your objects will have o
 Add this line to your application's Gemfile:
 
 ```ruby
-gem 'micro-attributes'
+gem 'u-attributes'
 ```
 
 And then execute:
@@ -16,7 +16,7 @@ And then execute:
 
 Or install it yourself as:
 
-    $ gem install micro-attributes
+    $ gem install u-attributes
 
 ## Usage
 
