@@ -58,6 +58,28 @@ puts person.age  # 21
 #
 # person.name = 'Rodrigo'
 # NoMethodError (undefined method `name=' for #<Person:0x0000... @name="John Doe", @age=21>)
+
+####################
+# self.attributes= #
+####################
+
+# This protected method is added to make easier the assignment in a constructor.
+
+class Person
+  include Micro::Attributes
+
+  attribute :name
+  attribute :age
+
+  def initialize(options)
+    self.attributes = options
+  end
+end
+
+person = Person.new('name' => 'John', age: 20)
+
+puts person.name # John
+puts person.age  # 20
 ```
 
 ### How to define multiple attributes?
@@ -71,8 +93,8 @@ class Person
 
   attributes :name, :age
 
-  def initialize(name, age)
-    @name, @age = name, age
+  def initialize(options)
+    self.attributes = options
   end
 end
 
