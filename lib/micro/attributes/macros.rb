@@ -12,12 +12,8 @@ module Micro
       end
 
       def __attribute(name)
-        return false if attribute?(name)
-
         __attributes.add(name)
         attr_reader(name)
-
-        return true
       end
 
       def __attributes_data
@@ -25,7 +21,9 @@ module Micro
       end
 
       def __attribute_data(name, value, allow_to_override)
-        __attributes_data[name] = value if allow_to_override || __attribute(name)
+        has_attribute = attribute?(name)
+        __attribute(name) unless has_attribute
+        __attributes_data[name] = value if allow_to_override || !has_attribute
       end
 
       def __attribute_data!(arg, allow_to_override:)
