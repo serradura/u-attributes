@@ -232,15 +232,17 @@ class Micro::AttributesTest < Minitest::Test
   end
 
   class SubSub2 < Sub
-    attributes! e: '3', f: '_F_'
+    attributes! e: '3', f: '_F_', g: 99
+    attribute! :h
+    attribute! i: -99
   end
 
   def test_overriding_default_attributes_data_with_inheritance
     assert_equal(['e', 'f'], SubSub.attributes)
-    assert_equal(['e', 'f'], SubSub2.attributes)
+    assert_equal(['e', 'f', 'g', 'h', 'i'], SubSub2.attributes)
 
     assert_equal(Sub.attributes, SubSub.attributes)
-    assert_equal(Sub.attributes, SubSub2.attributes)
+    refute_equal(Sub.attributes, SubSub2.attributes)
 
     refute_equal(Sub.attributes_data({}), SubSub.attributes_data({}))
     refute_equal(SubSub.attributes_data({}), SubSub2.attributes_data({}))
@@ -254,5 +256,8 @@ class Micro::AttributesTest < Minitest::Test
 
     assert_equal('3', object2.e)
     assert_equal('_F_', object2.f)
+    assert_equal(99, object2.g)
+    assert_nil(object2.h)
+    assert_equal(-99, object2.i)
   end
 end
