@@ -24,20 +24,32 @@ module Micro
         @__attributes_data ||= {}
       end
 
-      def __attribute_data(name, value)
-        __attributes_data[name] = value if __attribute(name)
+      def __attribute_data(name, value, allow_to_override)
+        __attributes_data[name] = value if allow_to_override || __attribute(name)
+      end
+
+      def __attribute_data!(arg, allow_to_override:)
+        return __attribute_data(arg.to_s, nil, allow_to_override) unless arg.is_a?(Hash)
+
+        arg.each { |key, value| __attribute_data(key.to_s, value, allow_to_override) }
       end
 
       def attribute(arg)
-        return __attribute_data(arg.to_s, nil) unless arg.is_a?(Hash)
+        __attribute_data!(arg, allow_to_override: false)
+      end
 
-        arg.each { |key, value| __attribute_data(key.to_s, value) }
+      def attribute!(arg)
+        __attribute_data!(arg, allow_to_override: true)
       end
 
       def attributes(*args)
         return __attributes.to_a if args.empty?
 
         args.flatten.each { |arg| attribute(arg) }
+      end
+
+      def attributes!(*args)
+        args.flatten.each { |arg| attribute!(arg) }
       end
 
       def attributes_data(arg)
