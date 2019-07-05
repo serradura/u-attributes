@@ -166,6 +166,28 @@ instance = Subclass.new({})
 puts instance.name              # John Doe
 puts instance.respond_to?(:age) # true
 puts instance.respond_to?(:foo) # true
+
+##############################################################
+# Inheritance allows to redefine the attributes default data #
+##############################################################
+
+class AnotherSubclass < Person
+  attribute! name: 'Alfa'
+end
+
+alfa_person = AnotherSubclass.new({})
+
+p alfa_person.name # "Alfa"
+p alfa_person.age  # nil
+
+class SubSubclass < Subclass
+  attributes! name: 'Beta', age: 0
+end
+
+beta_person = SubSubclass.new({})
+
+p beta_person.name # "Beta"
+p beta_person.age  # 0
 ```
 
 ### How to query the attributes?
