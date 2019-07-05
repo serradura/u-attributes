@@ -13,6 +13,7 @@ module Micro
         private_class_method :__attribute
         private_class_method :__attributes
         private_class_method :__attribute_data
+        private_class_method :__attribute_data!
         private_class_method :__attributes_data
       end
 

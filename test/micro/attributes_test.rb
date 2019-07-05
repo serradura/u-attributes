@@ -156,6 +156,9 @@ class Micro::AttributesTest < Minitest::Test
       assert klass.respond_to?(:__attribute_data, true)
       assert_raises(NoMethodError) { klass.__attribute_data }
 
+      assert klass.respond_to?(:__attribute_data!, true)
+      assert_raises(NoMethodError) { klass.__attribute_data! }
+
       assert klass.respond_to?(:__attributes_data, true)
       assert_raises(NoMethodError) { klass.__attributes_data }
     end
@@ -222,5 +225,34 @@ class Micro::AttributesTest < Minitest::Test
 
     assert_equal('£', object.e)
     assert_equal('ƒ', object.f)
+  end
+
+  class SubSub < Sub
+    attribute! f: 'F'
+  end
+
+  class SubSub2 < Sub
+    attributes! e: '3', f: '_F_'
+  end
+
+  def test_overriding_default_attributes_data_with_inheritance
+    assert_equal(['e', 'f'], SubSub.attributes)
+    assert_equal(['e', 'f'], SubSub2.attributes)
+
+    assert_equal(Sub.attributes, SubSub.attributes)
+    assert_equal(Sub.attributes, SubSub2.attributes)
+
+    refute_equal(Sub.attributes_data({}), SubSub.attributes_data({}))
+    refute_equal(SubSub.attributes_data({}), SubSub2.attributes_data({}))
+
+    object1 = SubSub.new(e: 3)
+
+    assert_equal(3, object1.e)
+    assert_equal('F', object1.f)
+
+    object2 = SubSub2.new({})
+
+    assert_equal('3', object2.e)
+    assert_equal('_F_', object2.f)
   end
 end
