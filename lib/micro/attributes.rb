@@ -57,12 +57,9 @@ module Micro
     end
 
     def attributes
-      state =
-        self.class.attributes.each_with_object({}) do |name, memo|
-          if instance_variable_defined?(iv_name = "@#{name}")
-            memo[name] = instance_variable_get(iv_name)
-          end
-        end
+      state = self.class.attributes.each_with_object({}) do |name, memo|
+        memo[name] = public_send(name) if respond_to?(name)
+      end
 
       self.class.attributes_data(state)
     end
