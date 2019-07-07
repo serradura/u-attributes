@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 
 require "micro/attributes/version"
-require "micro/attributes/utils"
+require "micro/attributes/attributes_utils"
 require "micro/attributes/macros"
 require "micro/attributes/to_initialize"
 
 module Micro
   module Attributes
     def self.included(base)
-      base.extend Macros
+      base.extend(::Micro::Attributes.const_get(:Macros))
 
       base.class_eval do
         private_class_method :__attribute
@@ -23,7 +23,7 @@ module Micro
           subclass.attribute(value.nil? ? name : {name => value})
         end
 
-        subclass.extend Macros.const_get(:ForSubclasses)
+        subclass.extend ::Micro::Attributes.const_get('Macros::ForSubclasses')
       end
     end
 
@@ -32,7 +32,7 @@ module Micro
     end
 
     def attributes=(arg)
-      self.class.attributes_data(Utils.hash_argument!(arg)).each do |name, value|
+      self.class.attributes_data(AttributesUtils.hash_argument!(arg)).each do |name, value|
         instance_variable_set("@#{name}", value) if attribute?(name)
       end
     end
