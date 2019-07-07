@@ -3,6 +3,7 @@
 require "micro/attributes/version"
 require "micro/attributes/utils"
 require "micro/attributes/macros"
+require "micro/attributes/to_initialize"
 
 module Micro
   module Attributes
@@ -27,29 +28,7 @@ module Micro
     end
 
     def self.to_initialize
-      @to_initialize ||= Module.new do
-        def self.included(base)
-          base.send(:include, Micro::Attributes)
-
-          base.class_eval(<<-RUBY)
-            def initialize(arg)
-              self.attributes = arg
-            end
-
-            def with_attribute(key, val)
-              self.class.new(attributes.merge(key => val))
-            end
-
-            def with_attributes(arg)
-              self.class.new(attributes.merge(arg))
-            end
-          RUBY
-        end
-      end
-    end
-
-    def attribute?(name)
-      self.class.attribute?(name)
+      @to_initialize ||= ::Micro::Attributes.const_get(:ToInitialize)
     end
 
     def attributes=(arg)
@@ -67,5 +46,8 @@ module Micro
       self.class.attributes_data(state)
     end
 
+    def attribute?(name)
+      self.class.attribute?(name)
+    end
   end
 end
