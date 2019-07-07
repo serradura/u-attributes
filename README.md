@@ -80,6 +80,32 @@ person = Person.new('name' => 'John', age: 20)
 
 puts person.name # John
 puts person.age  # 20
+
+#--------------#
+# #attribute() #
+#--------------#
+#
+# Use the #attribute() method with a valid attribute name to get its value
+
+puts person.attribute(:name) # John
+puts person.attribute('age') # 20
+puts person.attribute('foo') # nil
+
+#
+# If you pass a block, it will be executed only if the attribute is valid.
+
+person.attribute(:name) { |value| puts value } # John
+person.attribute('age') { |value| puts value } # 20
+person.attribute('foo') { |value| puts value } # !! Nothing happened, because of the attribute not exists.
+
+#--------------#
+# #attribute() #
+#--------------#
+#
+# Works like the #attribute() method, but will raise an exception when the attribute not exist.
+
+puts person.attribute!('foo')                   # NameError (undefined attribute `foo)
+person.attribute!('foo') { |value| puts value } # NameError (undefined attribute `foo)
 ```
 
 ### How to define multiple attributes?
