@@ -139,7 +139,8 @@ class Micro::AttributesTest < Minitest::Test
 
   def test_the_constructor_argument_validation
     [Bar, Foo, Baz, Foz].each do |klass|
-      assert_raises(ArgumentError, 'argument must be a Hash') { klass.new(1) }
+      error = assert_raises(ArgumentError) { klass.new(1) }
+      assert_equal('argument must be a Hash', error.message)
     end
   end
 
@@ -168,9 +169,8 @@ class Micro::AttributesTest < Minitest::Test
 
   def test_attributes_data
     [Bar, Foo, Baz, Foz].each do |klass|
-      assert_raises(ArgumentError, 'argument must be a Hash') do
-        klass.attributes_data(1)
-      end
+      error = assert_raises(ArgumentError) { klass.attributes_data(1) }
+      assert 'argument must be a Hash', error.message
 
       assert klass.attributes_data({}).is_a?(Hash)
       refute klass.attributes_data({}).empty?
@@ -215,6 +215,13 @@ class Micro::AttributesTest < Minitest::Test
     attributes :e, f: 'ƒ'
   end
 
+  def test_base_classes_cant_access_the_methods_to_override_attributes_data
+    [Bar, Foo, Baz, Foz, Base].each do |klass|
+      refute klass.respond_to?(:attribute!, true)
+      refute klass.respond_to?(:attributes!, true)
+    end
+  end
+
   class Sub < Base
   end
 
@@ -237,7 +244,7 @@ class Micro::AttributesTest < Minitest::Test
     attribute! i: -99
   end
 
-  def test_overriding_default_attributes_data_with_inheritance
+  def test_overriding_default_attributes_data_with_subclasses
     assert_equal(['e', 'f'], SubSub.attributes)
     assert_equal(['e', 'f', 'g', 'h', 'i'], SubSub2.attributes)
 
@@ -259,5 +266,10 @@ class Micro::AttributesTest < Minitest::Test
     assert_equal(99, object2.g)
     assert_nil(object2.h)
     assert_equal(-99, object2.i)
+  end
+
+  def test_the_argument_error_of_attributes!
+    error = assert_raises(ArgumentError) { SubSub.attributes! }
+    assert_equal('wrong number of arguments (given 0, expected 1 or more)', error.message)
   end
 end

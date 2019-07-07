@@ -21,6 +21,8 @@ module Micro
         self.attributes_data({}).each do |name, value|
           subclass.attribute(value.nil? ? name : {name => value})
         end
+
+        subclass.extend Macros.const_get(:ForSubclasses)
       end
     end
 
