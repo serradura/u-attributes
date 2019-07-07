@@ -49,5 +49,19 @@ module Micro
     def attribute?(name)
       self.class.attribute?(name)
     end
+
+    def attribute(name)
+      return unless attribute?(name)
+
+      value = public_send(name)
+
+      block_given? ? yield(value) : value
+    end
+
+    def attribute!(name, &block)
+      attribute(name) { |name| return block ? block[name] : name }
+
+      raise NameError, "undefined attribute `#{name}"
+    end
   end
 end

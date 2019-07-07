@@ -94,7 +94,7 @@ class Micro::AttributesTest < Minitest::Test
 
   # ---
 
-  def test_getting_attributes
+  def test_instance_attributes
     bar = Bar.new(a: 'a')
     foo = Foo.new(a: 'a')
     baz = Baz.new(a: 'a')
@@ -108,7 +108,24 @@ class Micro::AttributesTest < Minitest::Test
 
   # ---
 
-  def test_checking_attributes
+  def test_attribute?
+    #
+    # Classes
+    #
+    assert Bar.attribute?(:a)
+    assert Bar.attribute?('a')
+    refute Bar.attribute?('c')
+    refute Bar.attribute?(:c)
+
+    assert Foz.attribute?(:a)
+    assert Foz.attribute?('a')
+    assert Foz.attribute?('c')
+    refute Foz.attribute?(:d)
+    refute Foz.attribute?('d')
+
+    #
+    # Instances
+    #
     bar = Bar.new(a: 'a')
     foz = Foz.new(a: 'a')
 
@@ -122,17 +139,81 @@ class Micro::AttributesTest < Minitest::Test
     assert foz.attribute?('c')
     refute foz.attribute?(:d)
     refute foz.attribute?('d')
+  end
 
-    assert Bar.attribute?(:a)
-    assert Bar.attribute?('a')
-    refute Bar.attribute?('c')
-    refute Bar.attribute?(:c)
+  # ---
 
-    assert Foz.attribute?(:a)
-    assert Foz.attribute?('a')
-    assert Foz.attribute?('c')
-    refute Foz.attribute?(:d)
-    refute Foz.attribute?('d')
+  def test_instance_attribute
+    [Biz.new('a', nil), Bar.new(a: 'a')].each do |instance|
+      #
+      # #attribute
+      #
+      assert_equal("a", instance.attribute(:a))
+      assert_equal("a", instance.attribute('a'))
+
+      assert_nil(instance.attribute(:b))
+      assert_nil(instance.attribute('b'))
+
+      assert_nil(instance.attribute(:unknown))
+      assert_nil(instance.attribute('unknown'))
+
+      #
+      # #attribute!
+      #
+      assert_equal("a", instance.attribute!(:a))
+      assert_equal("a", instance.attribute!('a'))
+
+      assert_nil(instance.attribute!(:b))
+      assert_nil(instance.attribute!('b'))
+
+      err1 = assert_raises(NameError) { instance.attribute!(:unknown) }
+      assert_equal('undefined attribute `unknown', err1.message)
+
+      err2 = assert_raises(NameError) { instance.attribute!('unknown') }
+      assert_equal('undefined attribute `unknown', err2.message)
+    end
+  end
+
+  def test_instance_attribute_with_a_block
+    [Biz.new('a', nil), Bar.new(a: 'a')].each do |instance|
+      #
+      # #attribute
+      #
+      acc1 = 0
+      instance.attribute(:a) { |val| acc1 += 1 if val == 'a' }
+      instance.attribute('a') { |val| acc1 += 1 if val == 'a' }
+      assert_equal(2, acc1)
+
+      instance.attribute(:b) { |val| acc1 += 1 if val.nil? }
+      instance.attribute('b') { |val| acc1 += 1 if val.nil? }
+      assert_equal(4, acc1)
+
+      instance.attribute(:unknown) { |_val| acc1 += 1 }
+      instance.attribute('unknown') { |_val| acc1 += 1 }
+      assert_equal(4, acc1)
+
+      #
+      # #attribute!
+      #
+      acc2 = 0
+      instance.attribute(:a) { |val| acc2 += 1 if val == 'a' }
+      instance.attribute('a') { |val| acc2 += 1 if val == 'a' }
+      assert_equal(2, acc2)
+
+      instance.attribute(:b) { |val| acc2 += 1 if val.nil? }
+      instance.attribute('b') { |val| acc2 += 1 if val.nil? }
+      assert_equal(4, acc2)
+
+      err1 = assert_raises(NameError) do
+        instance.attribute!(:unknown) { |_val| acc2 += 1 }
+      end
+      assert_equal('undefined attribute `unknown', err1.message)
+
+      err2 = assert_raises(NameError) do
+        instance.attribute!('unknown') { |_val| acc2 += 1 }
+      end
+      assert_equal('undefined attribute `unknown', err2.message)
+    end
   end
 
   # ---
