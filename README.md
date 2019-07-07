@@ -153,11 +153,11 @@ puts other_person.equal?(person) # false
 # Person.new(1)
 # ArgumentError (argument must be a Hash)
 
-#########################################################
-# Inheritance will preserve the parent class attributes #
-#########################################################
+################
+# Inheritance  #
+################
 
-class Subclass < Person
+class Subclass < Person # Will preserve the parent class attributes
   attribute :foo
 end
 
@@ -167,9 +167,11 @@ puts instance.name              # John Doe
 puts instance.respond_to?(:age) # true
 puts instance.respond_to?(:foo) # true
 
-##############################################################
-# Inheritance allows to redefine the attributes default data #
-##############################################################
+#---------------------------------#
+# .attribute!() or .attributes!() #
+#---------------------------------#
+
+# The methods above allow redefining the attributes default data
 
 class AnotherSubclass < Person
   attribute! name: 'Alfa'
