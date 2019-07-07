@@ -10,6 +10,12 @@ module Micro
 
         raise ArgumentError, ARGUMENT_ERROR_MSG
       end
+
+      def self.stringify_hash_keys!(arg)
+        hash_argument!(arg).each_with_object({}) do |(key, val), memo|
+          memo[key.to_s] = val
+        end
+      end
     end
   end
 end

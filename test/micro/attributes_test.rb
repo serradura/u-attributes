@@ -49,8 +49,8 @@ class Micro::AttributesTest < Minitest::Test
     include Micro::Attributes.to_initialize
 
     attribute :a
-    attribute b: 'B'
-    attribute 'c' => 'C'
+    attribute :b, 'B'
+    attribute 'c', 'C'
   end
 
   def test_single_definition_with_default_values
@@ -229,17 +229,17 @@ class Micro::AttributesTest < Minitest::Test
 
   def test_private_class_methods
     [Bar, Foo, Baz, Foz].each do |klass|
-      assert klass.respond_to?(:__attribute, true)
-      assert_raises(NoMethodError) { klass.__attribute }
+      assert klass.respond_to?(:__attribute_set, true)
+      assert_raises(NoMethodError) { klass.__attribute_set }
+
+      assert klass.respond_to?(:__attribute_reader, true)
+      assert_raises(NoMethodError) { klass.__attribute_reader }
 
       assert klass.respond_to?(:__attributes, true)
       assert_raises(NoMethodError) { klass.__attributes }
 
-      assert klass.respond_to?(:__attribute_data, true)
-      assert_raises(NoMethodError) { klass.__attribute_data }
-
-      assert klass.respond_to?(:__attribute_data!, true)
-      assert_raises(NoMethodError) { klass.__attribute_data! }
+      assert klass.respond_to?(:__attributes_set, true)
+      assert_raises(NoMethodError) { klass.__attributes_set }
 
       assert klass.respond_to?(:__attributes_data, true)
       assert_raises(NoMethodError) { klass.__attributes_data }
@@ -316,18 +316,18 @@ class Micro::AttributesTest < Minitest::Test
   end
 
   class SubSub < Sub
-    attribute! f: 'F'
+    attribute! :f, 'F'
   end
 
   class SubSub2 < Sub
-    attributes! e: '3', f: '_F_', g: 99
     attribute! :h
-    attribute! i: -99
+    attribute! :i, -99
+    attributes! e: '3', f: '_F_', g: 99
   end
 
   def test_overriding_default_attributes_data_with_subclasses
     assert_equal(['e', 'f'], SubSub.attributes)
-    assert_equal(['e', 'f', 'g', 'h', 'i'], SubSub2.attributes)
+    assert_equal(['e', 'f', 'h', 'i', 'g'], SubSub2.attributes)
 
     assert_equal(Sub.attributes, SubSub.attributes)
     refute_equal(Sub.attributes, SubSub2.attributes)
