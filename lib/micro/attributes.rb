@@ -57,6 +57,7 @@ module Micro
         instance_variable_set("@#{name}", value) if attribute?(name)
       end
     end
+    protected :attributes=
 
     def attributes
       state = self.class.attributes.each_with_object({}) do |name, memo|
@@ -66,6 +67,5 @@ module Micro
       self.class.attributes_data(state)
     end
 
-    protected :attributes=
   end
 end
