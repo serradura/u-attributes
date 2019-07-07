@@ -2,7 +2,7 @@
 
 module Micro
   module Attributes
-    module Utils
+    module AttributesUtils
       ARGUMENT_ERROR_MSG = 'argument must be a Hash'
 
       def self.hash_argument!(arg)

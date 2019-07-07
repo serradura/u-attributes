@@ -44,8 +44,8 @@ module Micro
 
       def attributes_data(arg)
         __attributes_data.merge(
-          Utils.hash_argument!(arg)
-               .each_with_object({}) { |(key, val), memo| memo[key.to_s] = val }
+          AttributesUtils.hash_argument!(arg)
+                         .each_with_object({}) { |(key, val), memo| memo[key.to_s] = val }
         )
       end
 
@@ -59,8 +59,8 @@ module Micro
           raise ArgumentError, 'wrong number of arguments (given 0, expected 1 or more)'
         end
       end
-
       private_constant :ForSubclasses
     end
+    private_constant :Macros
   end
 end

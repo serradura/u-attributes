@@ -353,4 +353,16 @@ class Micro::AttributesTest < Minitest::Test
     error = assert_raises(ArgumentError) { SubSub.attributes! }
     assert_equal('wrong number of arguments (given 0, expected 1 or more)', error.message)
   end
+
+  # ---
+
+  def test_private_constants
+    [Bar, Foo, Baz, Foz, Base, Sub, SubSub, SubSub2].each do |klass|
+      refute klass.constants.include?(:Macros)
+      assert klass.constants.include?(:AttributesUtils)
+    end
+
+    err = assert_raises(NameError) { Micro::Attributes::ToInitialize }
+    assert_equal('private constant Micro::Attributes::ToInitialize referenced', err.message)
+  end
 end
