@@ -36,18 +36,10 @@ module Micro
         __attribute_data!(arg, allow_to_override: false)
       end
 
-      def attribute!(arg)
-        __attribute_data!(arg, allow_to_override: true)
-      end
-
       def attributes(*args)
         return __attributes.to_a if args.empty?
 
         args.flatten.each { |arg| attribute(arg) }
-      end
-
-      def attributes!(*args)
-        args.flatten.each { |arg| attribute!(arg) }
       end
 
       def attributes_data(arg)
@@ -56,6 +48,19 @@ module Micro
                .each_with_object({}) { |(key, val), memo| memo[key.to_s] = val }
         )
       end
+
+      module ForSubclasses
+        def attribute!(arg)
+          __attribute_data!(arg, allow_to_override: true)
+        end
+
+        def attributes!(*args)
+          return args.flatten.each { |arg| attribute!(arg) } unless args.empty?
+          raise ArgumentError, 'wrong number of arguments (given 0, expected 1 or more)'
+        end
+      end
+
+      private_constant :ForSubclasses
     end
   end
 end
