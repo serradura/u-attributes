@@ -11,18 +11,13 @@ module Micro
       base.extend(::Micro::Attributes.const_get(:Macros))
 
       base.class_eval do
-        private_class_method :__attribute
-        private_class_method :__attributes
-        private_class_method :__attribute_data
-        private_class_method :__attribute_data!
+        private_class_method :__attribute_set, :__attribute_reader
+        private_class_method :__attributes, :__attributes_set
         private_class_method :__attributes_data
       end
 
       def base.inherited(subclass)
-        self.attributes_data({}).each do |name, value|
-          subclass.attribute(value.nil? ? name : {name => value})
-        end
-
+        subclass.attributes(self.attributes_data({}))
         subclass.extend ::Micro::Attributes.const_get('Macros::ForSubclasses')
       end
     end
