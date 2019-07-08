@@ -68,7 +68,7 @@ puts person.age  # 21
 class Person
   include Micro::Attributes
 
-  attribute :name
+  attribute :name, 'John Doe' # .attribute() accepts a second arg as its default value
   attribute :age
 
   def initialize(options)
@@ -76,9 +76,9 @@ class Person
   end
 end
 
-person = Person.new('name' => 'John', age: 20)
+person = Person.new(age: 20)
 
-puts person.name # John
+puts person.name # John Doe
 puts person.age  # 20
 
 #--------------#
@@ -87,14 +87,14 @@ puts person.age  # 20
 #
 # Use the #attribute() method with a valid attribute name to get its value
 
-puts person.attribute(:name) # John
+puts person.attribute(:name) # John Doe
 puts person.attribute('age') # 20
 puts person.attribute('foo') # nil
 
 #
 # If you pass a block, it will be executed only if the attribute is valid.
 
-person.attribute(:name) { |value| puts value } # John
+person.attribute(:name) { |value| puts value } # John Doe
 person.attribute('age') { |value| puts value } # 20
 person.attribute('foo') { |value| puts value } # !! Nothing happened, because of the attribute not exists.
 
@@ -117,16 +117,16 @@ person.attribute!('foo') { |value| puts value } # NameError (undefined attribute
 class Person
   include Micro::Attributes
 
-  attributes :name, :age
+  attributes :age, name: 'John Doe' # Use a hash to define attributes with default values
 
   def initialize(options)
     self.attributes = options
   end
 end
 
-person = Person.new('Serradura', 32)
+person = Person.new(age: 32)
 
-puts person.name # Serradura
+puts person.name # 'John Doe'
 puts person.age  # 32
 ```
 
@@ -137,10 +137,7 @@ A: Use `Micro::Attributes.to_initialize`
 class Person
   include Micro::Attributes.to_initialize
 
-  attributes :age, name: 'John Doe' # Use a hash to define a default value
-
-  # attribute name: 'John Doe'
-  # attribute :age
+  attributes :age, name: 'John Doe'
 end
 
 person = Person.new(age: 18)
@@ -200,7 +197,7 @@ puts instance.respond_to?(:foo) # true
 # The methods above allow redefining the attributes default data
 
 class AnotherSubclass < Person
-  attribute! name: 'Alfa'
+  attribute! :name, 'Alfa'
 end
 
 alfa_person = AnotherSubclass.new({})
