@@ -98,9 +98,9 @@ person.attribute(:name) { |value| puts value } # John Doe
 person.attribute('age') { |value| puts value } # 20
 person.attribute('foo') { |value| puts value } # !! Nothing happened, because of the attribute not exists.
 
-#--------------#
-# #attribute() #
-#--------------#
+#---------------#
+# #attribute!() #
+#---------------#
 #
 # Works like the #attribute() method, but will raise an exception when the attribute not exist.
 
