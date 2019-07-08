@@ -229,20 +229,23 @@ class Micro::AttributesTest < Minitest::Test
 
   def test_private_class_methods
     [Bar, Foo, Baz, Foz].each do |klass|
-      assert klass.respond_to?(:__attribute_set, true)
-      assert_raises(NoMethodError) { klass.__attribute_set }
-
-      assert klass.respond_to?(:__attribute_reader, true)
-      assert_raises(NoMethodError) { klass.__attribute_reader }
+      assert klass.respond_to?(:__attributes_data, true)
+      assert_raises(NoMethodError) { klass.__attributes_data }
 
       assert klass.respond_to?(:__attributes, true)
       assert_raises(NoMethodError) { klass.__attributes }
 
+      assert klass.respond_to?(:__attributes_def, true)
+      assert_raises(NoMethodError) { klass.__attributes_def }
+
       assert klass.respond_to?(:__attributes_set, true)
       assert_raises(NoMethodError) { klass.__attributes_set }
 
-      assert klass.respond_to?(:__attributes_data, true)
-      assert_raises(NoMethodError) { klass.__attributes_data }
+      assert klass.respond_to?(:__attribute_reader, true)
+      assert_raises(NoMethodError) { klass.__attribute_reader }
+
+      assert klass.respond_to?(:__attribute_set, true)
+      assert_raises(NoMethodError) { klass.__attribute_set }
     end
   end
 
