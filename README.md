@@ -1,4 +1,4 @@
-# μ-attributes (Micro::Attributes)
+# μ-attributes (Micro::Attributes) [![Build Status](https://travis-ci.com/serradura/u-attributes.svg?branch=master)](https://travis-ci.com/serradura/u-attributes)
 
 This gem allows defining read-only attributes, that is, your objects will have only getters to access their attributes data.
 
