@@ -46,9 +46,12 @@ module Micro
       private_constant :Changes
 
       def diff_attributes(to)
-        return Changes.new(from: self, to: to) if to.is_a?(::Micro::Attributes)
-
-        raise ArgumentError, "#{to.inspect} must be Micro::Attributes"
+        if to.is_a?(::Micro::Attributes)
+          return Changes.new(from: self, to: to) if to.is_a?(self.class)
+          raise ArgumentError, "expected an instance of #{self.class}"
+        else
+          raise ArgumentError, "#{to.inspect} must implement Micro::Attributes"
+        end
       end
     end
   end
