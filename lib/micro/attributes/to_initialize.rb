@@ -19,7 +19,5 @@ module Micro
         self.class.new(attributes.merge(arg))
       end
     end
-
-    private_constant :ToInitialize
   end
 end
