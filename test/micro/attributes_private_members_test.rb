@@ -15,8 +15,16 @@ class Micro::AttributesPrivateMembersTest < Minitest::Test
   class BB < B; end
   class BBB < BB; end
 
+  class C
+    include Micro::Attributes::ToInitialize
+    include Micro::Attributes::Differ
+  end
+
+  class CC < C; end
+  class CCC < CC; end
+
   def test_private_class_methods
-    [A, AA, AAA, B, BB, BBB].each do |klass|
+    [A, AA, AAA, B, BB, BBB, C, CC, CCC].each do |klass|
       assert klass.respond_to?(:__attributes_data, true)
       assert_raises(NoMethodError) { klass.__attributes_data }
 
@@ -38,7 +46,7 @@ class Micro::AttributesPrivateMembersTest < Minitest::Test
   end
 
   def test_private_constants
-    [A, AA, AAA, B, BB, BBB].each do |klass|
+    [A, AA, AAA, B, BB, BBB, C, CC, CCC].each do |klass|
       refute klass.constants.include?(:Macros)
       assert klass.constants.include?(:AttributesUtils)
     end
