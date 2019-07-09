@@ -98,6 +98,11 @@ class Micro::AttributesTest < Minitest::Test
     assert_equal({"a"=>"a", "b"=>nil}, foo.attributes)
     assert_equal({"b"=>"B", "c"=>"C", "a"=>"a"}, baz.attributes)
     assert_equal({"b"=>"_b", "c"=>"c_", "a"=>"a"}, foz.attributes)
+
+    assert(bar.attributes.frozen?)
+    assert(foo.attributes.frozen?)
+    assert(baz.attributes.frozen?)
+    assert(foz.attributes.frozen?)
   end
 
   # ---

@@ -34,9 +34,9 @@ module Micro
 
         private
 
-        def diff(from_attrs, to_attrs)
-          @to_attributes = to_attrs.freeze
-          @from_attributes = from_attrs.freeze
+        def diff(from_attributes, to_attributes)
+          @to_attributes = to_attributes
+          @from_attributes = from_attributes
           @from_attributes.each_with_object({}) do |(from_key, from_val), acc|
             to_value = @to_attributes[from_key]
             acc[from_key] = to_value if from_val != to_value

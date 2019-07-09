@@ -36,17 +36,19 @@ module Micro
 
     def attributes=(arg)
       self.class.attributes_data(AttributesUtils.hash_argument!(arg)).each do |name, value|
-        instance_variable_set("@#{name}", value) if attribute?(name)
+        __attributes[name] = instance_variable_set("@#{name}", value) if attribute?(name)
       end
+      __attributes.freeze
     end
     protected :attributes=
 
-    def attributes
-      state = self.class.attributes.each_with_object({}) do |name, memo|
-        memo[name] = public_send(name) if respond_to?(name)
-      end
+    def __attributes
+      @__attributes ||= {}
+    end
+    private :__attributes
 
-      self.class.attributes_data(state)
+    def attributes
+      __attributes
     end
 
     def attribute?(name)
