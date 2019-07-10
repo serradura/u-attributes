@@ -10,7 +10,7 @@ GEM
     json (2.2.0)
     minitest (5.11.3)
     rake (10.5.0)
-    simplecov (0.16.1)
+    simplecov (0.17.0)
       docile (~> 1.1)
       json (>= 1.8, < 3)
       simplecov-html (~> 0.10.0)
