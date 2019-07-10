@@ -1,6 +1,6 @@
 require "test_helper"
 
-class Micro::AttributesPrivateMembersTest < Minitest::Test
+class Micro::Attributes::PrivateMembersTest < Minitest::Test
   class A
     include Micro::Attributes
   end

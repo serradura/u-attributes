@@ -1,6 +1,6 @@
 require "test_helper"
 
-class Micro::AttributesDifferTest < Minitest::Test
+class Micro::Attributes::Features::DiffTest < Minitest::Test
   class Foo
     include Micro::Attributes.to_initialize(diff: true)
 
@@ -34,10 +34,10 @@ class Micro::AttributesDifferTest < Minitest::Test
     assert_equal('{} must implement Micro::Attributes', err2.message)
 
     err3 = assert_raises(ArgumentError) { @foo_1.diff_attributes(@bar_1) }
-    assert_equal('expected an instance of Micro::AttributesDifferTest::Foo', err3.message)
+    assert_equal('expected an instance of Micro::Attributes::Features::DiffTest::Foo', err3.message)
 
     err4 = assert_raises(ArgumentError) { @bar_2.diff_attributes(@foo_2) }
-    assert_equal('expected an instance of Micro::AttributesDifferTest::Bar', err4.message)
+    assert_equal('expected an instance of Micro::Attributes::Features::DiffTest::Bar', err4.message)
   end
 
   def test_from
@@ -77,8 +77,8 @@ class Micro::AttributesDifferTest < Minitest::Test
   end
 
   def test_empty?
-    @foo_changes.method(:empty?) == @foo_changes.method(:blank?)
-    @bar_changes.method(:empty?) == @bar_changes.method(:blank?)
+    assert_equal(@foo_changes.method(:empty?), @foo_changes.method(:blank?))
+    assert_equal(@bar_changes.method(:empty?), @bar_changes.method(:blank?))
   end
 
   def test_changed?
