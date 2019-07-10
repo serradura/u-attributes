@@ -23,10 +23,15 @@ module Micro
     end
 
     def self.to_initialize(diff: false)
-      return ::Micro::Attributes::Features::Initialize unless diff
-
-      ::Micro::Attributes::Features::InitializeAndDiff
+      options = [:initialize]
+      options << :diff if diff
+      features(*options)
     end
+
+    def self.features(*names)
+      Features.fetch(names)
+    end
+    singleton_class.send(:alias_method, :with, :features)
 
     def attributes=(arg)
       self.class.attributes_data(AttributesUtils.hash_argument!(arg)).each do |name, value|
