@@ -1,6 +1,9 @@
 unless ENV['DISABLE_SIMPLECOV'] == 'true'
   require 'simplecov'
-  SimpleCov.start
+
+  SimpleCov.start do
+    add_filter "/test/"
+  end
 end
 
 $LOAD_PATH.unshift File.expand_path("../../lib", __FILE__)
