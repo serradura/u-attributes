@@ -29,10 +29,13 @@ module Micro
       features(*options)
     end
 
-    def self.features(*names)
+    def self.with(*names)
       Features.fetch(names)
     end
-    singleton_class.send(:alias_method, :with, :features)
+
+    def self.features(*names)
+      names.empty? ? Features.all : Features.fetch(names)
+    end
 
     def attributes=(arg)
       self.class.attributes_data(AttributesUtils.hash_argument!(arg)).each do |name, value|

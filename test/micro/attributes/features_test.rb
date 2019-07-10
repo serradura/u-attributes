@@ -16,8 +16,16 @@ class Micro::Attributes::FeaturesTest < Minitest::Test
   end
 
   def test_fetching_features_error
-    err = assert_raises(ArgumentError) { Micro::Attributes.features(:foo) }
-    assert_equal('Invalid feature name! Available options: diff, initialize, activemodel_validations', err.message)
+    err1 = assert_raises(ArgumentError) { Micro::Attributes.features(:foo) }
+    assert_equal('Invalid feature name! Available options: diff, initialize, activemodel_validations', err1.message)
+
+    err2 = assert_raises(ArgumentError) { Micro::Attributes.with() }
+    assert_equal('Invalid feature name! Available options: diff, initialize, activemodel_validations', err2.message)
+  end
+
+  def test_fetching_all_features
+    assert_equal(Features.all, Micro::Attributes.features)
+    assert_equal(Features.all, Micro::Attributes.with(:initialize, :diff, :activemodel_validations))
   end
 
   class A
@@ -68,9 +76,5 @@ class Micro::Attributes::FeaturesTest < Minitest::Test
     assert_includes(F.ancestors, Features::Diff)
     assert_includes(F.ancestors, Features::Initialize)
     assert_includes(F.ancestors, Features::ActiveModelValidations)
-  end
-
-  def test_features_alias_method
-    assert_equal(Micro::Attributes.method(:features), Micro::Attributes.method(:with))
   end
 end
