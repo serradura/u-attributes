@@ -264,6 +264,99 @@ p person.attributes                   # {"age"=>20, "name"=>"John Doe"}
 p Person.new(name: 'John').attributes # {"age"=>nil, "name"=>"John"}
 ```
 
+## Built-in extensions
+
+You can use the method `Micro::Attributes.features()` to combine and require only the features that better fit your needs.
+
+Note: The method `Micro::Attributes.with()` is an alias for `Micro::Attributes.features()`.
+
+### Diff extension
+
+Provides a way to track changes in your object attributes.
+
+#### How to enable?
+
+```ruby
+#----------------------------------#
+# Via Micro::Attributes.features() #
+#----------------------------------#
+class Job
+  include Micro::Attributes.features(:diff)
+
+  attributes :id, state: 'sleeping'
+
+  def initialize(options)
+    self.options = options
+  end
+end
+
+# --------------------------------------------------------------------#
+# Using the .with() method alias and adding the initialize extension. #
+# --------------------------------------------------------------------#
+
+class Job
+  include Micro::Attributes.with(:initialize, :diff)
+
+  attributes :id, state: 'sleeping'
+end
+
+#---------------------------------------#
+# Via Micro::Attributes.to_initialize() #
+#---------------------------------------#
+class Job
+  include Micro::Attributes.to_initialize(diff: true)
+
+  attribute :id
+  attribute :state, 'sleeping'
+end
+```
+
+#### Usage
+
+```ruby
+require 'securerandom'
+
+class Job
+  include Micro::Attributes.features(:initialize, :diff)
+
+  attributes :id, state: 'sleeping'
+end
+
+job = Job.new(id: SecureRandom.uuid())
+
+p job.id    # A random UUID generated from SecureRandom.uuid(). e.g: "e68bcc74-b91c-45c2-a904-12f1298cc60e"
+p job.state # "sleeping"
+
+job_running = job.with_attribute(:state, 'running')
+
+p job_running.state # "running"
+
+job_changes = job.diff_attributes(job_running)
+
+#-----------------------------#
+# #present?, #blank?, #empty? #
+#-----------------------------#
+
+p job_changes.present? # true
+p job_changes.blank?   # false
+p job_changes.empty?   # false
+
+#-----------#
+# #changed? #
+#-----------#
+p job_changes.changed? # true
+
+p job_changes.changed?(:id)    # false
+
+p job_changes.changed?(:state) # true
+p job_changes.changed?(:state, from: 'sleeping', to: 'running') # true
+
+#----------------#
+# #differences() #
+#----------------#
+p job_changes.differences # {"state"=>"running"}
+```
+
 ## Development
 
 After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake test` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
