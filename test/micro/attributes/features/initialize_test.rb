@@ -9,7 +9,7 @@ class Micro::Attributes::Features::InitializeTest < Minitest::Test
   end
 
   class Bar
-    include Micro::Attributes.to_initialize
+    include Micro::Attributes.to_initialize(activemodel_validations: true)
 
     attribute :a
     attributes b: 'B', 'c' => 'C'

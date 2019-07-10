@@ -17,7 +17,7 @@ class Micro::Attributes::FeaturesTest < Minitest::Test
 
   def test_fetching_features_error
     err = assert_raises(ArgumentError) { Micro::Attributes.features(:foo) }
-    assert_equal('Invalid feature name! Available options: diff, initialize', err.message)
+    assert_equal('Invalid feature name! Available options: diff, initialize, activemodel_validations', err.message)
   end
 
   class A
@@ -32,15 +32,42 @@ class Micro::Attributes::FeaturesTest < Minitest::Test
     include Micro::Attributes.features(:initialize, :diff)
   end
 
+  class D
+    include Micro::Attributes.features(:initialize, :activemodel_validations)
+  end
+
+  class E
+    include Micro::Attributes.features(:diff, :activemodel_validations)
+  end
+
+  class F
+    include Micro::Attributes.features(:initialize, :diff, :activemodel_validations)
+  end
+
   def test_including_features
     assert_includes(A.ancestors, Features::Diff)
     refute_includes(A.ancestors, Features::Initialize)
+    refute_includes(A.ancestors, Features::ActiveModelValidations)
 
     assert_includes(B.ancestors, Features::Initialize)
     refute_includes(B.ancestors, Features::Diff)
+    refute_includes(B.ancestors, Features::ActiveModelValidations)
 
     assert_includes(C.ancestors, Features::Diff)
     assert_includes(C.ancestors, Features::Initialize)
+    refute_includes(C.ancestors, Features::ActiveModelValidations)
+
+    refute_includes(D.ancestors, Features::Diff)
+    assert_includes(D.ancestors, Features::Initialize)
+    assert_includes(D.ancestors, Features::ActiveModelValidations)
+
+    assert_includes(E.ancestors, Features::Diff)
+    refute_includes(E.ancestors, Features::Initialize)
+    assert_includes(E.ancestors, Features::ActiveModelValidations)
+
+    assert_includes(F.ancestors, Features::Diff)
+    assert_includes(F.ancestors, Features::Initialize)
+    assert_includes(F.ancestors, Features::ActiveModelValidations)
   end
 
   def test_features_alias_method
