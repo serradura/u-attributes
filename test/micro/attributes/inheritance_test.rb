@@ -1,6 +1,6 @@
 require "test_helper"
 
-class Micro::AttributesAfterInheritanceTest < Minitest::Test
+class Micro::Attributes::InheritanceTest < Minitest::Test
   class Base
     include Micro::Attributes.to_initialize
 

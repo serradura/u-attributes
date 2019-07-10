@@ -1,6 +1,6 @@
 require "test_helper"
 
-class Micro::AttributesToInitializeTest < Minitest::Test
+class Micro::Attributes::Features::InitializeTest < Minitest::Test
   class Foo
     include Micro::Attributes::Features::Initialize
 
