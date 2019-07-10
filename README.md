@@ -266,9 +266,7 @@ p Person.new(name: 'John').attributes # {"age"=>nil, "name"=>"John"}
 
 ## Built-in extensions
 
-You can use the method `Micro::Attributes.features()` to combine and require only the features that better fit your needs.
-
-Note: The method `Micro::Attributes.with()` is an alias for `Micro::Attributes.features()`.
+You can use the method `Micro::Attributes.features()` or `Micro::Attributes.with()` to combine and require only the features that better fit your needs.
 
 ### Usage
 
@@ -276,6 +274,9 @@ Note: The method `Micro::Attributes.with()` is an alias for `Micro::Attributes.f
 #----------------------------------#
 # Via Micro::Attributes.features() #
 #----------------------------------#
+
+# Loading specific features
+
 class Job
   include Micro::Attributes.features(:diff)
 
@@ -287,6 +288,18 @@ class Job
   end
 end
 
+# Loading all features
+#         ---
+
+class Job
+  include Micro::Attributes.features
+
+  attributes :id, state: 'sleeping'
+end
+
+# Note:
+# If `Micro::Attributes.features()` be invoked without arguments, a module with all features will be returned.
+
 # --------------------------------------------------------------------#
 # Using the .with() method alias and adding the initialize extension. #
 # --------------------------------------------------------------------#
@@ -295,6 +308,13 @@ class Job
 
   attributes :id, state: 'sleeping'
 end
+
+# Note:
+# The method `Micro::Attributes.with()` will raise an exception if no arguments/features were declared.
+#
+# class Job
+#   include Micro::Attributes.with() # ArgumentError (Invalid feature name! Available options: diff, initialize, activemodel_validations)
+# end
 
 #---------------------------------------#
 # Via Micro::Attributes.to_initialize() #

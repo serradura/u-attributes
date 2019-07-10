@@ -50,6 +50,10 @@ module Micro
 
       private_constant :OPTIONS
 
+      def self.all
+        ActiveModelValidationsAndDiffAndInitialize
+      end
+
       def self.fetch(names)
         option = OPTIONS[names.map { |name| name.to_s.downcase }.sort.join(':')]
         return option if option
