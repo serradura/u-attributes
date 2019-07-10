@@ -270,11 +270,7 @@ You can use the method `Micro::Attributes.features()` to combine and require onl
 
 Note: The method `Micro::Attributes.with()` is an alias for `Micro::Attributes.features()`.
 
-### Diff extension
-
-Provides a way to track changes in your object attributes.
-
-#### How to enable?
+### Usage
 
 ```ruby
 #----------------------------------#
@@ -283,17 +279,17 @@ Provides a way to track changes in your object attributes.
 class Job
   include Micro::Attributes.features(:diff)
 
-  attributes :id, state: 'sleeping'
+  attribute :id
+  attribute :state, 'sleeping'
 
   def initialize(options)
-    self.options = options
+    self.attributes = options
   end
 end
 
 # --------------------------------------------------------------------#
 # Using the .with() method alias and adding the initialize extension. #
 # --------------------------------------------------------------------#
-
 class Job
   include Micro::Attributes.with(:initialize, :diff)
 
@@ -304,12 +300,40 @@ end
 # Via Micro::Attributes.to_initialize() #
 #---------------------------------------#
 class Job
-  include Micro::Attributes.to_initialize(diff: true)
+  include Micro::Attributes.to_initialize(diff: false, activemodel_validations: true)
 
-  attribute :id
-  attribute :state, 'sleeping'
+  attributes :id, state: 'sleeping'
+  validates! :id, :state, presence: true
 end
 ```
+
+### ActiveModel::Validations extension
+
+If your application uses ActiveModel as a dependency (like a regular Rails app). You will be enabled to use the `actimodel_validations` extension.
+
+#### Usage
+
+```ruby
+class Job
+  # include Micro::Attributes.with(:initialize, :activemodel_validations)
+  # include Micro::Attributes.features(:initialize, :activemodel_validations)
+  include Micro::Attributes.to_initialize(activemodel_validations: true)
+
+  attributes :id, state: 'sleeping'
+  validates! :id, :state, presence: true
+end
+
+Job.new({}) # ActiveModel::StrictValidationFailed (Id can't be blank)
+
+job = Job.new(id: 1)
+
+p job.id    # 1
+p job.state # "sleeping"
+```
+
+### Diff extension
+
+Provides a way to track changes in your object attributes.
 
 #### Usage
 
@@ -317,6 +341,8 @@ end
 require 'securerandom'
 
 class Job
+  # include Micro::Attributes.with(:initialize, :diff)
+  # include Micro::Attributes.to_initialize(diff: true)
   include Micro::Attributes.features(:initialize, :diff)
 
   attributes :id, state: 'sleeping'
