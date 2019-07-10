@@ -9,8 +9,8 @@ class Micro::AttributesDifferTest < Minitest::Test
   end
 
   class Bar
-    include Micro::Attributes::ToInitialize
-    include Micro::Attributes::Differ
+    include Micro::Attributes::Features::Initialize
+    include Micro::Attributes::Features::Diff
 
     attributes :a, 'b'
   end

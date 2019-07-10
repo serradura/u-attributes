@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-module Micro
-  module Attributes
-    module ToInitialize
+module Micro::Attributes
+  module Features
+    module Initialize
       def self.included(base)
         base.send(:include, ::Micro::Attributes)
       end

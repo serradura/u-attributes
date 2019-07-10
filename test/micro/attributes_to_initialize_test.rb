@@ -2,7 +2,7 @@ require "test_helper"
 
 class Micro::AttributesToInitializeTest < Minitest::Test
   class Foo
-    include Micro::Attributes::ToInitialize
+    include Micro::Attributes::Features::Initialize
 
     attribute :a
     attribute 'b'

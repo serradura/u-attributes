@@ -3,8 +3,7 @@
 require "micro/attributes/version"
 require "micro/attributes/attributes_utils"
 require "micro/attributes/macros"
-require "micro/attributes/differ"
-require "micro/attributes/to_initialize"
+require "micro/attributes/features"
 
 module Micro
   module Attributes
@@ -24,14 +23,9 @@ module Micro
     end
 
     def self.to_initialize(diff: false)
-      return ::Micro::Attributes::ToInitialize unless diff
+      return ::Micro::Attributes::Features::Initialize unless diff
 
-      @__to_initialize_and_diff ||= Module.new do
-        def self.included(base)
-          base.send(:include, ::Micro::Attributes::ToInitialize)
-          base.send(:include, ::Micro::Attributes::Differ)
-        end
-      end
+      ::Micro::Attributes::Features::InitializeAndDiff
     end
 
     def attributes=(arg)

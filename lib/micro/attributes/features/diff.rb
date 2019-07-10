@@ -1,12 +1,13 @@
 # frozen_string_literal: true
 
-module Micro
-  module Attributes
-    module Differ
+module Micro::Attributes
+  module Features
+    module Diff
       class Changes
         attr_reader :from, :to, :differences
 
         def initialize(from:, to:)
+          raise ArgumentError, "expected an instance of #{from.class}" unless to.is_a?(from.class)
           @from, @to = from, to
           @differences = diff(from.attributes, to.attributes).freeze
         end
@@ -46,12 +47,8 @@ module Micro
       private_constant :Changes
 
       def diff_attributes(to)
-        if to.is_a?(::Micro::Attributes)
-          return Changes.new(from: self, to: to) if to.is_a?(self.class)
-          raise ArgumentError, "expected an instance of #{self.class}"
-        else
-          raise ArgumentError, "#{to.inspect} must implement Micro::Attributes"
-        end
+        return Changes.new(from: self, to: to) if to.is_a?(::Micro::Attributes)
+        raise ArgumentError, "#{to.inspect} must implement Micro::Attributes"
       end
     end
   end
