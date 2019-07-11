@@ -1,6 +1,28 @@
-# μ-attributes (Micro::Attributes) [![Build Status](https://travis-ci.com/serradura/u-attributes.svg?branch=master)](https://travis-ci.com/serradura/u-attributes)
+[![Build Status](https://travis-ci.com/serradura/u-attributes.svg?branch=master)](https://travis-ci.com/serradura/u-attributes)
+
+μ-attributes (Micro::Attributes)
+================================
 
 This gem allows defining read-only attributes, that is, your objects will have only getters to access their attributes data.
+
+## Table of contents
+- [μ-attributes (Micro::Attributes)](#%CE%BC-attributes-MicroAttributes)
+  - [Table of contents](#Table-of-contents)
+  - [Installation](#Installation)
+  - [Usage](#Usage)
+    - [How to require?](#How-to-require)
+    - [How to define attributes?](#How-to-define-attributes)
+    - [How to define multiple attributes?](#How-to-define-multiple-attributes)
+    - [How to define attributes with a constructor to assign them?](#How-to-define-attributes-with-a-constructor-to-assign-them)
+    - [How to query the attributes?](#How-to-query-the-attributes)
+  - [Built-in extensions](#Built-in-extensions)
+    - [ActiveModel::Validations extension](#ActiveModelValidations-extension)
+    - [Diff extension](#Diff-extension)
+    - [Initialize extension](#Initialize-extension)
+  - [Development](#Development)
+  - [Contributing](#Contributing)
+  - [License](#License)
+  - [Code of Conduct](#Code-of-Conduct)
 
 ## Installation
 
@@ -268,8 +290,6 @@ p Person.new(name: 'John').attributes # {"age"=>nil, "name"=>"John"}
 
 You can use the method `Micro::Attributes.features()` or `Micro::Attributes.with()` to combine and require only the features that better fit your needs.
 
-### Usage
-
 ```ruby
 #----------------------------------#
 # Via Micro::Attributes.features() #
@@ -331,8 +351,6 @@ end
 
 If your application uses ActiveModel as a dependency (like a regular Rails app). You will be enabled to use the `actimodel_validations` extension.
 
-#### Usage
-
 ```ruby
 class Job
   # include Micro::Attributes.with(:initialize, :activemodel_validations)
@@ -354,8 +372,6 @@ p job.state # "sleeping"
 ### Diff extension
 
 Provides a way to track changes in your object attributes.
-
-#### Usage
 
 ```ruby
 require 'securerandom'
@@ -401,6 +417,25 @@ p job_changes.changed?(:state, from: 'sleeping', to: 'running') # true
 # #differences() #
 #----------------#
 p job_changes.differences # {"state"=> {"from" => "sleeping", "to" => "running"}}
+```
+
+### Initialize extension
+
+Creates a constructor to assign the attributes.
+
+```ruby
+class Job
+  # include Micro::Attributes.features(:initialize)
+  # include Micro::Attributes.with(:initialize)
+  include Micro::Attributes.to_initialize
+
+  attributes :id, :state
+end
+
+job = Job.new(id: 1, state: 'sleeping')
+
+p job.id    # 1
+p job.state # "sleeping"
 ```
 
 ## Development
