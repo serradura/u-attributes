@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.com/serradura/u-attributes.svg?branch=master)](https://travis-ci.com/serradura/u-attributes)
+[![Build Status](https://travis-ci.com/serradura/u-attributes.svg?branch=master)](https://travis-ci.com/serradura/u-attributes) [![Maintainability](https://api.codeclimate.com/v1/badges/b562e6b877a9edf4dbf6/maintainability)](https://codeclimate.com/github/serradura/u-attributes/maintainability)
 
 μ-attributes (Micro::Attributes)
 ================================
