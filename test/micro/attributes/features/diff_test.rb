@@ -53,8 +53,8 @@ class Micro::Attributes::Features::DiffTest < Minitest::Test
     assert_equal({}, @foo_1.diff_attributes(@foo_1).differences)
     assert_equal({}, @bar_1.diff_attributes(@bar_1).differences)
 
-    assert_equal({"a" => -1}, @foo_changes.differences)
-    assert_equal({"a" => -3, "b" => -4}, @bar_changes.differences)
+    assert_equal({"a" => {'from' => 1, 'to' => -1}}, @foo_changes.differences)
+    assert_equal({"a" => {'from' => 3, 'to' => -3}, "b" => {'from' => 4, 'to' => -4 }}, @bar_changes.differences)
     assert(@foo_changes.differences.frozen?)
     assert(@bar_changes.differences.frozen?)
   end
