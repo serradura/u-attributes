@@ -21,8 +21,8 @@ module Micro::Attributes
 
           if ::ActiveModel::VERSION::STRING >= '3.2'
             base.class_eval(<<-RUBY)
-              def initialize(options)
-                self.attributes=(options)
+              def initialize(arg)
+                self.attributes=arg
                 run_validations!
               end
             RUBY

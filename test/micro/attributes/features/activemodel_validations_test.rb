@@ -2,7 +2,9 @@ require "test_helper"
 
 class Micro::Attributes::Features::ActiveModelValidationsTest < MiniTest::Test
   def test_load_error
-    Micro::Attributes.with(:initialize, :activemodel_validations)
+    Class.new do
+      include Micro::Attributes::With::ActiveModelValidations
+    end
     assert(true)
   end
 
@@ -26,6 +28,13 @@ class Micro::Attributes::Features::ActiveModelValidationsTest < MiniTest::Test
       validates! :b, presence: true
     end
 
+    class C
+      include Micro::Attributes.features
+
+      attributes :c
+      validates! :c, presence: true
+    end
+
     def test_validates
       instance = A.new(a: '')
 
@@ -33,8 +42,11 @@ class Micro::Attributes::Features::ActiveModelValidationsTest < MiniTest::Test
     end
 
     def test_validates!
-      err = assert_raises(ActiveModel::StrictValidationFailed) { B.new(B: '') }
-      assert_equal("B can't be blank", err.message)
+      err1 = assert_raises(ActiveModel::StrictValidationFailed) { B.new(b: '') }
+      assert_equal("B can't be blank", err1.message)
+
+      err2 = assert_raises(ActiveModel::StrictValidationFailed) { C.new(c: nil) }
+      assert_equal("C can't be blank", err2.message)
     end
 
   end

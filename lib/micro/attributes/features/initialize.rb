@@ -4,11 +4,11 @@ module Micro::Attributes
   module Features
     module Initialize
       def self.included(base)
-        base.send(:include, ::Micro::Attributes)
-      end
-
-      def initialize(arg)
-        self.attributes = arg
+        base.class_eval(<<-RUBY)
+          def initialize(arg)
+            self.attributes = arg
+          end
+        RUBY
       end
 
       def with_attribute(key, val)

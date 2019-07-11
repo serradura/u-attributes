@@ -16,7 +16,7 @@ class Micro::Attributes::PrivateMembersTest < Minitest::Test
   class BBB < BB; end
 
   class C
-    include Micro::Attributes::Features::Initialize
+    include Micro::Attributes::With::Initialize
     include Micro::Attributes::Features::Diff
   end
 
