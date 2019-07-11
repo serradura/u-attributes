@@ -50,14 +50,18 @@ module Micro
       end
 
       module ForSubclasses
+        WRONG_NUMBER_OF_ARGS = 'wrong number of arguments (given 0, expected 1 or more)'.freeze
+
         def attribute!(name, value=nil)
           __attribute_set(name, value, true)
         end
 
         def attributes!(*args)
           return __attributes_set(args, can_overwrite: true) unless args.empty?
-          raise ArgumentError, 'wrong number of arguments (given 0, expected 1 or more)'
+          raise ArgumentError, WRONG_NUMBER_OF_ARGS
         end
+
+        private_constant :WRONG_NUMBER_OF_ARGS
       end
       private_constant :ForSubclasses
     end
