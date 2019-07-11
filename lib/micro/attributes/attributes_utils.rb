@@ -3,7 +3,7 @@
 module Micro
   module Attributes
     module AttributesUtils
-      ARGUMENT_ERROR_MSG = 'argument must be a Hash'
+      ARGUMENT_ERROR_MSG = 'argument must be a Hash'.freeze
 
       def self.hash_argument!(arg)
         return arg if arg.is_a?(Hash)

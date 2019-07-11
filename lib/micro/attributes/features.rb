@@ -5,6 +5,8 @@ require "micro/attributes/with"
 module Micro
   module Attributes
     module Features
+      INVALID_FEATURES = 'Invalid feature name! Available options: :initialize, :diff, :activemodel_validations'.freeze
+
       OPTIONS = {
         # Features
         'diff' => With::Diff,
@@ -26,7 +28,7 @@ module Micro
       def self.fetch(names)
         option = OPTIONS[names.map { |name| name.to_s.downcase }.sort.join(':')]
         return option if option
-        raise ArgumentError, 'Invalid feature name! Available options: :initialize, :diff, :activemodel_validations'
+        raise ArgumentError, INVALID_FEATURES
       end
     end
   end

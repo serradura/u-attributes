@@ -3,8 +3,10 @@
 module Micro::Attributes
   module Features
     module ActiveModelValidations
-      @@__active_model_load_error = false
       @@__active_model_required = false
+      @@__active_model_load_error = false
+
+      V32 = '3.2'
 
       def self.included(base)
         if !@@__active_model_load_error && !@@__active_model_required
@@ -19,7 +21,7 @@ module Micro::Attributes
         unless @@__active_model_load_error
           base.send(:include, ::ActiveModel::Validations)
 
-          if ::ActiveModel::VERSION::STRING >= '3.2'
+          if ::ActiveModel::VERSION::STRING >= V32
             base.class_eval(<<-RUBY)
               def initialize(arg)
                 self.attributes=arg
@@ -29,6 +31,8 @@ module Micro::Attributes
           end
         end
       end
+
+      private_constant :V32
     end
   end
 end
