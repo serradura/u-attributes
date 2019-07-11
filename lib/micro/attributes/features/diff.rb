@@ -4,6 +4,10 @@ module Micro::Attributes
   module Features
     module Diff
       class Changes
+        TO = 'to'.freeze
+        FROM = 'from'.freeze
+        FROM_TO_ERROR = 'pass the attribute name with the :from and :to values'.freeze
+
         attr_reader :from, :to, :differences
 
         def initialize(from:, to:)
@@ -24,32 +28,34 @@ module Micro::Attributes
         def changed?(name = nil, from: nil, to: nil)
           if name.nil?
             return present? if from.nil? && to.nil?
-            raise ArgumentError, 'pass the attribute name with the :from and :to values'
+            raise ArgumentError, FROM_TO_ERROR
           elsif from.nil? && to.nil?
             differences.has_key?(name.to_s)
           else
-            key = name.to_s
-            @from_attributes[key] == from && @to_attributes[key] == to
+            result = @differences[name.to_s]
+            result ? result[FROM] == from && result[TO] == to : false
           end
         end
 
         private
 
         def diff(from_attributes, to_attributes)
-          @to_attributes = to_attributes
-          @from_attributes = from_attributes
+          @from_attributes, @to_attributes = from_attributes, to_attributes
           @from_attributes.each_with_object({}) do |(from_key, from_val), acc|
             to_value = @to_attributes[from_key]
-            acc[from_key] = to_value if from_val != to_value
+            acc[from_key] = {FROM => from_val, TO => to_value}.freeze if from_val != to_value
           end
         end
+
+        private_constant :TO, :FROM, :FROM_TO_ERROR
       end
-      private_constant :Changes
 
       def diff_attributes(to)
         return Changes.new(from: self, to: to) if to.is_a?(::Micro::Attributes)
         raise ArgumentError, "#{to.inspect} must implement Micro::Attributes"
       end
+
+      private_constant :Changes
     end
   end
 end

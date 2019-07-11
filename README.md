@@ -400,7 +400,7 @@ p job_changes.changed?(:state, from: 'sleeping', to: 'running') # true
 #----------------#
 # #differences() #
 #----------------#
-p job_changes.differences # {"state"=>"running"}
+p job_changes.differences # {"state"=> {"from" => "sleeping", "to" => "running"}}
 ```
 
 ## Development
