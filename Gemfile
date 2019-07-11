@@ -16,8 +16,8 @@ activemodel = case activemodel_version
               end
 
 if activemodel_version < '6.1'
-  gem 'activemodel', activemodel
-  gem 'activesupport', activemodel
+  gem 'activemodel', activemodel, require: false
+  gem 'activesupport', activemodel, require: false
 end
 
 minitest = activemodel_version < '4.1' ? '~> 4.2' : '~> 5.0'
