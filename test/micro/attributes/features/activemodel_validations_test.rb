@@ -1,13 +1,17 @@
 require "test_helper"
 
-if ENV.fetch('ACTIVEMODEL_VERSION', '6.1') < '6.1'
+class Micro::Attributes::Features::ActiveModelValidationsTest < MiniTest::Test
+  def test_load_error
+    Micro::Attributes.with(:initialize, :activemodel_validations)
+    assert(true)
+  end
 
-  require "active_model"
-  require "active_model/naming"
-  require "active_model/translation"
-  require "active_model/validations"
+  if ENV.fetch('ACTIVEMODEL_VERSION', '6.1') < '6.1'
 
-  class Micro::Attributes::Features::ActiveModelValidations::V32V60Test < MiniTest::Test
+    require "active_model"
+    require "active_model/naming"
+    require "active_model/translation"
+    require "active_model/validations"
     class A
       include Micro::Attributes.to_initialize(activemodel_validations: true)
 
@@ -32,6 +36,6 @@ if ENV.fetch('ACTIVEMODEL_VERSION', '6.1') < '6.1'
       err = assert_raises(ActiveModel::StrictValidationFailed) { B.new(B: '') }
       assert_equal("B can't be blank", err.message)
     end
-  end
 
+  end
 end
