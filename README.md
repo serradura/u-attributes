@@ -290,6 +290,8 @@ p Person.new(name: 'John').attributes # {"age"=>nil, "name"=>"John"}
 
 You can use the method `Micro::Attributes.features()` or `Micro::Attributes.with()` to combine and require only the features that better fit your needs.
 
+Note: If you desire require only one feature, use the `Micro::Attributes.feature()` method.
+
 ```ruby
 #----------------------------------#
 # Via Micro::Attributes.features() #
@@ -298,7 +300,7 @@ You can use the method `Micro::Attributes.features()` or `Micro::Attributes.with
 # Loading specific features
 
 class Job
-  include Micro::Attributes.features(:diff)
+  include Micro::Attributes.feature(:diff)
 
   attribute :id
   attribute :state, 'sleeping'
@@ -421,12 +423,14 @@ p job_changes.differences # {"state"=> {"from" => "sleeping", "to" => "running"}
 
 ### Initialize extension
 
-Creates a constructor to assign the attributes.
+1. Creates a constructor to assign the attributes.
+2. Adds methods to build new instances when some data was assigned.
 
 ```ruby
 class Job
   # include Micro::Attributes.features(:initialize)
   # include Micro::Attributes.with(:initialize)
+  # include Micro::Attributes.feature(:initialize)
   include Micro::Attributes.to_initialize
 
   attributes :id, :state
@@ -436,6 +440,32 @@ job = Job.new(id: 1, state: 'sleeping')
 
 p job.id    # 1
 p job.state # "sleeping"
+
+##############################################
+# Assigning new values to get a new instance #
+##############################################
+
+#-------------------#
+# #with_attribute() #
+#-------------------#
+
+new_job = job.with_attribute(:state, 'running')
+
+puts new_job.id          # 1
+puts new_job.state       # running
+puts new_job.equal?(job) # false
+
+#--------------------#
+# #with_attributes() #
+#--------------------#
+#
+# Use it to assign multiple attributes
+
+other_job = job.with_attributes(id: 2, state: 'killed')
+
+puts other_job.id          # 2
+puts other_job.state       # killed
+puts other_job.equal?(job) # false
 ```
 
 ## Development
