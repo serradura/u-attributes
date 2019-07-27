@@ -4,7 +4,18 @@ class Micro::Attributes::FeaturesTest < Minitest::Test
   With = Micro::Attributes::With
   Features = Micro::Attributes::Features
 
-  def test_fetching_features
+  def test_fetching_one_feature
+    assert_equal(With::Diff, Micro::Attributes.feature(:Diff))
+    assert_equal(With::Diff, Micro::Attributes.feature('diFF'))
+
+    assert_equal(With::Initialize, Micro::Attributes.feature(:Initialize))
+    assert_equal(With::Initialize, Micro::Attributes.feature('INITIALIZE'))
+
+    err = assert_raises(ArgumentError) { Micro::Attributes.feature('INITIALIZE', :initialize) }
+    assert_equal('wrong number of arguments (given 2, expected 1)', err.message)
+  end
+
+  def test_fetching_many_features
     assert_equal(With::Diff, Micro::Attributes.features(:Diff))
     assert_equal(With::Diff, Micro::Attributes.features('diFF'))
 
