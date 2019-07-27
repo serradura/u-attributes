@@ -30,11 +30,15 @@ module Micro
     end
 
     def self.with(*names)
-      Features.fetch(names)
+      Features.with(names)
+    end
+
+    def self.feature(name)
+      self.with(name)
     end
 
     def self.features(*names)
-      names.empty? ? Features.all : Features.fetch(names)
+      names.empty? ? Features.all : Features.with(names)
     end
 
     def attributes=(arg)

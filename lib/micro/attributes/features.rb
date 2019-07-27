@@ -25,7 +25,7 @@ module Micro
         With::ActiveModelValidationsAndDiffAndInitialize
       end
 
-      def self.fetch(names)
+      def self.with(names)
         option = OPTIONS[names.map { |name| name.to_s.downcase }.sort.join(':')]
         return option if option
         raise ArgumentError, INVALID_FEATURES
