@@ -1,9 +1,7 @@
-unless ENV['DISABLE_SIMPLECOV'] == 'true'
-  require 'simplecov'
+require 'simplecov'
 
-  SimpleCov.start do
-    add_filter "/test/"
-  end
+SimpleCov.start do
+  add_filter "/test/"
 end
 
 if ENV.fetch('ACTIVEMODEL_VERSION', '6.1') < '4.1'
