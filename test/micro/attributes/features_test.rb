@@ -12,7 +12,11 @@ class Micro::Attributes::FeaturesTest < Minitest::Test
     assert_equal(With::Initialize, Micro::Attributes.feature('INITIALIZE'))
 
     err = assert_raises(ArgumentError) { Micro::Attributes.feature('INITIALIZE', :initialize) }
-    assert_equal('wrong number of arguments (given 2, expected 1)', err.message)
+    if RUBY_VERSION < '2.3.0'
+      assert_equal('wrong number of arguments (2 for 1)', err.message)
+    else
+      assert_equal('wrong number of arguments (given 2, expected 1)', err.message)
+    end
   end
 
   def test_fetching_many_features
