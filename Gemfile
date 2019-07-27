@@ -1,7 +1,5 @@
 source 'https://rubygems.org'
 
-gem 'simplecov', require: false, group: :test
-
 activemodel_version = ENV.fetch('ACTIVEMODEL_VERSION', '6.1')
 
 activemodel = case activemodel_version
@@ -20,9 +18,10 @@ if activemodel_version < '6.1'
   gem 'activesupport', activemodel, require: false
 end
 
-minitest = activemodel_version < '4.1' ? '~> 4.2' : '~> 5.0'
-
-gem 'minitest', minitest
+group :test do
+  gem 'minitest', activemodel_version < '4.1' ? '~> 4.2' : '~> 5.0'
+  gem 'simplecov', require: false
+end
 
 # Specify your gem's dependencies in u-attributes.gemspec
 gemspec
