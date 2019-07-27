@@ -1,6 +1,7 @@
 [![Gem](https://img.shields.io/gem/v/u-attributes.svg?style=flat-square)](https://rubygems.org/gems/u-attributes)
 [![Build Status](https://travis-ci.com/serradura/u-attributes.svg?branch=master)](https://travis-ci.com/serradura/u-attributes)
 [![Maintainability](https://api.codeclimate.com/v1/badges/b562e6b877a9edf4dbf6/maintainability)](https://codeclimate.com/github/serradura/u-attributes/maintainability)
+[![Test Coverage](https://api.codeclimate.com/v1/badges/b562e6b877a9edf4dbf6/test_coverage)](https://codeclimate.com/github/serradura/u-attributes/test_coverage)
 
 μ-attributes (Micro::Attributes)
 ================================
@@ -8,23 +9,23 @@
 This gem allows defining read-only attributes, that is, your objects will have only getters to access their attributes data.
 
 ## Table of contents
-- [μ-attributes (Micro::Attributes)](#%CE%BC-attributes-MicroAttributes)
-  - [Table of contents](#Table-of-contents)
-  - [Installation](#Installation)
-  - [Usage](#Usage)
-    - [How to require?](#How-to-require)
-    - [How to define attributes?](#How-to-define-attributes)
-    - [How to define multiple attributes?](#How-to-define-multiple-attributes)
-    - [How to define attributes with a constructor to assign them?](#How-to-define-attributes-with-a-constructor-to-assign-them)
-    - [How to query the attributes?](#How-to-query-the-attributes)
-  - [Built-in extensions](#Built-in-extensions)
-    - [ActiveModel::Validations extension](#ActiveModelValidations-extension)
-    - [Diff extension](#Diff-extension)
-    - [Initialize extension](#Initialize-extension)
-  - [Development](#Development)
-  - [Contributing](#Contributing)
-  - [License](#License)
-  - [Code of Conduct](#Code-of-Conduct)
+- [μ-attributes (Micro::Attributes)](#%ce%bc-attributes-microattributes)
+  - [Table of contents](#table-of-contents)
+  - [Installation](#installation)
+  - [Usage](#usage)
+    - [How to require?](#how-to-require)
+    - [How to define attributes?](#how-to-define-attributes)
+    - [How to define multiple attributes?](#how-to-define-multiple-attributes)
+    - [How to define attributes with a constructor to assign them?](#how-to-define-attributes-with-a-constructor-to-assign-them)
+    - [How to query the attributes?](#how-to-query-the-attributes)
+  - [Built-in extensions](#built-in-extensions)
+    - [ActiveModel::Validations extension](#activemodelvalidations-extension)
+    - [Diff extension](#diff-extension)
+    - [Initialize extension](#initialize-extension)
+  - [Development](#development)
+  - [Contributing](#contributing)
+  - [License](#license)
+  - [Code of Conduct](#code-of-conduct)
 
 ## Installation
 
