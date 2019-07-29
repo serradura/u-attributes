@@ -549,7 +549,7 @@ Job.new({})
 # Samples passing some data #
 #---------------------------#
 
-job_null = Job.new({})
+job_null = Job.new(id: nil, state: nil)
 
 p job.id    # nil
 p job.state # nil
