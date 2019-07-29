@@ -25,6 +25,9 @@ module Micro
     def self.to_initialize(diff: false, activemodel_validations: false)
       features(*Features.options(:initialize, diff, activemodel_validations))
     end
+
+    def self.to_initialize!(diff: false, activemodel_validations: false)
+      features(*Features.options(:strict_initialize, diff, activemodel_validations))
     end
 
     def self.with(*names)
