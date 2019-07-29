@@ -23,10 +23,8 @@ module Micro
     end
 
     def self.to_initialize(diff: false, activemodel_validations: false)
-      options = [:initialize]
-      options << :diff if diff
-      options << :activemodel_validations if activemodel_validations
-      features(*options)
+      features(*Features.options(:initialize, diff, activemodel_validations))
+    end
     end
 
     def self.with(*names)

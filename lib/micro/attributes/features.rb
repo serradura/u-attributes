@@ -30,6 +30,13 @@ module Micro
         return option if option
         raise ArgumentError, INVALID_FEATURES
       end
+
+      def self.options(init, diff, activemodel_validations)
+        [init].tap do |options|
+          options << :diff if diff
+          options << :activemodel_validations if activemodel_validations
+        end
+      end
     end
   end
 end
