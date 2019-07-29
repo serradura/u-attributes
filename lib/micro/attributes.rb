@@ -39,18 +39,21 @@ module Micro
       names.empty? ? Features.all : Features.with(names)
     end
 
-    def attributes=(arg)
-      self.class.attributes_data(AttributesUtils.hash_argument!(arg)).each do |name, value|
-        __attributes[name] = instance_variable_set("@#{name}", value) if attribute?(name)
-      end
+    protected def attributes=(arg)
+      self.class
+          .attributes_data(AttributesUtils.hash_argument!(arg))
+          .each { |name, value| __attribute_set(name, value) }
+
       __attributes.freeze
     end
-    protected :attributes=
 
-    def __attributes
+    private def __attributes
       @__attributes ||= {}
     end
-    private :__attributes
+
+    private def __attribute_set(name, value)
+      __attributes[name] = instance_variable_set("@#{name}", value) if attribute?(name)
+    end
 
     def attributes
       __attributes
