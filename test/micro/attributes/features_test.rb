@@ -33,10 +33,10 @@ class Micro::Attributes::FeaturesTest < Minitest::Test
 
   def test_fetching_features_error
     err1 = assert_raises(ArgumentError) { Micro::Attributes.features(:foo) }
-    assert_equal('Invalid feature name! Available options: :initialize, :diff, :activemodel_validations', err1.message)
+    assert_equal('Invalid feature name! Available options: :initialize, :strict_initialize, :diff, :activemodel_validations', err1.message)
 
     err2 = assert_raises(ArgumentError) { Micro::Attributes.with() }
-    assert_equal('Invalid feature name! Available options: :initialize, :diff, :activemodel_validations', err2.message)
+    assert_equal('Invalid feature name! Available options: :initialize, :strict_initialize, :diff, :activemodel_validations', err2.message)
   end
 
   def test_fetching_all_features
@@ -56,8 +56,16 @@ class Micro::Attributes::FeaturesTest < Minitest::Test
     include Micro::Attributes.features(:initialize, :diff)
   end
 
+  class CStrict
+    include Micro::Attributes.features(:strict_initialize, :diff)
+  end
+
   class D
     include Micro::Attributes.features(:initialize, :activemodel_validations)
+  end
+
+  class DStrict
+    include Micro::Attributes.features(:strict_initialize, :activemodel_validations)
   end
 
   class E
@@ -66,6 +74,10 @@ class Micro::Attributes::FeaturesTest < Minitest::Test
 
   class F
     include Micro::Attributes.features(:initialize, :diff, :activemodel_validations)
+  end
+
+  class FStrict
+    include Micro::Attributes.features(:strict_initialize, :diff, :activemodel_validations)
   end
 
   def test_including_features
@@ -84,10 +96,20 @@ class Micro::Attributes::FeaturesTest < Minitest::Test
     assert_includes(C.ancestors, Features::Initialize)
     refute_includes(C.ancestors, Features::ActiveModelValidations)
 
+    assert_includes(CStrict.ancestors, ::Micro::Attributes)
+    assert_includes(CStrict.ancestors, Features::Diff)
+    assert_includes(CStrict.ancestors, Features::StrictInitialize)
+    refute_includes(CStrict.ancestors, Features::ActiveModelValidations)
+
     assert_includes(D.ancestors, ::Micro::Attributes)
     refute_includes(D.ancestors, Features::Diff)
     assert_includes(D.ancestors, Features::Initialize)
     assert_includes(D.ancestors, Features::ActiveModelValidations)
+
+    assert_includes(DStrict.ancestors, ::Micro::Attributes)
+    refute_includes(DStrict.ancestors, Features::Diff)
+    assert_includes(DStrict.ancestors, Features::StrictInitialize)
+    assert_includes(DStrict.ancestors, Features::ActiveModelValidations)
 
     assert_includes(E.ancestors, ::Micro::Attributes)
     assert_includes(E.ancestors, Features::Diff)
@@ -98,5 +120,10 @@ class Micro::Attributes::FeaturesTest < Minitest::Test
     assert_includes(F.ancestors, Features::Diff)
     assert_includes(F.ancestors, Features::Initialize)
     assert_includes(F.ancestors, Features::ActiveModelValidations)
+
+    assert_includes(FStrict.ancestors, ::Micro::Attributes)
+    assert_includes(FStrict.ancestors, Features::Diff)
+    assert_includes(FStrict.ancestors, Features::StrictInitialize)
+    assert_includes(FStrict.ancestors, Features::ActiveModelValidations)
   end
 end

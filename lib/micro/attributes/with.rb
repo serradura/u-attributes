@@ -3,6 +3,7 @@
 require 'micro/attributes/features/diff'
 require 'micro/attributes/features/initialize'
 require 'micro/attributes/features/activemodel_validations'
+require 'micro/attributes/features/strict_initialize'
 
 module Micro
   module Attributes
@@ -31,6 +32,13 @@ module Micro
         end
       end
 
+      module StrictInitialize
+        def self.included(base)
+          base.send(:include, ::Micro::Attributes)
+          base.send(:include, ::Micro::Attributes::Features::StrictInitialize)
+        end
+      end
+
       #
       # Combinations
       #
@@ -38,6 +46,14 @@ module Micro
         def self.included(base)
           base.send(:include, ::Micro::Attributes)
           base.send(:include, ::Micro::Attributes::Features::Initialize)
+          base.send(:include, ::Micro::Attributes::Features::Diff)
+        end
+      end
+
+      module DiffAndStrictInitialize
+        def self.included(base)
+          base.send(:include, ::Micro::Attributes)
+          base.send(:include, ::Micro::Attributes::Features::StrictInitialize)
           base.send(:include, ::Micro::Attributes::Features::Diff)
         end
       end
@@ -58,10 +74,27 @@ module Micro
         end
       end
 
+      module ActiveModelValidationsAndStrictInitialize
+        def self.included(base)
+          base.send(:include, ::Micro::Attributes)
+          base.send(:include, ::Micro::Attributes::Features::StrictInitialize)
+          base.send(:include, ::Micro::Attributes::Features::ActiveModelValidations)
+        end
+      end
+
       module ActiveModelValidationsAndDiffAndInitialize
         def self.included(base)
           base.send(:include, ::Micro::Attributes)
           base.send(:include, ::Micro::Attributes::Features::Initialize)
+          base.send(:include, ::Micro::Attributes::Features::ActiveModelValidations)
+          base.send(:include, ::Micro::Attributes::Features::Diff)
+        end
+      end
+
+      module ActiveModelValidationsAndDiffAndStrictInitialize
+        def self.included(base)
+          base.send(:include, ::Micro::Attributes)
+          base.send(:include, ::Micro::Attributes::Features::StrictInitialize)
           base.send(:include, ::Micro::Attributes::Features::ActiveModelValidations)
           base.send(:include, ::Micro::Attributes::Features::Diff)
         end

@@ -5,18 +5,22 @@ require "micro/attributes/with"
 module Micro
   module Attributes
     module Features
-      INVALID_FEATURES = 'Invalid feature name! Available options: :initialize, :diff, :activemodel_validations'.freeze
+      INVALID_FEATURES = 'Invalid feature name! Available options: :initialize, :strict_initialize, :diff, :activemodel_validations'.freeze
 
       OPTIONS = {
         # Features
         'diff' => With::Diff,
         'initialize' => With::Initialize,
+        'strict_initialize' => With::StrictInitialize,
         'activemodel_validations' => With::ActiveModelValidations,
         # Combinations
         'diff:initialize' => With::DiffAndInitialize,
+        'diff:strict_initialize' => With::DiffAndStrictInitialize,
         'activemodel_validations:diff' => With::ActiveModelValidationsAndDiff,
         'activemodel_validations:initialize' => With::ActiveModelValidationsAndInitialize,
-        'activemodel_validations:diff:initialize' => With::ActiveModelValidationsAndDiffAndInitialize
+        'activemodel_validations:strict_initialize' => With::ActiveModelValidationsAndStrictInitialize,
+        'activemodel_validations:diff:initialize' => With::ActiveModelValidationsAndDiffAndInitialize,
+        'activemodel_validations:diff:strict_initialize' => With::ActiveModelValidationsAndDiffAndStrictInitialize
       }.freeze
 
       private_constant :OPTIONS
