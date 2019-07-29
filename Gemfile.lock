@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    u-attributes (0.14.0)
+    u-attributes (1.0.0)
 
 GEM
   remote: https://rubygems.org/
