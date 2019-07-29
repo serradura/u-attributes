@@ -37,6 +37,10 @@ class Micro::Attributes::Features::InitializeTest < Minitest::Test
     assert_equal('A', instance_2.a)
     assert_equal('@', instance_3.a)
 
+    assert_nil(instance_1.b)
+    assert_nil(instance_2.b)
+    assert_nil(instance_3.b)
+
     refute_same(instance_1, instance_2)
     refute_same(instance_1, instance_3)
 
@@ -49,6 +53,10 @@ class Micro::Attributes::Features::InitializeTest < Minitest::Test
     assert_equal('a', instance_1.a)
     assert_equal('A', instance_2.a)
     assert_equal('@', instance_3.a)
+
+    assert_equal('B', instance_1.b)
+    assert_equal('B', instance_2.b)
+    assert_equal('B', instance_3.b)
 
     refute_same(instance_1, instance_2)
     refute_same(instance_1, instance_3)
