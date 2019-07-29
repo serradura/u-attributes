@@ -17,11 +17,13 @@ This gem allows defining read-only attributes, that is, your objects will have o
     - [How to define attributes?](#how-to-define-attributes)
     - [How to define multiple attributes?](#how-to-define-multiple-attributes)
     - [How to define attributes with a constructor to assign them?](#how-to-define-attributes-with-a-constructor-to-assign-them)
+    - [How to inherit the attributes?](#how-to-inherit-the-attributes)
     - [How to query the attributes?](#how-to-query-the-attributes)
   - [Built-in extensions](#built-in-extensions)
     - [ActiveModel::Validations extension](#activemodelvalidations-extension)
     - [Diff extension](#diff-extension)
     - [Initialize extension](#initialize-extension)
+    - [Strict initialize extension](#strict-initialize-extension)
   - [Development](#development)
   - [Contributing](#contributing)
   - [License](#license)
@@ -201,9 +203,40 @@ puts other_person.equal?(person) # false
 # Person.new(1)
 # ArgumentError (argument must be a Hash)
 
-################
-# Inheritance  #
-################
+#--------------------#
+# Strict initializer #
+#--------------------#
+
+# Use .to_initialize! to forbids an instantiation without all keywords.
+
+class StrictPerson
+  include Micro::Attributes.to_initialize!
+
+  attributes :age, name: 'John Doe'
+end
+
+StrictPerson.new({})
+
+# The code above will raise:
+# ArgumentError (missing keyword: :age)
+
+person_without_age = StrictPerson.new(age: nil)
+
+p person_without_age.name # "John Doe"
+p person_without_age.age  # nil
+
+# Except for this validation when initializing,
+# the `to_initialize!` method will works in the same ways of `to_initialize`.
+```
+
+### How to inherit the attributes?
+
+```ruby
+class Person
+  include Micro::Attributes.to_initialize
+
+  attributes :age, name: 'John Doe'
+end
 
 class Subclass < Person # Will preserve the parent class attributes
   attribute :foo
@@ -325,11 +358,11 @@ end
 # Note:
 # If `Micro::Attributes.features()` be invoked without arguments, a module with all features will be returned.
 
-# --------------------------------------------------------------------#
-# Using the .with() method alias and adding the initialize extension. #
-# --------------------------------------------------------------------#
+#----------------------------------------------------------------------------#
+# Using the .with() method alias and adding the strict initialize extension. #
+#----------------------------------------------------------------------------#
 class Job
-  include Micro::Attributes.with(:initialize, :diff)
+  include Micro::Attributes.with(:strict_initialize, :diff)
 
   attributes :id, state: 'sleeping'
 end
@@ -341,14 +374,26 @@ end
 #   include Micro::Attributes.with() # ArgumentError (Invalid feature name! Available options: diff, initialize, activemodel_validations)
 # end
 
+#===================================#
+# Alternatives to the methods above #
+#===================================#
+
 #---------------------------------------#
 # Via Micro::Attributes.to_initialize() #
 #---------------------------------------#
 class Job
-  include Micro::Attributes.to_initialize(diff: false, activemodel_validations: true)
+  include Micro::Attributes.to_initialize(diff: true, activemodel_validations: true)
 
-  attributes :id, state: 'sleeping'
-  validates! :id, :state, presence: true
+  # Same of `include Micro::Attributes.with(:initialize, :diff, :activemodel_validations)`
+end
+
+#----------------------------------------#
+# Via Micro::Attributes.to_initialize!() #
+#----------------------------------------#
+class Job
+  include Micro::Attributes.to_initialize!(diff: false, activemodel_validations: true)
+
+  # Same of `include Micro::Attributes.with(:strict_initialize, :activemodel_validations)`
 end
 ```
 
@@ -431,13 +476,18 @@ p job_changes.differences # {"state"=> {"from" => "sleeping", "to" => "running"}
 
 ```ruby
 class Job
-  # include Micro::Attributes.features(:initialize)
   # include Micro::Attributes.with(:initialize)
   # include Micro::Attributes.feature(:initialize)
+  # include Micro::Attributes.features(:initialize)
   include Micro::Attributes.to_initialize
 
   attributes :id, :state
 end
+
+job_null = Job.new({})
+
+p job.id    # nil
+p job.state # nil
 
 job = Job.new(id: 1, state: 'sleeping')
 
@@ -469,6 +519,50 @@ other_job = job.with_attributes(id: 2, state: 'killed')
 puts other_job.id          # 2
 puts other_job.state       # killed
 puts other_job.equal?(job) # false
+```
+
+### Strict initialize extension
+
+1. Creates a constructor to assign the attributes.
+2. Adds methods to build new instances when some data was assigned.
+3. **Forbids missing keywords**.
+
+```ruby
+class Job
+  # include Micro::Attributes.with(:strict_initialize)
+  # include Micro::Attributes.feature(:strict_initialize)
+  # include Micro::Attributes.features(:strict_initialize)
+  include Micro::Attributes.to_initialize!
+
+  attributes :id, :state
+end
+#----------------------------------------------------------------------------#
+# The strict_initialize extension will require all the keys when initialize. #
+#----------------------------------------------------------------------------#
+
+Job.new({})
+
+# The code above will raise:
+# ArgumentError (missing keywords: :id, :state)
+
+#---------------------------#
+# Samples passing some data #
+#---------------------------#
+
+job_null = Job.new({})
+
+p job.id    # nil
+p job.state # nil
+
+job = Job.new(id: 1, state: 'sleeping')
+
+p job.id    # 1
+p job.state # "sleeping"
+
+
+# Note:
+#   This extension works like the `initialize` extension.
+#   So, look at its section to understand all the other features.
 ```
 
 ## Development
