@@ -30,7 +30,7 @@ module Micro
       end
 
       def self.with(names)
-        option = OPTIONS[names.map { |name| name.to_s.downcase }.sort.join(':')]
+        option = OPTIONS[names.map { |name| name.to_s.downcase }.uniq.sort.join(':')]
         return option if option
         raise ArgumentError, INVALID_FEATURES
       end
