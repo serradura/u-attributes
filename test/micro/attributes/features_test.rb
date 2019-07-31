@@ -26,6 +26,9 @@ class Micro::Attributes::FeaturesTest < Minitest::Test
     assert_equal(With::Initialize, Micro::Attributes.features(:Initialize))
     assert_equal(With::Initialize, Micro::Attributes.features('INITIALIZE'))
 
+    assert_equal(With::Initialize, Micro::Attributes.features(:Initialize, 'initialize'))
+    assert_equal(With::Initialize, Micro::Attributes.features('INITIALIZE', :initialize))
+
     assert_equal(With::DiffAndInitialize, Micro::Attributes.features(:diff, :initialize))
     assert_equal(With::DiffAndInitialize, Micro::Attributes.features('initialize', :diff))
     assert_equal(With::DiffAndInitialize, Micro::Attributes.features('INITIALIZE', 'diff'))
