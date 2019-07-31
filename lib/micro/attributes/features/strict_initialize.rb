@@ -6,10 +6,6 @@ module Micro::Attributes
       MISSING_KEYWORD = 'missing keyword'.freeze
       MISSING_KEYWORDS = 'missing keywords'.freeze
 
-      def self.included(base)
-        base.send(:include, ::Micro::Attributes::Features::Initialize)
-      end
-
       protected def attributes=(arg)
         arg_hash = AttributesUtils.stringify_hash_keys!(arg)
         att_data = self.class.attributes_data({})

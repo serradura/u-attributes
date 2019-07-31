@@ -34,7 +34,7 @@ module Micro
 
       module StrictInitialize
         def self.included(base)
-          base.send(:include, ::Micro::Attributes)
+          base.send(:include, Initialize)
           base.send(:include, ::Micro::Attributes::Features::StrictInitialize)
         end
       end
