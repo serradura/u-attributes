@@ -30,6 +30,10 @@ module Micro
       features(*Features.options(:strict_initialize, diff, activemodel_validations))
     end
 
+    def self.without(*names)
+      Features.without(names)
+    end
+
     def self.with(*names)
       Features.with(names)
     end

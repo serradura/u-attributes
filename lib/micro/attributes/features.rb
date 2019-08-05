@@ -5,6 +5,8 @@ require "micro/attributes/with"
 module Micro
   module Attributes
     module Features
+      extend self
+
       ALL = [
         DIFF = 'diff'.freeze,
         INITIALIZE = 'initialize'.freeze,
@@ -12,7 +14,7 @@ module Micro
         ACTIVEMODEL_VALIDATIONS = 'activemodel_validations'.freeze
       ].sort.freeze
 
-      INVALID_OPTION = [
+      INVALID_NAME = [
         'Invalid feature name! Available options: ',
         ALL.map { |feature_name| ":#{feature_name}" }.join(', ')
       ].join
@@ -34,23 +36,61 @@ module Micro
         ALL.join(':') => With::ActiveModelValidationsAndDiffAndStrictInitialize
       }.freeze
 
-      private_constant :OPTIONS, :INVALID_OPTION
+      private_constant :OPTIONS, :INVALID_NAME
 
-      def self.all
+      def all
         @all ||= self.with(ALL)
       end
 
-      def self.with(names)
-        option = OPTIONS[names.map { |name| name.to_s.downcase }.uniq.sort.join(':')]
-        return option if option
-        raise ArgumentError, INVALID_OPTION
+      def with(args)
+        valid_names!(args) do |names|
+          OPTIONS.fetch(names.sort.join(':'))
+        end
       end
 
-      def self.options(init, diff, activemodel_validations)
+      def without(args)
+        valid_names!(args) do |except|
+          only = ALL - except
+          only.delete_if { |name| an_initialize?(name) } if any_kind_of_initialize?(except)
+          only.delete_if { |name| name == INITIALIZE } if has_strict_initialize?(only)
+          only.empty? ? ::Micro::Attributes : self.with(only)
+        end
+      end
+
+      def options(init, diff, activemodel_validations)
         [init].tap do |options|
           options << :diff if diff
           options << :activemodel_validations if activemodel_validations
         end
+      end
+
+      private
+      def normalize_names(args)
+        Array(args).map { |arg| arg.to_s.downcase }.uniq
+      end
+
+      def valid_names?(names)
+        names.all? { |name| ALL.include?(name) }
+      end
+
+      def valid_names!(args)
+        names = normalize_names(args)
+
+        raise ArgumentError, INVALID_NAME if args.empty? || !valid_names?(names)
+
+        yield(names)
+      end
+
+      def has_strict_initialize?(names)
+        names.include?(STRICT_INITIALIZE)
+      end
+
+      def any_kind_of_initialize?(names)
+        names.include?(INITIALIZE) || has_strict_initialize?(names)
+      end
+
+      def an_initialize?(name)
+        name == INITIALIZE || name == STRICT_INITIALIZE
       end
     end
   end
