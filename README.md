@@ -326,14 +326,14 @@ p Person.new(name: 'John').attributes # {"age"=>nil, "name"=>"John"}
 
 You can use the method `Micro::Attributes.features()` or `Micro::Attributes.with()` to combine and require only the features that better fit your needs.
 
-Note: If you desire require only one feature, use the `Micro::Attributes.feature()` method.
+But, if you desire...
+1. only one feature, use the `Micro::Attributes.feature()` method.
+2. except one or more features, use the `Micro::Attributes.without()` method.
 
 ```ruby
-#----------------------------------#
-# Via Micro::Attributes.features() #
-#----------------------------------#
-
-# Loading specific features
+#===========================#
+# Loading specific features #
+#===========================#
 
 class Job
   include Micro::Attributes.feature(:diff)
@@ -346,8 +346,10 @@ class Job
   end
 end
 
-# Loading all features
-#         ---
+#======================#
+# Loading all features #
+#         ---          #
+#======================#
 
 class Job
   include Micro::Attributes.features
@@ -395,6 +397,20 @@ class Job
 
   # Same of `include Micro::Attributes.with(:strict_initialize, :activemodel_validations)`
 end
+
+#=====================================#
+# Loading except one or more features #
+#         -----                       #
+#=====================================#
+
+class Job
+  include Micro::Attributes.without(:diff)
+
+  attributes :id, state: 'sleeping'
+end
+
+# Note:
+# The method `Micro::Attributes.without()` returns `Micro::Attributes` if all features extensions were used.
 ```
 
 ### ActiveModel::Validations extension
