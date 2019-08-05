@@ -36,15 +36,15 @@ class Micro::Attributes::FeaturesTest < Minitest::Test
 
   def test_fetching_features_error
     err1 = assert_raises(ArgumentError) { Micro::Attributes.features(:foo) }
-    assert_equal('Invalid feature name! Available options: :initialize, :strict_initialize, :diff, :activemodel_validations', err1.message)
+    assert_equal('Invalid feature name! Available options: :activemodel_validations, :diff, :initialize, :strict_initialize', err1.message)
 
     err2 = assert_raises(ArgumentError) { Micro::Attributes.with() }
-    assert_equal('Invalid feature name! Available options: :initialize, :strict_initialize, :diff, :activemodel_validations', err2.message)
+    assert_equal('Invalid feature name! Available options: :activemodel_validations, :diff, :initialize, :strict_initialize', err2.message)
   end
 
   def test_fetching_all_features
     assert_equal(Features.all, Micro::Attributes.features)
-    assert_equal(Features.all, Micro::Attributes.with(:initialize, :diff, :activemodel_validations))
+    assert_equal(Features.all, Micro::Attributes::With::ActiveModelValidationsAndDiffAndStrictInitialize)
   end
 
   class A
