@@ -32,8 +32,7 @@ module Micro
         'activemodel_validations:initialize' => With::ActiveModelValidationsAndInitialize,
         'activemodel_validations:strict_initialize' => With::ActiveModelValidationsAndStrictInitialize,
         'activemodel_validations:diff:initialize' => With::ActiveModelValidationsAndDiffAndInitialize,
-        'activemodel_validations:diff:strict_initialize' => With::ActiveModelValidationsAndDiffAndStrictInitialize,
-        ALL.join(':') => With::ActiveModelValidationsAndDiffAndStrictInitialize
+        'activemodel_validations:diff:strict_initialize' => With::ActiveModelValidationsAndDiffAndStrictInitialize
       }.freeze
 
       private_constant :OPTIONS, :INVALID_NAME
@@ -44,6 +43,8 @@ module Micro
 
       def with(args)
         valid_names!(args) do |names|
+          delete_initialize_if_has_strict_initialize(names)
+
           OPTIONS.fetch(names.sort.join(':'))
         end
       end
@@ -80,22 +81,21 @@ module Micro
         yield(names)
       end
 
-      def has_strict_initialize?(names)
-        names.include?(STRICT_INITIALIZE)
-      end
-
-      def any_kind_of_initialize?(names)
-        names.include?(INITIALIZE) || has_strict_initialize?(names)
-      end
-
       def an_initialize?(name)
         name == INITIALIZE || name == STRICT_INITIALIZE
       end
 
+      def delete_initialize_if_has_strict_initialize(names)
+        return unless names.include?(STRICT_INITIALIZE)
+
+        names.delete_if { |name| name == INITIALIZE }
+      end
+
       def except_options(names_to_exclude)
         (ALL - names_to_exclude).tap do |names|
-          names.delete_if { |name| an_initialize?(name) } if any_kind_of_initialize?(names_to_exclude)
-          names.delete_if { |name| name == INITIALIZE } if has_strict_initialize?(names)
+          names.delete_if { |name| an_initialize?(name) } if names_to_exclude.include?(INITIALIZE)
+
+          delete_initialize_if_has_strict_initialize(names)
         end
       end
     end
