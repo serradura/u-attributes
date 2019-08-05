@@ -138,4 +138,21 @@ class Micro::Attributes::FeaturesTest < Minitest::Test
     assert_includes(FStrict.ancestors, Features::StrictInitialize)
     assert_includes(FStrict.ancestors, Features::ActiveModelValidations)
   end
+
+  def test_excluding_features
+    assert_equal(Micro::Attributes.without(:diff), Micro::Attributes::With::ActiveModelValidationsAndStrictInitialize)
+    assert_equal(Micro::Attributes.without(:initialize), With::ActiveModelValidationsAndDiff)
+    assert_equal(Micro::Attributes.without(:strict_initialize), With::ActiveModelValidationsAndDiff)
+    assert_equal(Micro::Attributes.without(:activemodel_validations), With::DiffAndStrictInitialize)
+
+    assert_equal(Micro::Attributes.without(:diff, :initialize), Micro::Attributes::With::ActiveModelValidations)
+    assert_equal(Micro::Attributes.without(:diff, :strict_initialize), Micro::Attributes::With::ActiveModelValidations)
+    assert_equal(Micro::Attributes.without(:diff, :activemodel_validations), Micro::Attributes::With::StrictInitialize)
+
+    assert_equal(Micro::Attributes.without(:activemodel_validations, :initialize), Micro::Attributes::With::Diff)
+    assert_equal(Micro::Attributes.without(:activemodel_validations, :strict_initialize), Micro::Attributes::With::Diff)
+
+    assert_equal(Micro::Attributes.without(:activemodel_validations, :diff, :initialize), Micro::Attributes)
+    assert_equal(Micro::Attributes.without(:activemodel_validations, :diff, :strict_initialize), Micro::Attributes)
+  end
 end
