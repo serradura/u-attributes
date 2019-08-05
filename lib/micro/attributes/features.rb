@@ -49,11 +49,9 @@ module Micro
       end
 
       def without(args)
-        valid_names!(args) do |except|
-          only = ALL - except
-          only.delete_if { |name| an_initialize?(name) } if any_kind_of_initialize?(except)
-          only.delete_if { |name| name == INITIALIZE } if has_strict_initialize?(only)
-          only.empty? ? ::Micro::Attributes : self.with(only)
+        valid_names!(args) do |names_to_exclude|
+          names = except_options(names_to_exclude)
+          names.empty? ? ::Micro::Attributes : self.with(names)
         end
       end
 
@@ -65,6 +63,7 @@ module Micro
       end
 
       private
+
       def normalize_names(args)
         Array(args).map { |arg| arg.to_s.downcase }.uniq
       end
@@ -91,6 +90,13 @@ module Micro
 
       def an_initialize?(name)
         name == INITIALIZE || name == STRICT_INITIALIZE
+      end
+
+      def except_options(names_to_exclude)
+        (ALL - names_to_exclude).tap do |names|
+          names.delete_if { |name| an_initialize?(name) } if any_kind_of_initialize?(names_to_exclude)
+          names.delete_if { |name| name == INITIALIZE } if has_strict_initialize?(names)
+        end
       end
     end
   end
