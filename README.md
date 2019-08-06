@@ -11,6 +11,7 @@ This gem allows defining read-only attributes, that is, your objects will have o
 ## Table of contents
 - [μ-attributes (Micro::Attributes)](#%ce%bc-attributes-microattributes)
   - [Table of contents](#table-of-contents)
+  - [Required Ruby version](#required-ruby-version)
   - [Installation](#installation)
   - [Usage](#usage)
     - [How to require?](#how-to-require)
@@ -28,6 +29,10 @@ This gem allows defining read-only attributes, that is, your objects will have o
   - [Contributing](#contributing)
   - [License](#license)
   - [Code of Conduct](#code-of-conduct)
+
+## Required Ruby version
+
+> \>= 2.2.0
 
 ## Installation
 
