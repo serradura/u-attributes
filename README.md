@@ -325,6 +325,17 @@ puts person.attribute?(:foo)  # false
 
 p person.attributes                   # {"age"=>20, "name"=>"John Doe"}
 p Person.new(name: 'John').attributes # {"age"=>nil, "name"=>"John"}
+
+#---------------------#
+# #attributes(*names) #
+#---------------------#
+
+# Slices the attributes to include only the given keys.
+# Returns a hash containing the given keys (in their types).
+
+p person.attributes(:age)             # {age: 20}
+p person.attributes(:age, :name)      # {age: 20, name: "John Doe"}
+p person.attributes('age', 'name')    # {"age"=>20, "name"=>"John Doe"}
 ```
 
 ## Built-in extensions
