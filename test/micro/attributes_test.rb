@@ -105,6 +105,18 @@ class Micro::AttributesTest < Minitest::Test
     assert(foz.attributes.frozen?)
   end
 
+  def test_the_slicing_of_the_instance_attributes
+    bar = Bar.new(a: 'a')
+    foo = Foo.new(a: 'a')
+    baz = Baz.new(a: 'a')
+    foz = Foz.new(a: 'a')
+
+    assert_equal({a: "a"}, bar.attributes(:a))
+    assert_equal({"a"=>"a", "b"=>nil}, foo.attributes("a", "b"))
+    assert_equal({"b"=>"B", "c"=>"C"}, baz.attributes("b", "c"))
+    assert_equal({b: "_b", c: "c_", a: "a"}, foz.attributes(:b, :c, :a))
+  end
+
   # ---
 
   def test_attribute?
