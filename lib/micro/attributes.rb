@@ -62,8 +62,12 @@ module Micro
       __attributes[name] = instance_variable_set("@#{name}", value) if attribute?(name)
     end
 
-    def attributes
-      __attributes
+    def attributes(*names)
+      return __attributes if names.empty?
+
+      names.each_with_object({}) do |name, memo|
+        memo[name] = attribute(name) if attribute?(name)
+      end
     end
 
     def attribute?(name)
