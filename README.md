@@ -1,3 +1,4 @@
+![Ruby](https://img.shields.io/badge/ruby-2.2+-ruby.svg?colorA=99004d&colorB=cc0066)
 [![Gem](https://img.shields.io/gem/v/u-attributes.svg?style=flat-square)](https://rubygems.org/gems/u-attributes)
 [![Build Status](https://travis-ci.com/serradura/u-attributes.svg?branch=master)](https://travis-ci.com/serradura/u-attributes)
 [![Maintainability](https://api.codeclimate.com/v1/badges/b562e6b877a9edf4dbf6/maintainability)](https://codeclimate.com/github/serradura/u-attributes/maintainability)
@@ -9,7 +10,7 @@
 This gem allows defining read-only attributes, that is, your objects will have only getters to access their attributes data.
 
 ## Table of contents
-- [μ-attributes (Micro::Attributes)](#%ce%bc-attributes-microattributes)
+- [μ-attributes (Micro::Attributes)](#μ-attributes-microattributes)
   - [Table of contents](#table-of-contents)
   - [Required Ruby version](#required-ruby-version)
   - [Installation](#installation)
