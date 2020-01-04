@@ -4,32 +4,30 @@
 [![Maintainability](https://api.codeclimate.com/v1/badges/b562e6b877a9edf4dbf6/maintainability)](https://codeclimate.com/github/serradura/u-attributes/maintainability)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/b562e6b877a9edf4dbf6/test_coverage)](https://codeclimate.com/github/serradura/u-attributes/test_coverage)
 
-μ-attributes (Micro::Attributes)
+μ-attributes (Micro::Attributes) <!-- omit in toc -->
 ================================
 
 This gem allows defining read-only attributes, that is, your objects will have only getters to access their attributes data.
 
-## Table of contents
-- [μ-attributes (Micro::Attributes)](#μ-attributes-microattributes)
-  - [Table of contents](#table-of-contents)
-  - [Required Ruby version](#required-ruby-version)
-  - [Installation](#installation)
-  - [Usage](#usage)
-    - [How to require?](#how-to-require)
-    - [How to define attributes?](#how-to-define-attributes)
-    - [How to define multiple attributes?](#how-to-define-multiple-attributes)
-    - [How to define attributes with a constructor to assign them?](#how-to-define-attributes-with-a-constructor-to-assign-them)
-    - [How to inherit the attributes?](#how-to-inherit-the-attributes)
-    - [How to query the attributes?](#how-to-query-the-attributes)
-  - [Built-in extensions](#built-in-extensions)
-    - [ActiveModel::Validations extension](#activemodelvalidations-extension)
-    - [Diff extension](#diff-extension)
-    - [Initialize extension](#initialize-extension)
-    - [Strict initialize extension](#strict-initialize-extension)
-  - [Development](#development)
-  - [Contributing](#contributing)
-  - [License](#license)
-  - [Code of Conduct](#code-of-conduct)
+## Table of contents <!-- omit in toc -->
+- [Required Ruby version](#required-ruby-version)
+- [Installation](#installation)
+- [Usage](#usage)
+  - [How to require?](#how-to-require)
+  - [How to define attributes?](#how-to-define-attributes)
+  - [How to define multiple attributes?](#how-to-define-multiple-attributes)
+  - [How to define attributes with a constructor to assign them?](#how-to-define-attributes-with-a-constructor-to-assign-them)
+  - [How to inherit the attributes?](#how-to-inherit-the-attributes)
+  - [How to query the attributes?](#how-to-query-the-attributes)
+- [Built-in extensions](#built-in-extensions)
+  - [ActiveModel::Validations extension](#activemodelvalidations-extension)
+  - [Diff extension](#diff-extension)
+  - [Initialize extension](#initialize-extension)
+  - [Strict initialize extension](#strict-initialize-extension)
+- [Development](#development)
+- [Contributing](#contributing)
+- [License](#license)
+- [Code of Conduct](#code-of-conduct)
 
 ## Required Ruby version
 
