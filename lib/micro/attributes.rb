@@ -1,7 +1,9 @@
 # frozen_string_literal: true
 
+require 'kind'
+
 require "micro/attributes/version"
-require "micro/attributes/attributes_utils"
+require "micro/attributes/hash"
 require "micro/attributes/macros"
 require "micro/attributes/features"
 
@@ -48,7 +50,7 @@ module Micro
 
     protected def attributes=(arg)
       self.class
-          .attributes_data(AttributesUtils.hash_argument!(arg))
+          .attributes_data(Kind::Of::Hash(arg))
           .each { |name, value| __attribute_set(name, value) }
 
       __attributes.freeze

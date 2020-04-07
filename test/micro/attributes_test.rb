@@ -231,8 +231,8 @@ class Micro::AttributesTest < Minitest::Test
 
   def test_attributes_data
     [Bar, Foo, Baz, Foz].each do |klass|
-      error = assert_raises(ArgumentError) { klass.attributes_data(1) }
-      assert 'argument must be a Hash', error.message
+      error = assert_raises(Kind::Error) { klass.attributes_data(1) }
+      assert '1 expected to be a kind of Hash', error.message
 
       assert klass.attributes_data({}).is_a?(Hash)
       refute klass.attributes_data({}).empty?
