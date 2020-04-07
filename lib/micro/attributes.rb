@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'kind'
+
 require "micro/attributes/version"
 require "micro/attributes/attributes_utils"
 require "micro/attributes/macros"
