@@ -10,7 +10,7 @@ activemodel = case activemodel_version
               when '5.0' then '5.0.7'
               when '5.1' then '5.1.7'
               when '5.2' then '5.2.3'
-              when '6.0' then '6.0.0.rc1'
+              when '6.0' then '6.0.0'
               end
 
 if activemodel_version < '6.1'
