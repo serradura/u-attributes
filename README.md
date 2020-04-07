@@ -94,7 +94,7 @@ puts person.age  # 21
 # If you try to call a setter, you will see a NoMethodError.
 #
 # person.name = 'Rodrigo'
-# NoMethodError (undefined method `name=' for #<Person:0x0000... @name="John Doe", @age=21>)
+# NoMethodError (undefined method `name=' for #<Person:0x0000... @name='John Doe', @age=21>)
 
 #------------------#
 # self.attributes= #
@@ -232,7 +232,7 @@ StrictPerson.new({})
 
 person_without_age = StrictPerson.new(age: nil)
 
-p person_without_age.name # "John Doe"
+p person_without_age.name # 'John Doe'
 p person_without_age.age  # nil
 
 # Except for this validation when initializing,
@@ -270,7 +270,7 @@ end
 
 alfa_person = AnotherSubclass.new({})
 
-p alfa_person.name # "Alfa"
+p alfa_person.name # 'Alfa'
 p alfa_person.age  # nil
 
 class SubSubclass < Subclass
@@ -279,7 +279,7 @@ end
 
 beta_person = SubSubclass.new({})
 
-p beta_person.name # "Beta"
+p beta_person.name # 'Beta'
 p beta_person.age  # 0
 ```
 
@@ -300,7 +300,7 @@ end
 # .attributes() #
 #---------------#
 
-p Person.attributes # ["name", "age"]
+p Person.attributes # ['name', 'age']
 
 #---------------#
 # .attribute?() #
@@ -328,8 +328,8 @@ puts person.attribute?(:foo)  # false
 # #attributes() #
 #---------------#
 
-p person.attributes                   # {"age"=>20, "name"=>"John Doe"}
-p Person.new(name: 'John').attributes # {"age"=>nil, "name"=>"John"}
+p person.attributes                   # {'age'=>20, 'name'=>'John Doe'}
+p Person.new(name: 'John').attributes # {'age'=>nil, 'name'=>'John'}
 
 #---------------------#
 # #attributes(*names) #
@@ -339,8 +339,8 @@ p Person.new(name: 'John').attributes # {"age"=>nil, "name"=>"John"}
 # Returns a hash containing the given keys (in their types).
 
 p person.attributes(:age)             # {age: 20}
-p person.attributes(:age, :name)      # {age: 20, name: "John Doe"}
-p person.attributes('age', 'name')    # {"age"=>20, "name"=>"John Doe"}
+p person.attributes(:age, :name)      # {age: 20, name: 'John Doe'}
+p person.attributes('age', 'name')    # {'age'=>20, 'name'=>'John Doe'}
 ```
 
 ## Built-in extensions
@@ -453,7 +453,7 @@ Job.new({}) # ActiveModel::StrictValidationFailed (Id can't be blank)
 job = Job.new(id: 1)
 
 p job.id    # 1
-p job.state # "sleeping"
+p job.state # 'sleeping'
 ```
 
 ### Diff extension
@@ -473,12 +473,12 @@ end
 
 job = Job.new(id: SecureRandom.uuid())
 
-p job.id    # A random UUID generated from SecureRandom.uuid(). e.g: "e68bcc74-b91c-45c2-a904-12f1298cc60e"
-p job.state # "sleeping"
+p job.id    # A random UUID generated from SecureRandom.uuid(). e.g: 'e68bcc74-b91c-45c2-a904-12f1298cc60e'
+p job.state # 'sleeping'
 
 job_running = job.with_attribute(:state, 'running')
 
-p job_running.state # "running"
+p job_running.state # 'running'
 
 job_changes = job.diff_attributes(job_running)
 
@@ -503,7 +503,7 @@ p job_changes.changed?(:state, from: 'sleeping', to: 'running') # true
 #----------------#
 # #differences() #
 #----------------#
-p job_changes.differences # {"state"=> {"from" => "sleeping", "to" => "running"}}
+p job_changes.differences # {'state'=> {'from' => 'sleeping', 'to' => 'running'}}
 ```
 
 ### Initialize extension
@@ -529,7 +529,7 @@ p job.state # nil
 job = Job.new(id: 1, state: 'sleeping')
 
 p job.id    # 1
-p job.state # "sleeping"
+p job.state # 'sleeping'
 
 ##############################################
 # Assigning new values to get a new instance #
@@ -594,7 +594,7 @@ p job.state # nil
 job = Job.new(id: 1, state: 'sleeping')
 
 p job.id    # 1
-p job.state # "sleeping"
+p job.state # 'sleeping'
 
 
 # Note:

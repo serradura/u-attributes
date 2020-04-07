@@ -1,4 +1,4 @@
-require "test_helper"
+require 'test_helper'
 
 class Micro::Attributes::Features::ActiveModelValidationsTest < MiniTest::Test
   def test_load_error
@@ -10,10 +10,11 @@ class Micro::Attributes::Features::ActiveModelValidationsTest < MiniTest::Test
 
   if ENV.fetch('ACTIVEMODEL_VERSION', '6.1') < '6.1'
 
-    require "active_model"
-    require "active_model/naming"
-    require "active_model/translation"
-    require "active_model/validations"
+    require 'active_model'
+    require 'active_model/naming'
+    require 'active_model/translation'
+    require 'active_model/validations'
+
     class A
       include Micro::Attributes.to_initialize(activemodel_validations: true)
 

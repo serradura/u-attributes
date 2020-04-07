@@ -1,4 +1,4 @@
-require "test_helper"
+require 'test_helper'
 
 class Micro::Attributes::Features::StrictInitializeTest < Minitest::Test
   class Foo
@@ -82,9 +82,9 @@ class Micro::Attributes::Features::StrictInitializeTest < Minitest::Test
     instance_2 = instance_1.with_attributes(a: 'A', b: :bb)
     instance_3 = instance_1.with_attributes(a: '@', b: 'Bb')
 
-    assert_equal({'a' => nil, 'b' => "B", "c"=>"CC"}, instance_1.attributes)
-    assert_equal({'a' => 'A', 'b' => :bb, "c"=>"CC"}, instance_2.attributes)
-    assert_equal({'a' => '@', 'b' => 'Bb', "c"=>"CC"}, instance_3.attributes)
+    assert_equal({'a' => nil, 'b' => 'B', 'c'=>'CC'}, instance_1.attributes)
+    assert_equal({'a' => 'A', 'b' => :bb, 'c'=>'CC'}, instance_2.attributes)
+    assert_equal({'a' => '@', 'b' => 'Bb', 'c'=>'CC'}, instance_3.attributes)
 
     refute_same(instance_1, instance_2)
     refute_same(instance_1, instance_3)
@@ -95,9 +95,9 @@ class Micro::Attributes::Features::StrictInitializeTest < Minitest::Test
     instance_2 = instance_1.with_attributes(a: 'A', b: :bb)
     instance_3 = instance_1.with_attributes(a: '@', b: 'Bb')
 
-    assert_equal({'a' => nil, 'b' => "B", "c"=>"CC"}, instance_1.attributes)
-    assert_equal({'a' => 'A', 'b' => :bb, "c"=>"CC"}, instance_2.attributes)
-    assert_equal({'a' => '@', 'b' => 'Bb', "c"=>"CC"}, instance_3.attributes)
+    assert_equal({'a' => nil, 'b' => 'B', 'c'=>'CC'}, instance_1.attributes)
+    assert_equal({'a' => 'A', 'b' => :bb, 'c'=>'CC'}, instance_2.attributes)
+    assert_equal({'a' => '@', 'b' => 'Bb', 'c'=>'CC'}, instance_3.attributes)
 
     refute_same(instance_1, instance_2)
     refute_same(instance_1, instance_3)

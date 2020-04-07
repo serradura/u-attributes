@@ -1,4 +1,4 @@
-require "test_helper"
+require 'test_helper'
 
 class Micro::AttributesTest < Minitest::Test
   class Biz
@@ -94,10 +94,10 @@ class Micro::AttributesTest < Minitest::Test
     baz = Baz.new(a: 'a')
     foz = Foz.new(a: 'a')
 
-    assert_equal({"a"=>"a", "b"=>nil}, bar.attributes)
-    assert_equal({"a"=>"a", "b"=>nil}, foo.attributes)
-    assert_equal({"b"=>"B", "c"=>"C", "a"=>"a"}, baz.attributes)
-    assert_equal({"b"=>"_b", "c"=>"c_", "a"=>"a"}, foz.attributes)
+    assert_equal({'a'=>'a', 'b'=>nil}, bar.attributes)
+    assert_equal({'a'=>'a', 'b'=>nil}, foo.attributes)
+    assert_equal({'b'=>'B', 'c'=>'C', 'a'=>'a'}, baz.attributes)
+    assert_equal({'b'=>'_b', 'c'=>'c_', 'a'=>'a'}, foz.attributes)
 
     assert(bar.attributes.frozen?)
     assert(foo.attributes.frozen?)
@@ -111,10 +111,10 @@ class Micro::AttributesTest < Minitest::Test
     baz = Baz.new(a: 'a')
     foz = Foz.new(a: 'a')
 
-    assert_equal({a: "a"}, bar.attributes(:a))
-    assert_equal({"a"=>"a", "b"=>nil}, foo.attributes("a", "b"))
-    assert_equal({"b"=>"B", "c"=>"C"}, baz.attributes("b", "c"))
-    assert_equal({b: "_b", c: "c_", a: "a"}, foz.attributes(:b, :c, :a))
+    assert_equal({a: 'a'}, bar.attributes(:a))
+    assert_equal({'a'=>'a', 'b'=>nil}, foo.attributes('a', 'b'))
+    assert_equal({'b'=>'B', 'c'=>'C'}, baz.attributes('b', 'c'))
+    assert_equal({b: '_b', c: 'c_', a: 'a'}, foz.attributes(:b, :c, :a))
   end
 
   # ---
@@ -159,8 +159,8 @@ class Micro::AttributesTest < Minitest::Test
       #
       # #attribute
       #
-      assert_equal("a", instance.attribute(:a))
-      assert_equal("a", instance.attribute('a'))
+      assert_equal('a', instance.attribute(:a))
+      assert_equal('a', instance.attribute('a'))
 
       assert_nil(instance.attribute(:b))
       assert_nil(instance.attribute('b'))
@@ -171,8 +171,8 @@ class Micro::AttributesTest < Minitest::Test
       #
       # #attribute!
       #
-      assert_equal("a", instance.attribute!(:a))
-      assert_equal("a", instance.attribute!('a'))
+      assert_equal('a', instance.attribute!(:a))
+      assert_equal('a', instance.attribute!('a'))
 
       assert_nil(instance.attribute!(:b))
       assert_nil(instance.attribute!('b'))

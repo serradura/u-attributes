@@ -2,10 +2,10 @@
 
 require 'kind'
 
-require "micro/attributes/version"
-require "micro/attributes/hash"
-require "micro/attributes/macros"
-require "micro/attributes/features"
+require 'micro/attributes/version'
+require 'micro/attributes/hash'
+require 'micro/attributes/macros'
+require 'micro/attributes/features'
 
 module Micro
   module Attributes

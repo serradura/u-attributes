@@ -1,4 +1,4 @@
-require "test_helper"
+require 'test_helper'
 
 class Micro::Attributes::FeaturesTest < Minitest::Test
   With = Micro::Attributes::With
