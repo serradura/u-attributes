@@ -23,8 +23,9 @@ class Micro::Attributes::Features::StrictInitializeTest < Minitest::Test
 
   def test_the_constructor_argument_validation
     [Foo, Bar].each do |klass|
-      error = assert_raises(ArgumentError) { klass.new(1) }
-      assert_equal('argument must be a Hash', error.message)
+      error = assert_raises(Kind::Error) { klass.new(1) }
+
+      assert_equal('1 expected to be a kind of Hash', error.message)
     end
   end
 

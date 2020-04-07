@@ -46,7 +46,7 @@ module Micro
       end
 
       def attributes_data(arg)
-        __attributes_data.merge(AttributesUtils.stringify_hash_keys!(arg))
+        __attributes_data.merge(Hash.with_string_keys!(arg))
       end
 
       module ForSubclasses

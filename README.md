@@ -11,6 +11,7 @@ This gem allows defining read-only attributes, that is, your objects will have o
 
 ## Table of contents <!-- omit in toc -->
 - [Required Ruby version](#required-ruby-version)
+- [Dependencies](#dependencies)
 - [Installation](#installation)
 - [Usage](#usage)
   - [How to require?](#how-to-require)
@@ -32,6 +33,11 @@ This gem allows defining read-only attributes, that is, your objects will have o
 ## Required Ruby version
 
 > \>= 2.2.0
+
+## Dependencies
+
+This project depends on [Kind](https://github.com/serradura/kind) gem,
+it's used to validate the inputs of some methods.
 
 ## Installation
 
@@ -202,10 +208,10 @@ puts other_person.name           # Serradura
 puts other_person.age            # 32
 puts other_person.equal?(person) # false
 
-# If you pass a value different of a Hash, an ArgumentError will be raised.
+# If you pass a value different of a Hash, a Kind::Error will be raised.
 #
 # Person.new(1)
-# ArgumentError (argument must be a Hash)
+# Kind::Error (1 must be a Hash)
 
 #--------------------#
 # Strict initializer #
