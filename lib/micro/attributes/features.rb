@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "micro/attributes/with"
+require 'micro/attributes/with'
 
 module Micro
   module Attributes

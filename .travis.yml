@@ -20,9 +20,9 @@ install: bundle install --jobs=3 --retry=3
 before_script:
   - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
   - chmod +x ./cc-test-reporter
-  - "./cc-test-reporter before-build"
+  - './cc-test-reporter before-build'
 
-script: "./.travis.sh"
+script: './.travis.sh'
 
 after_success:
-  - "./cc-test-reporter after-build -t simplecov"
+  - './cc-test-reporter after-build -t simplecov'
