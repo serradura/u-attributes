@@ -5,7 +5,7 @@ class Micro::AttributesTest < Minitest::Test
     include Micro::Attributes
 
     attribute :a
-    attributes :b, :c
+    attributes b: { default: :c }
 
     def initialize(a, b, c='_c')
       @a, @b = a, b
@@ -43,8 +43,8 @@ class Micro::AttributesTest < Minitest::Test
     include Micro::Attributes.to_initialize
 
     attribute :a
-    attribute :b, 'B'
-    attribute 'c', 'C'
+    attribute :b, default: 'B'
+    attribute 'c', default: 'C'
   end
 
   def test_single_definitions_with_default_values
@@ -60,7 +60,7 @@ class Micro::AttributesTest < Minitest::Test
   class Foo
     include Micro::Attributes.to_initialize
 
-    attributes :a, 'b'
+    attributes a: { default: 'b' }
   end
 
   def test_multiple_definitions
@@ -75,7 +75,7 @@ class Micro::AttributesTest < Minitest::Test
   class Foz
     include Micro::Attributes.to_initialize
 
-    attributes :a, b: '_b', 'c' => 'c_'
+    attributes :a, b: { default: '_b' }, 'c' => { default: 'c_' }
   end
 
   def test_multiple_definitions_with_default_values

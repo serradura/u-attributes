@@ -12,13 +12,13 @@ class Micro::Attributes::Features::StrictInitializeTest < Minitest::Test
     include Micro::Attributes.to_initialize!
 
     attribute :a
-    attributes b: 'B', 'c' => 'C'
+    attributes b: { default: 'B' }, 'c' => { default: 'C' }
   end
 
   class Buz
     include Micro::Attributes.to_initialize!(activemodel_validations: true, diff: true)
 
-    attributes :a, b: 'B', 'c' => 'C'
+    attributes :a, b:  { default: 'B' }, 'c' => { default: 'C' }
   end
 
   def test_the_constructor_argument_validation

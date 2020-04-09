@@ -16,15 +16,19 @@ module Micro
         attr_reader(name)
       end
 
-      def __attribute_set(key, value, can_overwrite)
+      def __attribute_set(key, options, can_overwrite)
         name = key.to_s
         has_attribute = attribute?(name)
+
         __attribute_reader(name) unless has_attribute
-        __attributes_data[name] = value if can_overwrite || !has_attribute
+
+        if can_overwrite || !has_attribute
+          __attributes_data[name] = ::Kind::Of::Hash(options)
+        end
       end
 
       def __attributes_def(arg, can_overwrite)
-        return __attribute_set(arg, nil, can_overwrite) unless arg.is_a?(::Hash)
+        return __attribute_set(arg, {}, can_overwrite) unless arg.is_a?(::Hash)
         arg.each { |key, val| __attribute_set(key, val, can_overwrite) }
       end
 
@@ -36,8 +40,8 @@ module Micro
         __attributes.member?(name.to_s)
       end
 
-      def attribute(name, value=nil)
-        __attribute_set(name, value, false)
+      def attribute(name, options = {})
+        __attribute_set(name, options, false)
       end
 
       def attributes(*args)
@@ -52,8 +56,8 @@ module Micro
       module ForSubclasses
         WRONG_NUMBER_OF_ARGS = 'wrong number of arguments (given 0, expected 1 or more)'.freeze
 
-        def attribute!(name, value=nil)
-          __attribute_set(name, value, true)
+        def attribute!(name, options={})
+          __attribute_set(name, options, true)
         end
 
         def attributes!(*args)
