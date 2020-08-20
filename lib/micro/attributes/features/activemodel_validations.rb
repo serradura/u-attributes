@@ -8,7 +8,17 @@ module Micro::Attributes
           require 'active_model'
 
           base.send(:include, ::ActiveModel::Validations)
+          base.extend(ClassMethods)
         rescue LoadError
+        end
+      end
+
+      module ClassMethods
+        def __call_after_attribute_set__(attr_name, options)
+          validate, validates = options.values_at(:validate, :validates)
+
+          self.validate(validate) if validate
+          self.validates(attr_name, validates) if validates
         end
       end
 

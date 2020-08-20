@@ -18,7 +18,8 @@ module Micro
       end
 
       def base.inherited(subclass)
-        subclass.__inherited_attributes_set__(self.__attributes_data__)
+        subclass.__attributes_set_after_inherit__(self.__attributes_data__)
+
         subclass.extend ::Micro::Attributes.const_get('Macros::ForSubclasses'.freeze)
       end
     end
