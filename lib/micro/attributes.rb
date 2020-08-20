@@ -6,6 +6,7 @@ module Micro
   module Attributes
     require 'micro/attributes/version'
     require 'micro/attributes/utils'
+    require 'micro/attributes/diff'
     require 'micro/attributes/macros'
     require 'micro/attributes/features'
 
