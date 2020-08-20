@@ -24,7 +24,7 @@ class Micro::AttributesTest < Minitest::Test
   # ---
 
   class Bar
-    include Micro::Attributes.to_initialize
+    include Micro::Attributes.with(:initialize)
 
     attribute :a
     attribute 'b'
@@ -40,7 +40,7 @@ class Micro::AttributesTest < Minitest::Test
   # ---
 
   class Baz
-    include Micro::Attributes.to_initialize
+    include Micro::Attributes.with(:initialize)
 
     attribute :a
     attribute :b, 'B'
@@ -58,7 +58,7 @@ class Micro::AttributesTest < Minitest::Test
   # ---
 
   class Foo
-    include Micro::Attributes.to_initialize
+    include Micro::Attributes.with(:initialize)
 
     attributes :a, 'b'
   end
@@ -73,7 +73,7 @@ class Micro::AttributesTest < Minitest::Test
   # ---
 
   class Foz
-    include Micro::Attributes.to_initialize
+    include Micro::Attributes.with(:initialize)
 
     attributes :a, b: '_b', 'c' => 'c_'
   end

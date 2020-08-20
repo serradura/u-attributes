@@ -9,14 +9,14 @@ class Micro::Attributes::Features::InitializeTest < Minitest::Test
   end
 
   class Bar
-    include Micro::Attributes.to_initialize(activemodel_validations: true)
+    include Micro::Attributes.with(:initialize, :activemodel_validations)
 
     attribute :a
     attributes b: 'B', 'c' => 'C'
   end
 
   class Buz
-    include Micro::Attributes.to_initialize(diff: true)
+    include Micro::Attributes.with(:initialize, :diff)
 
     attributes :a, b: 'B', 'c' => 'C'
   end

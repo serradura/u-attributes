@@ -4,38 +4,8 @@ class Micro::Attributes::FeaturesTest < Minitest::Test
   With = Micro::Attributes::With
   Features = Micro::Attributes::Features
 
-  def test_fetching_one_feature
-    assert_equal(With::Diff, Micro::Attributes.feature(:Diff))
-    assert_equal(With::Diff, Micro::Attributes.feature('diFF'))
-
-    assert_equal(With::Initialize, Micro::Attributes.feature(:Initialize))
-    assert_equal(With::Initialize, Micro::Attributes.feature('INITIALIZE'))
-
-    err = assert_raises(ArgumentError) { Micro::Attributes.feature('INITIALIZE', :initialize) }
-    if RUBY_VERSION < '2.3.0'
-      assert_equal('wrong number of arguments (2 for 1)', err.message)
-    else
-      assert_equal('wrong number of arguments (given 2, expected 1)', err.message)
-    end
-  end
-
-  def test_fetching_many_features
-    assert_equal(With::Diff, Micro::Attributes.features(:Diff))
-    assert_equal(With::Diff, Micro::Attributes.features('diFF'))
-
-    assert_equal(With::Initialize, Micro::Attributes.features(:Initialize))
-    assert_equal(With::Initialize, Micro::Attributes.features('INITIALIZE'))
-
-    assert_equal(With::Initialize, Micro::Attributes.features(:Initialize, 'initialize'))
-    assert_equal(With::Initialize, Micro::Attributes.features('INITIALIZE', :initialize))
-
-    assert_equal(With::DiffAndInitialize, Micro::Attributes.features(:diff, :initialize))
-    assert_equal(With::DiffAndInitialize, Micro::Attributes.features('initialize', :diff))
-    assert_equal(With::DiffAndInitialize, Micro::Attributes.features('INITIALIZE', 'diff'))
-  end
-
   def test_fetching_features_error
-    err1 = assert_raises(ArgumentError) { Micro::Attributes.features(:foo) }
+    err1 = assert_raises(ArgumentError) { Micro::Attributes.with(:foo) }
     assert_equal('Invalid feature name! Available options: :activemodel_validations, :diff, :initialize, :strict_initialize', err1.message)
 
     err2 = assert_raises(ArgumentError) { Micro::Attributes.with() }
@@ -43,44 +13,44 @@ class Micro::Attributes::FeaturesTest < Minitest::Test
   end
 
   def test_fetching_all_features
-    assert_equal(Features.all, Micro::Attributes.features)
+    assert_equal(Features.all, Micro::Attributes.with(:everything))
     assert_equal(Features.all, Micro::Attributes::With::ActiveModelValidationsAndDiffAndStrictInitialize)
   end
 
   class A
-    include Micro::Attributes.features(:diff)
+    include Micro::Attributes.with(:diff)
   end
 
   class B
-    include Micro::Attributes.features(:initialize)
+    include Micro::Attributes.with(:initialize)
   end
 
   class C
-    include Micro::Attributes.features(:initialize, :diff)
+    include Micro::Attributes.with(:initialize, :diff)
   end
 
   class CStrict
-    include Micro::Attributes.features(:strict_initialize, :diff)
+    include Micro::Attributes.with(:strict_initialize, :diff)
   end
 
   class D
-    include Micro::Attributes.features(:initialize, :activemodel_validations)
+    include Micro::Attributes.with(:initialize, :activemodel_validations)
   end
 
   class DStrict
-    include Micro::Attributes.features(:strict_initialize, :activemodel_validations)
+    include Micro::Attributes.with(:strict_initialize, :activemodel_validations)
   end
 
   class E
-    include Micro::Attributes.features(:diff, :activemodel_validations)
+    include Micro::Attributes.with(:diff, :activemodel_validations)
   end
 
   class F
-    include Micro::Attributes.features(:initialize, :diff, :activemodel_validations)
+    include Micro::Attributes.with(:initialize, :diff, :activemodel_validations)
   end
 
   class FStrict
-    include Micro::Attributes.features(:strict_initialize, :diff, :activemodel_validations)
+    include Micro::Attributes.with(:strict_initialize, :diff, :activemodel_validations)
   end
 
   def test_including_features

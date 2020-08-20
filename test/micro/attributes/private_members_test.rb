@@ -9,7 +9,7 @@ class Micro::Attributes::PrivateMembersTest < Minitest::Test
   class AAA < AA; end
 
   class B
-    include Micro::Attributes.to_initialize
+    include Micro::Attributes.with(:initialize)
   end
 
   class BB < B; end
