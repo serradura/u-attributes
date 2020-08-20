@@ -13,7 +13,7 @@ class Micro::Attributes::FeaturesTest < Minitest::Test
   end
 
   def test_fetching_all_features
-    assert_equal(Features.all, Micro::Attributes.with(:everything))
+    assert_equal(Features.all, Micro::Attributes.with_all_features)
     assert_equal(Features.all, Micro::Attributes::With::ActiveModelValidationsAndDiffAndStrictInitialize)
   end
 
