@@ -48,7 +48,7 @@ class Micro::Attributes::PrivateMembersTest < Minitest::Test
   def test_private_constants
     [A, AA, AAA, B, BB, BBB, C, CC, CCC].each do |klass|
       refute klass.constants.include?(:Macros)
-      assert klass.constants.include?(:Hash)
+      refute klass.constants.include?(:Utils)
     end
   end
 end

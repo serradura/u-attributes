@@ -7,7 +7,7 @@ module Micro::Attributes
       MISSING_KEYWORDS = 'missing keywords'.freeze
 
       protected def attributes=(arg)
-        arg_hash = Hash.with_string_keys!(arg)
+        arg_hash = Utils.stringify_hash_keys!(arg)
         att_data = self.class.attributes_data({})
 
         attributes_missing!(ref: att_data, arg: arg_hash)
