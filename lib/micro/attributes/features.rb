@@ -68,39 +68,51 @@ module Micro
 
       private
 
-      def normalize_names(args)
-        Array(args).map { |arg| arg.to_s.downcase }.uniq
-      end
+        def fetch_feature_name(name)
+          return name unless name.is_a?(Hash)
 
-      def valid_names?(names)
-        names.all? { |name| ALL.include?(name) }
-      end
-
-      def valid_names!(args)
-        names = normalize_names(args)
-
-        raise ArgumentError, INVALID_NAME if args.empty? || !valid_names?(names)
-
-        yield(names)
-      end
-
-      def an_initialize?(name)
-        name == INITIALIZE || name == STRICT_INITIALIZE
-      end
-
-      def delete_initialize_if_has_strict_initialize(names)
-        return unless names.include?(STRICT_INITIALIZE)
-
-        names.delete_if { |name| name == INITIALIZE }
-      end
-
-      def except_options(names_to_exclude)
-        (ALL - names_to_exclude).tap do |names|
-          names.delete_if { |name| an_initialize?(name) } if names_to_exclude.include?(INITIALIZE)
-
-          delete_initialize_if_has_strict_initialize(names)
+          STRICT_INITIALIZE if name[:initialize] == :strict
         end
-      end
+
+        def normalize_names(args)
+          names = Array(args).dup
+
+          last_feature = fetch_feature_name(names.pop)
+
+          features = names.empty? ? [last_feature] : names + [last_feature]
+          features.map! { |name| name.to_s.downcase }
+          features.uniq
+        end
+
+        def valid_names?(names)
+          names.all? { |name| ALL.include?(name) }
+        end
+
+        def valid_names!(args)
+          names = normalize_names(args)
+
+          raise ArgumentError, INVALID_NAME if names.empty? || !valid_names?(names)
+
+          yield(names)
+        end
+
+        def an_initialize?(name)
+          name == INITIALIZE || name == STRICT_INITIALIZE
+        end
+
+        def delete_initialize_if_has_strict_initialize(names)
+          return unless names.include?(STRICT_INITIALIZE)
+
+          names.delete_if { |name| name == INITIALIZE }
+        end
+
+        def except_options(names_to_exclude)
+          (ALL - names_to_exclude).tap do |names|
+            names.delete_if { |name| an_initialize?(name) } if names_to_exclude.include?(INITIALIZE)
+
+            delete_initialize_if_has_strict_initialize(names)
+          end
+        end
     end
   end
 end
