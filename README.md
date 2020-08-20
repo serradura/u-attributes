@@ -11,20 +11,28 @@ This gem allows defining read-only attributes, that is, your objects will have o
 
 ## Table of contents <!-- omit in toc -->
 - [Required Ruby version](#required-ruby-version)
-- [Dependencies](#dependencies)
 - [Installation](#installation)
+- [Compatibility](#compatibility)
 - [Usage](#usage)
-  - [How to require?](#how-to-require)
   - [How to define attributes?](#how-to-define-attributes)
+    - [`Micro::Attributes#attributes=`](#microattributesattributes)
+    - [`Micro::Attributes#attribute`](#microattributesattribute)
+    - [`Micro::Attributes#attribute!`](#microattributesattribute-1)
   - [How to define multiple attributes?](#how-to-define-multiple-attributes)
-  - [How to define attributes with a constructor to assign them?](#how-to-define-attributes-with-a-constructor-to-assign-them)
-  - [How to inherit the attributes?](#how-to-inherit-the-attributes)
+  - [`Micro::Attributes.with(:initialize)`](#microattributeswithinitialize)
+    - [`#with_attribute()`](#with_attribute)
+    - [`#with_attributes()`](#with_attributes)
+  - [Defining default values to the attributes](#defining-default-values-to-the-attributes)
+  - [Strict initializer](#strict-initializer)
+  - [Is it possible to inherit the attributes?](#is-it-possible-to-inherit-the-attributes)
+    - [.attribute!()](#attribute)
   - [How to query the attributes?](#how-to-query-the-attributes)
 - [Built-in extensions](#built-in-extensions)
   - [ActiveModel::Validations extension](#activemodelvalidations-extension)
+    - [Attribute options](#attribute-options)
   - [Diff extension](#diff-extension)
   - [Initialize extension](#initialize-extension)
-  - [Strict initialize extension](#strict-initialize-extension)
+  - [Strict initialize mode](#strict-initialize-mode)
 - [Development](#development)
 - [Contributing](#contributing)
 - [License](#license)
@@ -34,44 +42,26 @@ This gem allows defining read-only attributes, that is, your objects will have o
 
 > \>= 2.2.0
 
-## Dependencies
-
-This project depends on [Kind](https://github.com/serradura/kind) gem,
-it's used to validate the inputs of some methods.
-
 ## Installation
 
-Add this line to your application's Gemfile:
+Add this line to your application's Gemfile and `bundle install`:
 
 ```ruby
 gem 'u-attributes'
 ```
 
-And then execute:
+## Compatibility
 
-    $ bundle
-
-Or install it yourself as:
-
-    $ gem install u-attributes
+| u-attributes   | branch  | ruby     |  activemodel  |
+| -------------- | ------- | -------- | ------------- |
+| 2.0.0          | master  | >= 2.2.0 | >= 3.2, < 6.1 |
+| 1.2.0          | v1.x    | >= 2.2.0 | >= 3.2, < 6.1 |
 
 ## Usage
 
-### How to require?
-```ruby
-# Bundler will do it automatically, but if you desire to do a manual require.
-# Use one of the following options:
-
-require 'micro/attributes'
-
-# or
-
-require 'u-attributes'
-```
-
 ### How to define attributes?
-```ruby
 
+```ruby
 # By default you must to define the class constructor.
 
 class Person
@@ -87,25 +77,25 @@ end
 
 person = Person.new(age: 21)
 
-puts person.name # John Doe
-puts person.age  # 21
+person.name # John Doe
+person.age  # 21
 
-# By design, the attributes expose only reader methods (getters).
-# If you try to call a setter, you will see a NoMethodError.
+# By design the attributes are always exposed as reader methods (getters).
+# If you try to call a setter you will see a NoMethodError.
 #
 # person.name = 'Rodrigo'
 # NoMethodError (undefined method `name=' for #<Person:0x0000... @name='John Doe', @age=21>)
+```
 
-#------------------#
-# self.attributes= #
-#------------------#
+#### `Micro::Attributes#attributes=`
 
-# This protected method is added to make easier the assignment in a constructor.
+This is a protected method to make easier the assignment in a constructor. e.g.
 
+```ruby
 class Person
   include Micro::Attributes
 
-  attribute :name, 'John Doe' # .attribute() accepts a second arg as its default value
+  attribute :name, default: 'John Doe'
   attribute :age
 
   def initialize(options)
@@ -115,46 +105,49 @@ end
 
 person = Person.new(age: 20)
 
-puts person.name # John Doe
-puts person.age  # 20
+person.name # John Doe
+person.age  # 20
+```
 
-#--------------#
-# #attribute() #
-#--------------#
-#
-# Use the #attribute() method with a valid attribute name to get its value
+#### `Micro::Attributes#attribute`
 
-puts person.attribute(:name) # John Doe
-puts person.attribute('age') # 20
-puts person.attribute('foo') # nil
+Use this method with a valid attribute name to get its value.
 
-#
-# If you pass a block, it will be executed only if the attribute is valid.
+```ruby
+person = Person.new(age: 20)
 
+person.attribute(:name) # John Doe
+person.attribute('age') # 20
+person.attribute('foo') # nil
+```
+
+If you pass a block, it will be executed only if the attribute was valid.
+
+```ruby
 person.attribute(:name) { |value| puts value } # John Doe
 person.attribute('age') { |value| puts value } # 20
-person.attribute('foo') { |value| puts value } # !! Nothing happened, because of the attribute not exists.
+person.attribute('foo') { |value| puts value } # !! Nothing happened, because of the attribute doesn't exist.
+```
 
-#---------------#
-# #attribute!() #
-#---------------#
-#
-# Works like the #attribute() method, but will raise an exception when the attribute not exist.
+#### `Micro::Attributes#attribute!`
 
-puts person.attribute!('foo')                   # NameError (undefined attribute `foo)
-person.attribute!('foo') { |value| puts value } # NameError (undefined attribute `foo)
+Works like the `#attribute` method, but it will raise an exception when the attribute doesn't exist.
+
+```ruby
+person.attribute!('foo')                        # NameError (undefined attribute `foo)
+
+person.attribute!('foo') { |value| value } # NameError (undefined attribute `foo)
 ```
 
 ### How to define multiple attributes?
 
+Use `.attributes` with a list of attribute names.
+
 ```ruby
-
-# Use .attributes with a list of attribute names.
-
 class Person
   include Micro::Attributes
 
-  attributes :age, name: 'John Doe' # Use a hash to define attributes with default values
+  attributes :age, :name
 
   def initialize(options)
     self.attributes = options
@@ -163,89 +156,123 @@ end
 
 person = Person.new(age: 32)
 
-puts person.name # 'John Doe'
-puts person.age  # 32
+person.name # nil
+person.age  # 32
 ```
 
-### How to define attributes with a constructor to assign them?
-A: Use `Micro::Attributes.to_initialize`
+> **Note:** This method can't define default values. To do this, use the `#attribute()` method.
+
+### `Micro::Attributes.with(:initialize)`
+
+Use `Micro::Attributes.with(:initialize)` to define a constructor to assign the attributes. e.g.
 
 ```ruby
 class Person
-  include Micro::Attributes.to_initialize
+  include Micro::Attributes.with(:initialize)
 
-  attributes :age, name: 'John Doe'
+  attribute :age
+  attribute :name, default: 'John Doe'
 end
 
 person = Person.new(age: 18)
 
-puts person.name # John Doe
-puts person.age  # 18
-
-##############################################
-# Assigning new values to get a new instance #
-##############################################
-
-#-------------------#
-# #with_attribute() #
-#-------------------#
-
-another_person = person.with_attribute(:age, 21)
-
-puts another_person.name           # John Doe
-puts another_person.age            # 21
-puts another_person.equal?(person) # false
-
-#--------------------#
-# #with_attributes() #
-#--------------------#
-#
-# Use it to assign multiple attributes
-
-other_person = person.with_attributes(name: 'Serradura', age: 32)
-
-puts other_person.name           # Serradura
-puts other_person.age            # 32
-puts other_person.equal?(person) # false
-
-# If you pass a value different of a Hash, a Kind::Error will be raised.
-#
-# Person.new(1)
-# Kind::Error (1 must be a Hash)
-
-#--------------------#
-# Strict initializer #
-#--------------------#
-
-# Use .to_initialize! to forbids an instantiation without all keywords.
-
-class StrictPerson
-  include Micro::Attributes.to_initialize!
-
-  attributes :age, name: 'John Doe'
-end
-
-StrictPerson.new({})
-
-# The code above will raise:
-# ArgumentError (missing keyword: :age)
-
-person_without_age = StrictPerson.new(age: nil)
-
-p person_without_age.name # 'John Doe'
-p person_without_age.age  # nil
-
-# Except for this validation when initializing,
-# the `to_initialize!` method will works in the same ways of `to_initialize`.
+person.name # John Doe
+person.age  # 18
 ```
 
-### How to inherit the attributes?
+This extension enables two methods for your objects.
+The `#with_attribute()` and `#with_attributes()`.
+
+#### `#with_attribute()`
+
+```ruby
+another_person = person.with_attribute(:age, 21)
+
+another_person.name           # John Doe
+another_person.age            # 21
+another_person.equal?(person) # false
+```
+
+#### `#with_attributes()`
+
+Use it to assign multiple attributes
+```ruby
+other_person = person.with_attributes(name: 'Serradura', age: 32)
+
+other_person.name           # Serradura
+other_person.age            # 32
+other_person.equal?(person) # false
+```
+
+If you pass a value different of a Hash, a Kind::Error will be raised.
+
+```ruby
+Person.new(1) # Kind::Error (1 must be a Hash)
+```
+
+### Defining default values to the attributes
+
+To do this, you only need make use of the `default:` keyword. e.g.
 
 ```ruby
 class Person
-  include Micro::Attributes.to_initialize
+  include Micro::Attributes.with(:initialize)
 
-  attributes :age, name: 'John Doe'
+  attribute :age
+  attribute :name, default: 'John Doe'
+end
+```
+
+There are 3 different strategies to define default values.
+1. Pass a regular object, like in the previous example.
+2. Pass a `proc`/`lambda`, and if it has an argument you will receive the attribute value to do something before assign it.
+3. Pass a **callable**, that is, a `class`, `module` or `instance` which responds to the `call` method. The behavior will be like the previous item (`proc`/`lambda`).
+
+```ruby
+class Person
+  include Micro::Attributes.with(:initialize)
+
+  attribute :age, default: -> age { age&.to_i }
+  attribute :name, default: -> name { String(name || 'John Doe').strip }
+end
+```
+
+### Strict initializer
+
+Use `.with(initialize: :strict)` to forbids an instantiation without all the attribute keywords. e.g.
+
+```ruby
+class StrictPerson
+  include Micro::Attributes.with(initialize: :strict)
+
+  attribute :age
+  attribute :name, default: 'John Doe'
+end
+
+StrictPerson.new({}) # ArgumentError (missing keyword: :age)
+```
+
+An attribute with a default value can be omitted.
+
+``` ruby
+person_without_age = StrictPerson.new(age: nil)
+
+person_without_age.name # 'John Doe'
+person_without_age.age  # nil
+```
+
+> **Note:** Except for this validation the `.with(initialize: :strict)` method will works in the same ways of `.with(:initialize)`.
+
+### Is it possible to inherit the attributes?
+
+Yes. e.g.
+
+```ruby
+class Person
+  include Micro::Attributes.with(:initialize)
+
+  attribute :age
+  attribute :name, default: 'John Doe'
 end
 
 class Subclass < Person # Will preserve the parent class attributes
@@ -254,33 +281,34 @@ end
 
 instance = Subclass.new({})
 
-puts instance.name              # John Doe
-puts instance.respond_to?(:age) # true
-puts instance.respond_to?(:foo) # true
+instance.name              # John Doe
+instance.respond_to?(:age) # true
+instance.respond_to?(:foo) # true
+```
 
-#---------------------------------#
-# .attribute!() or .attributes!() #
-#---------------------------------#
+#### .attribute!()
 
-# The methods above allow redefining the attributes default data
+This method allows us to redefine the attributes default data that was defined in the parent class. e.g.
 
+```ruby
 class AnotherSubclass < Person
-  attribute! :name, 'Alfa'
+  attribute! :name, default: 'Alfa'
 end
 
 alfa_person = AnotherSubclass.new({})
 
-p alfa_person.name # 'Alfa'
-p alfa_person.age  # nil
+alfa_person.name # 'Alfa'
+alfa_person.age  # nil
 
 class SubSubclass < Subclass
-  attributes! name: 'Beta', age: 0
+  attribute! :age, default: 0
+  attribute! :name, default: 'Beta'
 end
 
 beta_person = SubSubclass.new({})
 
-p beta_person.name # 'Beta'
-p beta_person.age  # 0
+beta_person.name # 'Beta'
+beta_person.age  # 0
 ```
 
 ### How to query the attributes?
@@ -289,7 +317,8 @@ p beta_person.age  # 0
 class Person
   include Micro::Attributes
 
-  attributes :age, name: 'John Doe'
+  attribute :age
+  attribute :name, default: 'John Doe'
 
   def initialize(options)
     self.attributes = options
@@ -300,16 +329,16 @@ end
 # .attributes() #
 #---------------#
 
-p Person.attributes # ['name', 'age']
+Person.attributes # ['name', 'age']
 
 #---------------#
 # .attribute?() #
 #---------------#
 
-puts Person.attribute?(:name)  # true
-puts Person.attribute?('name') # true
-puts Person.attribute?('foo') # false
-puts Person.attribute?(:foo)  # false
+Person.attribute?(:name)  # true
+Person.attribute?('name') # true
+Person.attribute?('foo') # false
+Person.attribute?(:foo)  # false
 
 # ---
 
@@ -319,17 +348,17 @@ person = Person.new(age: 20)
 # #attribute?() #
 #---------------#
 
-puts person.attribute?(:name)  # true
-puts person.attribute?('name') # true
-puts person.attribute?('foo') # false
-puts person.attribute?(:foo)  # false
+person.attribute?(:name)  # true
+person.attribute?('name') # true
+person.attribute?('foo') # false
+person.attribute?(:foo)  # false
 
 #---------------#
 # #attributes() #
 #---------------#
 
-p person.attributes                   # {'age'=>20, 'name'=>'John Doe'}
-p Person.new(name: 'John').attributes # {'age'=>nil, 'name'=>'John'}
+person.attributes                   # {'age'=>20, 'name'=>'John Doe'}
+Person.new(name: 'John').attributes # {'age'=>nil, 'name'=>'John'}
 
 #---------------------#
 # #attributes(*names) #
@@ -338,18 +367,16 @@ p Person.new(name: 'John').attributes # {'age'=>nil, 'name'=>'John'}
 # Slices the attributes to include only the given keys.
 # Returns a hash containing the given keys (in their types).
 
-p person.attributes(:age)             # {age: 20}
-p person.attributes(:age, :name)      # {age: 20, name: 'John Doe'}
-p person.attributes('age', 'name')    # {'age'=>20, 'name'=>'John Doe'}
+person.attributes(:age)             # {age: 20}
+person.attributes(:age, :name)      # {age: 20, name: 'John Doe'}
+person.attributes('age', 'name')    # {'age'=>20, 'name'=>'John Doe'}
 ```
 
 ## Built-in extensions
 
-You can use the method `Micro::Attributes.features()` or `Micro::Attributes.with()` to combine and require only the features that better fit your needs.
+You can use the method `Micro::Attributes.with()` to combine and require only the features that better fit your needs.
 
-But, if you desire...
-1. only one feature, use the `Micro::Attributes.feature()` method.
-2. except one or more features, use the `Micro::Attributes.without()` method.
+But, if you desire except one or more features, use the `Micro::Attributes.without()` method.
 
 ```ruby
 #===========================#
@@ -357,10 +384,10 @@ But, if you desire...
 #===========================#
 
 class Job
-  include Micro::Attributes.feature(:diff)
+  include Micro::Attributes.with(:diff)
 
   attribute :id
-  attribute :state, 'sleeping'
+  attribute :state, default: 'sleeping'
 
   def initialize(options)
     self.attributes = options
@@ -373,21 +400,20 @@ end
 #======================#
 
 class Job
-  include Micro::Attributes.features
+  include Micro::Attributes.with_all_features
 
-  attributes :id, state: 'sleeping'
+  attribute :id
+  attribute :state, default: 'sleeping'
 end
-
-# Note:
-# If `Micro::Attributes.features()` be invoked without arguments, a module with all features will be returned.
 
 #----------------------------------------------------------------------------#
 # Using the .with() method alias and adding the strict initialize extension. #
 #----------------------------------------------------------------------------#
 class Job
-  include Micro::Attributes.with(:strict_initialize, :diff)
+  include Micro::Attributes.with(:diff, initialize: :strict)
 
-  attributes :id, state: 'sleeping'
+  attribute :id
+  attribute :state, default: 'sleeping'
 end
 
 # Note:
@@ -397,28 +423,6 @@ end
 #   include Micro::Attributes.with() # ArgumentError (Invalid feature name! Available options: diff, initialize, activemodel_validations)
 # end
 
-#===================================#
-# Alternatives to the methods above #
-#===================================#
-
-#---------------------------------------#
-# Via Micro::Attributes.to_initialize() #
-#---------------------------------------#
-class Job
-  include Micro::Attributes.to_initialize(diff: true, activemodel_validations: true)
-
-  # Same of `include Micro::Attributes.with(:initialize, :diff, :activemodel_validations)`
-end
-
-#----------------------------------------#
-# Via Micro::Attributes.to_initialize!() #
-#----------------------------------------#
-class Job
-  include Micro::Attributes.to_initialize!(diff: false, activemodel_validations: true)
-
-  # Same of `include Micro::Attributes.with(:strict_initialize, :activemodel_validations)`
-end
-
 #=====================================#
 # Loading except one or more features #
 #         -----                       #
@@ -427,7 +431,8 @@ end
 class Job
   include Micro::Attributes.without(:diff)
 
-  attributes :id, state: 'sleeping'
+  attribute :id
+  attribute :state, default: 'sleeping'
 end
 
 # Note:
@@ -440,11 +445,11 @@ If your application uses ActiveModel as a dependency (like a regular Rails app).
 
 ```ruby
 class Job
-  # include Micro::Attributes.with(:initialize, :activemodel_validations)
-  # include Micro::Attributes.features(:initialize, :activemodel_validations)
-  include Micro::Attributes.to_initialize(activemodel_validations: true)
+  include Micro::Attributes.with(:activemodel_validations)
 
-  attributes :id, state: 'sleeping'
+  attribute :id
+  attribute :state, default: 'sleeping'
+
   validates! :id, :state, presence: true
 end
 
@@ -452,8 +457,27 @@ Job.new({}) # ActiveModel::StrictValidationFailed (Id can't be blank)
 
 job = Job.new(id: 1)
 
-p job.id    # 1
-p job.state # 'sleeping'
+job.id    # 1
+job.state # 'sleeping'
+```
+
+#### Attribute options
+
+You can use the `validate` or `validates` options to define your attributes. e.g.
+
+```ruby
+class Job
+  include Micro::Attributes.with(:activemodel_validations)
+
+  attribute :id, validates: { presence: true }
+  attribute :state, validate: :must_be_a_filled_string
+
+  def must_be_a_string
+    return if state.is_a?(String) && state.present?
+
+    errors.add(:state, 'must be a filled string')
+  end
+end
 ```
 
 ### Diff extension
@@ -464,21 +488,20 @@ Provides a way to track changes in your object attributes.
 require 'securerandom'
 
 class Job
-  # include Micro::Attributes.with(:initialize, :diff)
-  # include Micro::Attributes.to_initialize(diff: true)
-  include Micro::Attributes.features(:initialize, :diff)
+  include Micro::Attributes.with(:initialize, :diff)
 
-  attributes :id, state: 'sleeping'
+  attribute :id
+  attribute :state, default: 'sleeping'
 end
 
 job = Job.new(id: SecureRandom.uuid())
 
-p job.id    # A random UUID generated from SecureRandom.uuid(). e.g: 'e68bcc74-b91c-45c2-a904-12f1298cc60e'
-p job.state # 'sleeping'
+job.id    # A random UUID generated from SecureRandom.uuid(). e.g: 'e68bcc74-b91c-45c2-a904-12f1298cc60e'
+job.state # 'sleeping'
 
 job_running = job.with_attribute(:state, 'running')
 
-p job_running.state # 'running'
+job_running.state # 'running'
 
 job_changes = job.diff_attributes(job_running)
 
@@ -486,50 +509,47 @@ job_changes = job.diff_attributes(job_running)
 # #present?, #blank?, #empty? #
 #-----------------------------#
 
-p job_changes.present? # true
-p job_changes.blank?   # false
-p job_changes.empty?   # false
+job_changes.present? # true
+job_changes.blank?   # false
+job_changes.empty?   # false
 
 #-----------#
 # #changed? #
 #-----------#
-p job_changes.changed? # true
+job_changes.changed? # true
 
-p job_changes.changed?(:id)    # false
+job_changes.changed?(:id)    # false
 
-p job_changes.changed?(:state) # true
-p job_changes.changed?(:state, from: 'sleeping', to: 'running') # true
+job_changes.changed?(:state) # true
+job_changes.changed?(:state, from: 'sleeping', to: 'running') # true
 
 #----------------#
 # #differences() #
 #----------------#
-p job_changes.differences # {'state'=> {'from' => 'sleeping', 'to' => 'running'}}
+job_changes.differences # {'state'=> {'from' => 'sleeping', 'to' => 'running'}}
 ```
 
 ### Initialize extension
 
 1. Creates a constructor to assign the attributes.
-2. Adds methods to build new instances when some data was assigned.
+2. Add methods to build new instances when some data was assigned.
 
 ```ruby
 class Job
-  # include Micro::Attributes.with(:initialize)
-  # include Micro::Attributes.feature(:initialize)
-  # include Micro::Attributes.features(:initialize)
-  include Micro::Attributes.to_initialize
+  include Micro::Attributes.with(:initialize)
 
   attributes :id, :state
 end
 
 job_null = Job.new({})
 
-p job.id    # nil
-p job.state # nil
+job.id    # nil
+job.state # nil
 
 job = Job.new(id: 1, state: 'sleeping')
 
-p job.id    # 1
-p job.state # 'sleeping'
+job.id    # 1
+job.state # 'sleeping'
 
 ##############################################
 # Assigning new values to get a new instance #
@@ -541,9 +561,9 @@ p job.state # 'sleeping'
 
 new_job = job.with_attribute(:state, 'running')
 
-puts new_job.id          # 1
-puts new_job.state       # running
-puts new_job.equal?(job) # false
+new_job.id          # 1
+new_job.state       # running
+new_job.equal?(job) # false
 
 #--------------------#
 # #with_attributes() #
@@ -553,12 +573,12 @@ puts new_job.equal?(job) # false
 
 other_job = job.with_attributes(id: 2, state: 'killed')
 
-puts other_job.id          # 2
-puts other_job.state       # killed
-puts other_job.equal?(job) # false
+other_job.id          # 2
+other_job.state       # killed
+other_job.equal?(job) # false
 ```
 
-### Strict initialize extension
+### Strict initialize mode
 
 1. Creates a constructor to assign the attributes.
 2. Adds methods to build new instances when some data was assigned.
@@ -566,16 +586,13 @@ puts other_job.equal?(job) # false
 
 ```ruby
 class Job
-  # include Micro::Attributes.with(:strict_initialize)
-  # include Micro::Attributes.feature(:strict_initialize)
-  # include Micro::Attributes.features(:strict_initialize)
-  include Micro::Attributes.to_initialize!
+  include Micro::Attributes.with(initialize: :strict)
 
   attributes :id, :state
 end
-#----------------------------------------------------------------------------#
-# The strict_initialize extension will require all the keys when initialize. #
-#----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------#
+# The strict initialize mode will require all the keys when initialize. #
+#-----------------------------------------------------------------------#
 
 Job.new({})
 
@@ -588,19 +605,16 @@ Job.new({})
 
 job_null = Job.new(id: nil, state: nil)
 
-p job.id    # nil
-p job.state # nil
+job.id    # nil
+job.state # nil
 
 job = Job.new(id: 1, state: 'sleeping')
 
-p job.id    # 1
-p job.state # 'sleeping'
-
-
-# Note:
-#   This extension works like the `initialize` extension.
-#   So, look at its section to understand all the other features.
+job.id    # 1
+job.state # 'sleeping'
 ```
+
+> **Note**: This extension works like the `initialize` extension. So, look at its section to understand all of the other features.
 
 ## Development
 
