@@ -58,7 +58,7 @@ module Micro
 
     protected def attributes=(arg)
       self.class
-          .attributes_data(Kind::Of::Hash(arg))
+          .attributes_data(Kind::Of.(::Hash, arg))
           .each { |name, value| __attribute_set(name, value) }
 
       __attributes.freeze
