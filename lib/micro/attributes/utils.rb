@@ -4,6 +4,8 @@ module Micro
   module Attributes
     module Utils
       def self.stringify_hash_keys(arg)
+        return arg if arg.empty?
+
         if arg.respond_to?(:transform_keys)
           arg.transform_keys { |key| key.to_s }
         else

@@ -39,12 +39,18 @@ class Micro::AttributesTest < Minitest::Test
 
   # ---
 
+  class BValue
+    def self.call
+      'B'
+    end
+  end
+
   class Baz
     include Micro::Attributes.with(:initialize)
 
     attribute :a
-    attribute :b, default: 'B'
-    attribute 'c', default: 'C'
+    attribute :b, default: BValue
+    attribute 'c', default: -> { 'C' }
   end
 
   def test_single_definitions_with_default_values
@@ -75,8 +81,8 @@ class Micro::AttributesTest < Minitest::Test
   class Foz
     include Micro::Attributes.with(:initialize)
 
-    attribute :a
-    attribute :b, default: '_b'
+    attribute :a, default: -> value { value.to_s }
+    attribute :b, default: proc { '_b' }
     attribute 'c', default: 'c_'
   end
 
@@ -94,7 +100,7 @@ class Micro::AttributesTest < Minitest::Test
     bar = Bar.new(a: 'a')
     foo = Foo.new(a: 'a')
     baz = Baz.new(a: 'a')
-    foz = Foz.new(a: 'a')
+    foz = Foz.new(a: :a)
 
     assert_equal({'a'=>'a', 'b'=>nil}, bar.attributes)
     assert_equal({'a'=>'a', 'b'=>nil}, foo.attributes)
@@ -226,18 +232,6 @@ class Micro::AttributesTest < Minitest::Test
         instance.attribute!('unknown') { |_val| acc2 += 1 }
       end
       assert_equal('undefined attribute `unknown', err2.message)
-    end
-  end
-
-  # ---
-
-  def test_attributes_data
-    [Bar, Foo, Baz, Foz].each do |klass|
-      error = assert_raises(Kind::Error) { klass.__attributes_data__(1) }
-      assert '1 expected to be a kind of Hash', error.message
-
-      assert klass.__attributes_data__({}).is_a?(Hash)
-      refute klass.__attributes_data__({}).empty?
     end
   end
 

@@ -16,12 +16,18 @@ class Micro::Attributes::Features::StrictInitializeTest < Minitest::Test
     attribute 'c', default: 'C'
   end
 
+  class BValue
+    def self.call(value)
+      value || 'B'
+    end
+  end
+
   class Buz
     include Micro::Attributes
       .with(:activemodel_validations, :diff, initialize: :strict)
 
-    attribute :a
-    attribute :b, default: 'B'
+    attribute :a, default: -> v { v.to_sym }
+    attribute :b, default: BValue
     attribute 'c', default: 'C'
   end
 
@@ -42,9 +48,6 @@ class Micro::Attributes::Features::StrictInitializeTest < Minitest::Test
 
     err2 = assert_raises(ArgumentError) { Bar.new({}) }
     assert_equal('missing keyword: :a', err2.message)
-
-    err3 = assert_raises(ArgumentError) { Buz.new({}) }
-    assert_equal('missing keyword: :a', err3.message)
   end
 
   def test_build_new_instance_after_set_one_attribute
@@ -69,9 +72,9 @@ class Micro::Attributes::Features::StrictInitializeTest < Minitest::Test
     instance_2 = instance_1.with_attribute(:a, 'A')
     instance_3 = instance_1.with_attribute(:a, '@')
 
-    assert_equal('a', instance_1.a)
-    assert_equal('A', instance_2.a)
-    assert_equal('@', instance_3.a)
+    assert_equal(:a, instance_1.a)
+    assert_equal(:A, instance_2.a)
+    assert_equal(:'@', instance_3.a)
 
     assert_equal('B', instance_1.b)
     assert_equal('B', instance_2.b)
@@ -82,7 +85,7 @@ class Micro::Attributes::Features::StrictInitializeTest < Minitest::Test
   end
 
   def test_build_new_instance_after_set_many_attributes
-    instance_1 = Bar.new(a:nil, c: 'CC')
+    instance_1 = Bar.new(a: nil, c: 'CC')
     instance_2 = instance_1.with_attributes(a: 'A', b: :bb)
     instance_3 = instance_1.with_attributes(a: '@', b: 'Bb')
 
@@ -95,13 +98,13 @@ class Micro::Attributes::Features::StrictInitializeTest < Minitest::Test
 
     # ---
 
-    instance_1 = Buz.new(a: nil, c: 'CC')
+    instance_1 = Buz.new(a: 'A', c: 'CC')
     instance_2 = instance_1.with_attributes(a: 'A', b: :bb)
     instance_3 = instance_1.with_attributes(a: '@', b: 'Bb')
 
-    assert_equal({'a' => nil, 'b' => 'B', 'c'=>'CC'}, instance_1.attributes)
-    assert_equal({'a' => 'A', 'b' => :bb, 'c'=>'CC'}, instance_2.attributes)
-    assert_equal({'a' => '@', 'b' => 'Bb', 'c'=>'CC'}, instance_3.attributes)
+    assert_equal({'a' => :A, 'b' => 'B', 'c'=>'CC'}, instance_1.attributes)
+    assert_equal({'a' => :A, 'b' => :bb, 'c'=>'CC'}, instance_2.attributes)
+    assert_equal({'a' => :'@', 'b' => 'Bb', 'c'=>'CC'}, instance_3.attributes)
 
     refute_same(instance_1, instance_2)
     refute_same(instance_1, instance_3)

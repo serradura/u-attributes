@@ -14,12 +14,11 @@ module Micro
       base.extend(::Micro::Attributes.const_get(:Macros))
 
       base.class_eval do
-        private_class_method :__attributes_data, :__attributes
-        private_class_method :__attribute_set, :__attribute_reader
+        private_class_method :__attributes, :__attribute_set, :__attribute_reader
       end
 
       def base.inherited(subclass)
-        subclass.__inherited_attributes_set__(self.__attributes_data__({}))
+        subclass.__inherited_attributes_set__(self.__attributes_data__)
         subclass.extend ::Micro::Attributes.const_get('Macros::ForSubclasses'.freeze)
       end
     end
@@ -34,22 +33,6 @@ module Micro
 
     def self.with_all_features
       Features.all
-    end
-
-    protected def attributes=(arg)
-      self.class
-          .__attributes_data__(Kind::Of.(::Hash, arg))
-          .each { |name, value| __attribute_set(name, value) }
-
-      __attributes.freeze
-    end
-
-    def attributes(*names)
-      return __attributes if names.empty?
-
-      names.each_with_object({}) do |name, memo|
-        memo[name] = attribute(name) if attribute?(name)
-      end
     end
 
     def attribute?(name)
@@ -70,6 +53,22 @@ module Micro
       raise NameError, "undefined attribute `#{name}"
     end
 
+    def attributes(*names)
+      return __attributes if names.empty?
+
+      names.each_with_object({}) do |name, memo|
+        memo[name] = attribute(name) if attribute?(name)
+      end
+    end
+
+    protected
+
+      def attributes=(arg)
+        hash = Utils.stringify_hash_keys!(arg)
+
+        __attributes_set(hash, self.class.__attributes_data__)
+      end
+
     private
 
       def __attributes
@@ -78,6 +77,24 @@ module Micro
 
       def __attribute_set(name, value)
         __attributes[name] = instance_variable_set("@#{name}", value) if attribute?(name)
+      end
+
+      def __attributes_set(hash, att_data)
+        att_data.each do |key, default|
+          value = hash[key]
+
+          final_value =
+            if default.respond_to?(:call)
+              callable = default.is_a?(Proc) ? default : default.method(:call)
+              callable.arity > 0 ? callable.call(value) : callable.call
+            else
+              value || default
+            end
+
+          __attribute_set(key, final_value)
+        end
+
+        __attributes.freeze
       end
   end
 end
