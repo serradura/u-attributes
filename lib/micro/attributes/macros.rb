@@ -3,8 +3,8 @@
 module Micro
   module Attributes
     module Macros
-      def __attributes_data
-        @__attributes_data ||= {}
+      def __attributes_data__
+        @__attributes_data__ ||= {}
       end
 
       def __attributes
@@ -22,7 +22,11 @@ module Micro
         has_attribute = attribute?(name)
 
         __attribute_reader(name) unless has_attribute
-        __attributes_data[name] = value if can_overwrite || !has_attribute
+        __attributes_data__[name] = value if can_overwrite || !has_attribute
+      end
+
+      def __inherited_attributes_set__(arg)
+        arg.each { |key, val| __attribute_set(key, val, true) }
       end
 
       def attribute?(name)
@@ -36,21 +40,14 @@ module Micro
       def attributes(*args)
         return __attributes.to_a if args.empty?
 
-        args.flatten.each do |arg|
+        args.flatten!
+        args.each do |arg|
           if arg.is_a?(String) || arg.is_a?(Symbol)
             __attribute_set(arg, nil, false)
           else
             raise Kind::Error.new('String/Symbol'.freeze, arg)
           end
         end
-      end
-
-      def __inherited_attributes_set__(arg)
-        arg.each { |key, val| __attribute_set(key, val, true) }
-      end
-
-      def __attributes_data__(arg)
-        __attributes_data.merge(Utils.stringify_hash_keys!(arg))
       end
 
       module ForSubclasses

@@ -9,13 +9,11 @@ module Micro::Attributes
 
         protected def attributes=(arg)
           arg_hash = Utils.stringify_hash_keys!(arg)
-          att_data = self.class.__attributes_data__({})
+          att_data = self.class.__attributes_data__
 
           attributes_missing!(ref: att_data, arg: arg_hash)
 
-          att_data.merge(arg_hash).each { |name, value| __attribute_set(name, value) }
-
-          __attributes.freeze
+          __attributes_set(arg_hash, att_data)
         end
 
         private def attributes_missing!(ref:, arg:)

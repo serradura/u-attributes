@@ -25,9 +25,6 @@ class Micro::Attributes::PrivateMembersTest < Minitest::Test
 
   def test_private_class_methods
     [A, AA, AAA, B, BB, BBB, C, CC, CCC].each do |klass|
-      assert klass.respond_to?(:__attributes_data, true)
-      assert_raises(NoMethodError) { klass.__attributes_data }
-
       assert klass.respond_to?(:__attributes, true)
       assert_raises(NoMethodError) { klass.__attributes }
 
