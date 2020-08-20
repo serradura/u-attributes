@@ -2,9 +2,10 @@ require 'test_helper'
 
 class Micro::Attributes::InheritanceTest < Minitest::Test
   class Base
-    include Micro::Attributes.to_initialize
+    include Micro::Attributes.with(:initialize)
 
-    attributes :e, f: 'ƒ'
+    attribute :e
+    attribute :f, default: 'ƒ'
   end
 
   class AnotherClassWithAttributes
@@ -14,7 +15,6 @@ class Micro::Attributes::InheritanceTest < Minitest::Test
   def test_base_classes_cant_access_the_methods_to_override_attributes_data
     [Base, AnotherClassWithAttributes].each do |klass|
       refute klass.respond_to?(:attribute!, true)
-      refute klass.respond_to?(:attributes!, true)
     end
   end
 
@@ -31,13 +31,15 @@ class Micro::Attributes::InheritanceTest < Minitest::Test
   end
 
   class SubSub < Sub
-    attribute! :f, 'F'
+    attribute! :f, default: 'F'
   end
 
   class SubSub2 < Sub
     attribute! :h
-    attribute! :i, -99
-    attributes! e: '3', f: '_F_', g: 99
+    attribute! :i, default: -99
+    attribute! :e, default:'3'
+    attribute! :f, default:'_F_'
+    attribute! :g, default: 99
   end
 
   def test_overriding_default_attributes_data_with_subclasses
@@ -46,9 +48,6 @@ class Micro::Attributes::InheritanceTest < Minitest::Test
 
     assert_equal(Sub.attributes, SubSub.attributes)
     refute_equal(Sub.attributes, SubSub2.attributes)
-
-    refute_equal(Sub.attributes_data({}), SubSub.attributes_data({}))
-    refute_equal(SubSub.attributes_data({}), SubSub2.attributes_data({}))
 
     object1 = SubSub.new(e: 3)
 
@@ -62,10 +61,5 @@ class Micro::Attributes::InheritanceTest < Minitest::Test
     assert_equal(99, object2.g)
     assert_nil(object2.h)
     assert_equal(-99, object2.i)
-  end
-
-  def test_the_argument_error_of_attributes!
-    error = assert_raises(ArgumentError) { SubSub.attributes! }
-    assert_equal('wrong number of arguments (given 0, expected 1 or more)', error.message)
   end
 end

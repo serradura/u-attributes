@@ -9,7 +9,7 @@ class Micro::Attributes::PrivateMembersTest < Minitest::Test
   class AAA < AA; end
 
   class B
-    include Micro::Attributes.to_initialize
+    include Micro::Attributes.with(:initialize)
   end
 
   class BB < B; end
@@ -25,17 +25,8 @@ class Micro::Attributes::PrivateMembersTest < Minitest::Test
 
   def test_private_class_methods
     [A, AA, AAA, B, BB, BBB, C, CC, CCC].each do |klass|
-      assert klass.respond_to?(:__attributes_data, true)
-      assert_raises(NoMethodError) { klass.__attributes_data }
-
       assert klass.respond_to?(:__attributes, true)
       assert_raises(NoMethodError) { klass.__attributes }
-
-      assert klass.respond_to?(:__attributes_def, true)
-      assert_raises(NoMethodError) { klass.__attributes_def }
-
-      assert klass.respond_to?(:__attributes_set, true)
-      assert_raises(NoMethodError) { klass.__attributes_set }
 
       assert klass.respond_to?(:__attribute_reader, true)
       assert_raises(NoMethodError) { klass.__attribute_reader }
@@ -48,7 +39,6 @@ class Micro::Attributes::PrivateMembersTest < Minitest::Test
   def test_private_constants
     [A, AA, AAA, B, BB, BBB, C, CC, CCC].each do |klass|
       refute klass.constants.include?(:Macros)
-      assert klass.constants.include?(:Hash)
     end
   end
 end
