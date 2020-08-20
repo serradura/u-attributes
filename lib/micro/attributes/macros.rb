@@ -13,6 +13,7 @@ module Micro
 
       def __attribute_reader(name)
         __attributes.add(name)
+
         attr_reader(name)
       end
 
@@ -45,7 +46,7 @@ module Micro
         __attributes_set(args, can_overwrite: false)
       end
 
-      def attributes_data(arg)
+      def __attributes_data__(arg)
         __attributes_data.merge(Utils.stringify_hash_keys!(arg))
       end
 
@@ -63,8 +64,10 @@ module Micro
 
         private_constant :WRONG_NUMBER_OF_ARGS
       end
+
       private_constant :ForSubclasses
     end
+
     private_constant :Macros
   end
 end

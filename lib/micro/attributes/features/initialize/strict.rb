@@ -9,7 +9,7 @@ module Micro::Attributes
 
         protected def attributes=(arg)
           arg_hash = Utils.stringify_hash_keys!(arg)
-          att_data = self.class.attributes_data({})
+          att_data = self.class.__attributes_data__({})
 
           attributes_missing!(ref: att_data, arg: arg_hash)
 
