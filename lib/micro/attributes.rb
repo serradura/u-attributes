@@ -2,13 +2,13 @@
 
 require 'kind'
 
-require 'micro/attributes/version'
-require 'micro/attributes/hash'
-require 'micro/attributes/macros'
-require 'micro/attributes/features'
-
 module Micro
   module Attributes
+    require 'micro/attributes/version'
+    require 'micro/attributes/utils'
+    require 'micro/attributes/macros'
+    require 'micro/attributes/features'
+
     def self.included(base)
       base.extend(::Micro::Attributes.const_get(:Macros))
 
