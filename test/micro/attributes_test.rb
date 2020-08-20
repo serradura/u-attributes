@@ -240,4 +240,22 @@ class Micro::AttributesTest < Minitest::Test
       refute klass.__attributes_data__({}).empty?
     end
   end
+
+  # ---
+
+  begin
+    class InvalidAttributesDefinition
+      include Micro::Attributes
+
+      attributes foo: :bar
+    end
+  rescue => err
+    @@__invalid_attributes_definition = err
+  end
+
+  def test_invalid_attributes_definition
+    assert_instance_of(Kind::Error, @@__invalid_attributes_definition)
+
+    assert_equal('{:foo=>:bar} expected to be a kind of String/Symbol', @@__invalid_attributes_definition.message)
+  end
 end

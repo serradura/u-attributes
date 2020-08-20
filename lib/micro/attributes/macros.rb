@@ -36,7 +36,13 @@ module Micro
       def attributes(*args)
         return __attributes.to_a if args.empty?
 
-        args.flatten.each { |arg| __attribute_set(arg, nil, false) }
+        args.flatten.each do |arg|
+          if arg.is_a?(String) || arg.is_a?(Symbol)
+            __attribute_set(arg, nil, false)
+          else
+            raise Kind::Error.new('String/Symbol'.freeze, arg)
+          end
+        end
       end
 
       def __inherited_attributes_set__(arg)
