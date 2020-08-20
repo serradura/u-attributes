@@ -1,16 +1,16 @@
 ![Ruby](https://img.shields.io/badge/ruby-2.2+-ruby.svg?colorA=99004d&colorB=cc0066)
 [![Gem](https://img.shields.io/gem/v/u-attributes.svg?style=flat-square)](https://rubygems.org/gems/u-attributes)
-[![Build Status](https://travis-ci.com/serradura/u-attributes.svg?branch=master)](https://travis-ci.com/serradura/u-attributes)
+[![Build Status](https://travis-ci.com/serradura/u-attributes.svg?branch=main)](https://travis-ci.com/serradura/u-attributes)
 [![Maintainability](https://api.codeclimate.com/v1/badges/b562e6b877a9edf4dbf6/maintainability)](https://codeclimate.com/github/serradura/u-attributes/maintainability)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/b562e6b877a9edf4dbf6/test_coverage)](https://codeclimate.com/github/serradura/u-attributes/test_coverage)
 
 μ-attributes (Micro::Attributes) <!-- omit in toc -->
 ================================
 
-This gem allows defining read-only attributes, that is, your objects will have only getters to access their attributes data.
+This gem allows you to define "immutable" objects, and your objects will have only getters and no setters.
+So, if you change [[1](#with_attribute)] [[2](#with_attributes)] some object attribute, you will have a new object instance. That is, you transform the object instead of modifying it.
 
 ## Table of contents <!-- omit in toc -->
-- [Required Ruby version](#required-ruby-version)
 - [Installation](#installation)
 - [Compatibility](#compatibility)
 - [Usage](#usage)
@@ -23,26 +23,27 @@ This gem allows defining read-only attributes, that is, your objects will have o
     - [`#with_attribute()`](#with_attribute)
     - [`#with_attributes()`](#with_attributes)
   - [Defining default values to the attributes](#defining-default-values-to-the-attributes)
-  - [Strict initializer](#strict-initializer)
+  - [The strict initializer](#the-strict-initializer)
   - [Is it possible to inherit the attributes?](#is-it-possible-to-inherit-the-attributes)
-    - [.attribute!()](#attribute)
+    - [`.attribute!()`](#attribute)
   - [How to query the attributes?](#how-to-query-the-attributes)
 - [Built-in extensions](#built-in-extensions)
-  - [ActiveModel::Validations extension](#activemodelvalidations-extension)
-    - [Attribute options](#attribute-options)
-  - [Diff extension](#diff-extension)
-  - [Initialize extension](#initialize-extension)
-  - [Strict initialize mode](#strict-initialize-mode)
+  - [Picking specific features](#picking-specific-features)
+    - [`Micro::Attributes.with`](#microattributeswith)
+    - [`Micro::Attributes.without`](#microattributeswithout)
+  - [Picking all the features](#picking-all-the-features)
+  - [Extensions](#extensions)
+    - [`ActiveModel::Validation` extension](#activemodelvalidation-extension)
+      - [`.attribute()` options](#attribute-options)
+    - [Diff extension](#diff-extension)
+    - [Initialize extension](#initialize-extension)
+      - [Strict mode](#strict-mode)
 - [Development](#development)
 - [Contributing](#contributing)
 - [License](#license)
 - [Code of Conduct](#code-of-conduct)
 
-## Required Ruby version
-
-> \>= 2.2.0
-
-## Installation
+# Installation
 
 Add this line to your application's Gemfile and `bundle install`:
 
@@ -50,16 +51,20 @@ Add this line to your application's Gemfile and `bundle install`:
 gem 'u-attributes'
 ```
 
-## Compatibility
+# Compatibility
 
 | u-attributes   | branch  | ruby     |  activemodel  |
 | -------------- | ------- | -------- | ------------- |
-| 2.0.0          | master  | >= 2.2.0 | >= 3.2, < 6.1 |
+| 2.0.0          | main    | >= 2.2.0 | >= 3.2, < 6.1 |
 | 1.2.0          | v1.x    | >= 2.2.0 | >= 3.2, < 6.1 |
 
-## Usage
+> **Note**: The activemodel is an optional dependency, this module [can be enabled](#activemodelvalidation-extension) to validate the attributes.
 
-### How to define attributes?
+[⬆️ Back to Top](#table-of-contents-)
+
+# Usage
+
+## How to define attributes?
 
 ```ruby
 # By default you must to define the class constructor.
@@ -67,8 +72,8 @@ gem 'u-attributes'
 class Person
   include Micro::Attributes
 
-  attribute :name
   attribute :age
+  attribute :name
 
   def initialize(name: 'John Doe', age:)
     @name, @age = name, age
@@ -77,8 +82,8 @@ end
 
 person = Person.new(age: 21)
 
-person.name # John Doe
 person.age  # 21
+person.name # John Doe
 
 # By design the attributes are always exposed as reader methods (getters).
 # If you try to call a setter you will see a NoMethodError.
@@ -87,7 +92,9 @@ person.age  # 21
 # NoMethodError (undefined method `name=' for #<Person:0x0000... @name='John Doe', @age=21>)
 ```
 
-#### `Micro::Attributes#attributes=`
+[⬆️ Back to Top](#table-of-contents-)
+
+### `Micro::Attributes#attributes=`
 
 This is a protected method to make easier the assignment in a constructor. e.g.
 
@@ -95,8 +102,8 @@ This is a protected method to make easier the assignment in a constructor. e.g.
 class Person
   include Micro::Attributes
 
-  attribute :name, default: 'John Doe'
   attribute :age
+  attribute :name, default: 'John Doe'
 
   def initialize(options)
     self.attributes = options
@@ -105,19 +112,21 @@ end
 
 person = Person.new(age: 20)
 
-person.name # John Doe
 person.age  # 20
+person.name # John Doe
 ```
 
-#### `Micro::Attributes#attribute`
+[⬆️ Back to Top](#table-of-contents-)
+
+### `Micro::Attributes#attribute`
 
 Use this method with a valid attribute name to get its value.
 
 ```ruby
 person = Person.new(age: 20)
 
-person.attribute(:name) # John Doe
 person.attribute('age') # 20
+person.attribute(:name) # John Doe
 person.attribute('foo') # nil
 ```
 
@@ -129,17 +138,21 @@ person.attribute('age') { |value| puts value } # 20
 person.attribute('foo') { |value| puts value } # !! Nothing happened, because of the attribute doesn't exist.
 ```
 
-#### `Micro::Attributes#attribute!`
+[⬆️ Back to Top](#table-of-contents-)
+
+### `Micro::Attributes#attribute!`
 
 Works like the `#attribute` method, but it will raise an exception when the attribute doesn't exist.
 
 ```ruby
-person.attribute!('foo')                        # NameError (undefined attribute `foo)
+person.attribute!('foo')                   # NameError (undefined attribute `foo)
 
 person.attribute!('foo') { |value| value } # NameError (undefined attribute `foo)
 ```
 
-### How to define multiple attributes?
+[⬆️ Back to Top](#table-of-contents-)
+
+## How to define multiple attributes?
 
 Use `.attributes` with a list of attribute names.
 
@@ -162,7 +175,9 @@ person.age  # 32
 
 > **Note:** This method can't define default values. To do this, use the `#attribute()` method.
 
-### `Micro::Attributes.with(:initialize)`
+[⬆️ Back to Top](#table-of-contents-)
+
+## `Micro::Attributes.with(:initialize)`
 
 Use `Micro::Attributes.with(:initialize)` to define a constructor to assign the attributes. e.g.
 
@@ -176,41 +191,43 @@ end
 
 person = Person.new(age: 18)
 
-person.name # John Doe
 person.age  # 18
+person.name # John Doe
 ```
 
 This extension enables two methods for your objects.
 The `#with_attribute()` and `#with_attributes()`.
 
-#### `#with_attribute()`
+### `#with_attribute()`
 
 ```ruby
 another_person = person.with_attribute(:age, 21)
 
-another_person.name           # John Doe
 another_person.age            # 21
+another_person.name           # John Doe
 another_person.equal?(person) # false
 ```
 
-#### `#with_attributes()`
+### `#with_attributes()`
 
 Use it to assign multiple attributes
 ```ruby
 other_person = person.with_attributes(name: 'Serradura', age: 32)
 
-other_person.name           # Serradura
 other_person.age            # 32
+other_person.name           # Serradura
 other_person.equal?(person) # false
 ```
 
 If you pass a value different of a Hash, a Kind::Error will be raised.
 
 ```ruby
-Person.new(1) # Kind::Error (1 must be a Hash)
+Person.new(1) # Kind::Error (1 expected to be a kind of Hash)
 ```
 
-### Defining default values to the attributes
+[⬆️ Back to Top](#table-of-contents-)
+
+## Defining default values to the attributes
 
 To do this, you only need make use of the `default:` keyword. e.g.
 
@@ -237,7 +254,9 @@ class Person
 end
 ```
 
-### Strict initializer
+[⬆️ Back to Top](#table-of-contents-)
+
+## The strict initializer
 
 Use `.with(initialize: :strict)` to forbids an instantiation without all the attribute keywords. e.g.
 
@@ -257,13 +276,15 @@ An attribute with a default value can be omitted.
 ``` ruby
 person_without_age = StrictPerson.new(age: nil)
 
-person_without_age.name # 'John Doe'
 person_without_age.age  # nil
+person_without_age.name # 'John Doe'
 ```
 
 > **Note:** Except for this validation the `.with(initialize: :strict)` method will works in the same ways of `.with(:initialize)`.
 
-### Is it possible to inherit the attributes?
+[⬆️ Back to Top](#table-of-contents-)
+
+## Is it possible to inherit the attributes?
 
 Yes. e.g.
 
@@ -286,7 +307,9 @@ instance.respond_to?(:age) # true
 instance.respond_to?(:foo) # true
 ```
 
-#### .attribute!()
+[⬆️ Back to Top](#table-of-contents-)
+
+### `.attribute!()`
 
 This method allows us to redefine the attributes default data that was defined in the parent class. e.g.
 
@@ -311,7 +334,9 @@ beta_person.name # 'Beta'
 beta_person.age  # 0
 ```
 
-### How to query the attributes?
+[⬆️ Back to Top](#table-of-contents-)
+
+## How to query the attributes?
 
 ```ruby
 class Person
@@ -372,76 +397,65 @@ person.attributes(:age, :name)      # {age: 20, name: 'John Doe'}
 person.attributes('age', 'name')    # {'age'=>20, 'name'=>'John Doe'}
 ```
 
-## Built-in extensions
+[⬆️ Back to Top](#table-of-contents-)
+
+# Built-in extensions
 
 You can use the method `Micro::Attributes.with()` to combine and require only the features that better fit your needs.
 
 But, if you desire except one or more features, use the `Micro::Attributes.without()` method.
 
+## Picking specific features
+
+### `Micro::Attributes.with`
+
 ```ruby
-#===========================#
-# Loading specific features #
-#===========================#
+Micro::Attributes.with(:initialize)
 
-class Job
-  include Micro::Attributes.with(:diff)
+Micro::Attributes.with(initialize: :strict)
 
-  attribute :id
-  attribute :state, default: 'sleeping'
+Micro::Attributes.with(:diff, :initialize)
 
-  def initialize(options)
-    self.attributes = options
-  end
-end
+Micro::Attributes.with(:diff, initialize: :strict)
 
-#======================#
-# Loading all features #
-#         ---          #
-#======================#
+Micro::Attributes.with(:activemodel_validations)
 
-class Job
-  include Micro::Attributes.with_all_features
+Micro::Attributes.with(:activemodel_validations, :diff)
 
-  attribute :id
-  attribute :state, default: 'sleeping'
-end
-
-#----------------------------------------------------------------------------#
-# Using the .with() method alias and adding the strict initialize extension. #
-#----------------------------------------------------------------------------#
-class Job
-  include Micro::Attributes.with(:diff, initialize: :strict)
-
-  attribute :id
-  attribute :state, default: 'sleeping'
-end
-
-# Note:
-# The method `Micro::Attributes.with()` will raise an exception if no arguments/features were declared.
-#
-# class Job
-#   include Micro::Attributes.with() # ArgumentError (Invalid feature name! Available options: diff, initialize, activemodel_validations)
-# end
-
-#=====================================#
-# Loading except one or more features #
-#         -----                       #
-#=====================================#
-
-class Job
-  include Micro::Attributes.without(:diff)
-
-  attribute :id
-  attribute :state, default: 'sleeping'
-end
-
-# Note:
-# The method `Micro::Attributes.without()` returns `Micro::Attributes` if all features extensions were used.
+Micro::Attributes.with(:activemodel_validations, :diff, initialize: :strict)
 ```
 
-### ActiveModel::Validations extension
+The method `Micro::Attributes.with()` will raise an exception if no arguments/features were declared.
 
-If your application uses ActiveModel as a dependency (like a regular Rails app). You will be enabled to use the `actimodel_validations` extension.
+```ruby
+class Job
+  include Micro::Attributes.with() # ArgumentError (Invalid feature name! Available options: :activemodel_validations, :diff, :initialize)
+end
+```
+
+### `Micro::Attributes.without`
+
+Picking *except* one or more features
+
+```ruby
+Micro::Attributes.without(:diff) # will load :activemodel_validations and initialize: :strict
+
+Micro::Attributes.without(initialize: :strict) # will load :activemodel_validations and :diff
+```
+
+## Picking all the features
+
+```ruby
+Micro::Attributes.with_all_features
+```
+
+[⬆️ Back to Top](#table-of-contents-)
+
+## Extensions
+
+### `ActiveModel::Validation` extension
+
+If your application uses ActiveModel as a dependency (like a regular Rails app). You will be enabled to use the `activemodel_validations` extension.
 
 ```ruby
 class Job
@@ -461,7 +475,7 @@ job.id    # 1
 job.state # 'sleeping'
 ```
 
-#### Attribute options
+#### `.attribute()` options
 
 You can use the `validate` or `validates` options to define your attributes. e.g.
 
@@ -472,13 +486,15 @@ class Job
   attribute :id, validates: { presence: true }
   attribute :state, validate: :must_be_a_filled_string
 
-  def must_be_a_string
+  def must_be_a_filled_string
     return if state.is_a?(String) && state.present?
 
     errors.add(:state, 'must be a filled string')
   end
 end
 ```
+
+[⬆️ Back to Top](#table-of-contents-)
 
 ### Diff extension
 
@@ -529,6 +545,8 @@ job_changes.changed?(:state, from: 'sleeping', to: 'running') # true
 job_changes.differences # {'state'=> {'from' => 'sleeping', 'to' => 'running'}}
 ```
 
+[⬆️ Back to Top](#table-of-contents-)
+
 ### Initialize extension
 
 1. Creates a constructor to assign the attributes.
@@ -578,7 +596,9 @@ other_job.state       # killed
 other_job.equal?(job) # false
 ```
 
-### Strict initialize mode
+[⬆️ Back to Top](#table-of-contents-)
+
+#### Strict mode
 
 1. Creates a constructor to assign the attributes.
 2. Adds methods to build new instances when some data was assigned.
@@ -616,20 +636,22 @@ job.state # 'sleeping'
 
 > **Note**: This extension works like the `initialize` extension. So, look at its section to understand all of the other features.
 
-## Development
+[⬆️ Back to Top](#table-of-contents-)
+
+# Development
 
 After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake test` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
 
 To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and tags, and push the `.gem` file to [rubygems.org](https://rubygems.org).
 
-## Contributing
+# Contributing
 
 Bug reports and pull requests are welcome on GitHub at https://github.com/serradura/u-attributes. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](http://contributor-covenant.org) code of conduct.
 
-## License
+# License
 
 The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
 
-## Code of Conduct
+# Code of Conduct
 
-Everyone interacting in the Micro::Attributes project’s codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/serradura/u-attributes/blob/master/CODE_OF_CONDUCT.md).
+Everyone interacting in the Micro::Attributes project’s codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/serradura/u-attributes/blob/main/CODE_OF_CONDUCT.md).
