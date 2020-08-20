@@ -7,16 +7,19 @@ module Micro
     module Features
       extend self
 
-      ALL = [
+      STRICT_INITIALIZE = 'strict_initialize'.freeze
+
+      ALL_VISIBLE = [
         DIFF = 'diff'.freeze,
         INITIALIZE = 'initialize'.freeze,
-        STRICT_INITIALIZE = 'strict_initialize'.freeze,
         ACTIVEMODEL_VALIDATIONS = 'activemodel_validations'.freeze
       ].sort.freeze
 
+      ALL = (ALL_VISIBLE + [STRICT_INITIALIZE]).sort.freeze
+
       INVALID_NAME = [
         'Invalid feature name! Available options: ',
-        ALL.map { |feature_name| ":#{feature_name}" }.join(', ')
+        ALL_VISIBLE.map { |feature_name| ":#{feature_name}" }.join(', ')
       ].join
 
       OPTIONS = {

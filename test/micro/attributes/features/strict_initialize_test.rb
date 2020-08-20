@@ -9,7 +9,7 @@ class Micro::Attributes::Features::StrictInitializeTest < Minitest::Test
   end
 
   class Bar
-    include Micro::Attributes.with(:strict_initialize)
+    include Micro::Attributes.with(initialize: :strict)
 
     attribute :a
     attributes b: 'B', 'c' => 'C'
@@ -17,7 +17,7 @@ class Micro::Attributes::Features::StrictInitializeTest < Minitest::Test
 
   class Buz
     include Micro::Attributes.with(
-      :strict_initialize, :activemodel_validations, :diff
+      :activemodel_validations, :diff, initialize: :strict
     )
 
     attributes :a, b: 'B', 'c' => 'C'
