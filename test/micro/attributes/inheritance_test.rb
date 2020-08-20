@@ -4,7 +4,8 @@ class Micro::Attributes::InheritanceTest < Minitest::Test
   class Base
     include Micro::Attributes.with(:initialize)
 
-    attributes :e, f: 'ƒ'
+    attribute :e
+    attribute :f, default: 'ƒ'
   end
 
   class AnotherClassWithAttributes
@@ -31,13 +32,15 @@ class Micro::Attributes::InheritanceTest < Minitest::Test
   end
 
   class SubSub < Sub
-    attribute! :f, 'F'
+    attribute! :f, default: 'F'
   end
 
   class SubSub2 < Sub
     attribute! :h
-    attribute! :i, -99
-    attributes! e: '3', f: '_F_', g: 99
+    attribute! :i, default: -99
+    attribute! :e, default:'3'
+    attribute! :f, default:'_F_'
+    attribute! :g, default: 99
   end
 
   def test_overriding_default_attributes_data_with_subclasses
