@@ -24,28 +24,14 @@ module Micro
       end
     end
 
-    def self.to_initialize(diff: false, activemodel_validations: false)
-      features(*Features.options(:initialize, diff, activemodel_validations))
-    end
-
-    def self.to_initialize!(diff: false, activemodel_validations: false)
-      features(*Features.options(:strict_initialize, diff, activemodel_validations))
-    end
-
     def self.without(*names)
       Features.without(names)
     end
 
     def self.with(*names)
+      return Features.all if names.size == 1 && names[0] == :everything
+
       Features.with(names)
-    end
-
-    def self.feature(name)
-      self.with(name)
-    end
-
-    def self.features(*names)
-      names.empty? ? Features.all : Features.with(names)
     end
 
     protected def attributes=(arg)

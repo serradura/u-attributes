@@ -2,7 +2,7 @@ require 'test_helper'
 
 class Micro::Attributes::InheritanceTest < Minitest::Test
   class Base
-    include Micro::Attributes.to_initialize
+    include Micro::Attributes.with(:initialize)
 
     attributes :e, f: 'ƒ'
   end

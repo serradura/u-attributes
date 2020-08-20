@@ -16,7 +16,7 @@ class Micro::Attributes::Features::ActiveModelValidationsTest < MiniTest::Test
     require 'active_model/validations'
 
     class A
-      include Micro::Attributes.to_initialize(activemodel_validations: true)
+      include Micro::Attributes.with(:initialize, :activemodel_validations)
 
       attribute :a
       validates :a, presence: true
@@ -30,7 +30,7 @@ class Micro::Attributes::Features::ActiveModelValidationsTest < MiniTest::Test
     end
 
     class C
-      include Micro::Attributes.features
+      include Micro::Attributes.with(:everything)
 
       attributes :c
       validates! :c, presence: true
