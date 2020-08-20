@@ -20,6 +20,7 @@ module Micro
       def __attribute_set(key, value, can_overwrite)
         name = key.to_s
         has_attribute = attribute?(name)
+
         __attribute_reader(name) unless has_attribute
         __attributes_data[name] = value if can_overwrite || !has_attribute
       end
@@ -37,12 +38,13 @@ module Micro
         __attributes.member?(name.to_s)
       end
 
-      def attribute(name, value=nil)
-        __attribute_set(name, value, false)
+      def attribute(name, default: nil)
+        __attribute_set(name, default, false)
       end
 
       def attributes(*args)
         return __attributes.to_a if args.empty?
+
         __attributes_set(args, can_overwrite: false)
       end
 
@@ -53,12 +55,13 @@ module Micro
       module ForSubclasses
         WRONG_NUMBER_OF_ARGS = 'wrong number of arguments (given 0, expected 1 or more)'.freeze
 
-        def attribute!(name, value=nil)
-          __attribute_set(name, value, true)
+        def attribute!(name, default: nil)
+          __attribute_set(name, default, true)
         end
 
         def attributes!(*args)
           return __attributes_set(args, can_overwrite: true) unless args.empty?
+
           raise ArgumentError, WRONG_NUMBER_OF_ARGS
         end
 

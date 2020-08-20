@@ -43,8 +43,8 @@ class Micro::AttributesTest < Minitest::Test
     include Micro::Attributes.with(:initialize)
 
     attribute :a
-    attribute :b, 'B'
-    attribute 'c', 'C'
+    attribute :b, default: 'B'
+    attribute 'c', default: 'C'
   end
 
   def test_single_definitions_with_default_values
