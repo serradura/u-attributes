@@ -17,24 +17,28 @@ module Micro
         attr_reader(name)
       end
 
-      def __attribute_set(key, value, can_overwrite)
+      def __attribute_set(key, can_overwrite, options)
         name = key.to_s
         has_attribute = attribute?(name)
 
         __attribute_reader(name) unless has_attribute
-        __attributes_data__[name] = value if can_overwrite || !has_attribute
+        __attributes_data__[name] = options[:default] if can_overwrite || !has_attribute
+
+        __call_after_attribute_set__(name, options)
       end
 
-      def __inherited_attributes_set__(arg)
-        arg.each { |key, val| __attribute_set(key, val, true) }
+      def __call_after_attribute_set__(attr_name, options); end
+
+      def __attributes_set_after_inherit__(arg)
+        arg.each { |key, val| __attribute_set(key, true, default: val) }
       end
 
       def attribute?(name)
         __attributes.member?(name.to_s)
       end
 
-      def attribute(name, default: nil)
-        __attribute_set(name, default, false)
+      def attribute(name, options = Kind::Empty::HASH)
+        __attribute_set(name, false, options)
       end
 
       def attributes(*args)
@@ -43,7 +47,7 @@ module Micro
         args.flatten!
         args.each do |arg|
           if arg.is_a?(String) || arg.is_a?(Symbol)
-            __attribute_set(arg, nil, false)
+            __attribute_set(arg, false, Kind::Empty::HASH)
           else
             raise Kind::Error.new('String/Symbol'.freeze, arg)
           end
@@ -53,8 +57,8 @@ module Micro
       module ForSubclasses
         WRONG_NUMBER_OF_ARGS = 'wrong number of arguments (given 0, expected 1 or more)'.freeze
 
-        def attribute!(name, default: nil)
-          __attribute_set(name, default, true)
+        def attribute!(name, options = Kind::Empty::HASH)
+          __attribute_set(name, true, options)
         end
 
         private_constant :WRONG_NUMBER_OF_ARGS

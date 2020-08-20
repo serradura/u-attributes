@@ -18,15 +18,13 @@ class Micro::Attributes::Features::ActiveModelValidationsTest < MiniTest::Test
     class A
       include Micro::Attributes.with(:initialize, :activemodel_validations)
 
-      attribute :a
-      validates :a, presence: true
+      attribute :a, validates: { presence: true }
     end
 
     class B
       include Micro::Attributes.with(:initialize, :activemodel_validations)
 
-      attribute :b
-      validates! :b, presence: true
+      attribute :b, validates: { presence: true, strict: true }
     end
 
     class C
@@ -36,10 +34,24 @@ class Micro::Attributes::Features::ActiveModelValidationsTest < MiniTest::Test
       validates! :c, presence: true
     end
 
-    def test_validates
-      instance = A.new(a: '')
+    class D
+      include Micro::Attributes.with(:initialize, :activemodel_validations)
 
-      refute(instance.valid?)
+      attribute :a, validate: :must_be_present
+
+      def must_be_present
+        return if a.present?
+
+        errors.add(:a, "can't be blank")
+      end
+    end
+
+    def test_validates
+      a_instance = A.new(a: '')
+      d_instance = D.new(a: '')
+
+      refute(a_instance.valid?)
+      refute(d_instance.valid?)
     end
 
     def test_validates!
