@@ -26,35 +26,13 @@ module Micro
     end
 
     def self.without(*names)
-      last_name = names.pop
-      last_feature =
-        case last_name
-        when ::Hash
-          :strict_initialize if last_name[:initialize] == :strict
-        else last_name
-        end
-
-      features = names.empty? ? [last_feature] : names + [last_feature]
-      features.compact!
-
-      Features.without(features)
+      Features.without(names)
     end
 
     def self.with(*names)
       return Features.all if names.size == 1 && names[0] == :everything
 
-      last_name = names.pop
-      last_feature =
-        case last_name
-        when ::Hash
-          :strict_initialize if last_name[:initialize] == :strict
-        else last_name
-        end
-
-      features = names.empty? ? [last_feature] : names + [last_feature]
-      features.compact!
-
-      Features.with(features)
+      Features.with(names)
     end
 
     protected def attributes=(arg)
