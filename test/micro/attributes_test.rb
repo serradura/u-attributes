@@ -75,7 +75,9 @@ class Micro::AttributesTest < Minitest::Test
   class Foz
     include Micro::Attributes.with(:initialize)
 
-    attributes :a, b: '_b', 'c' => 'c_'
+    attribute :a
+    attribute :b, default: '_b'
+    attribute 'c', default: 'c_'
   end
 
   def test_multiple_definitions_with_default_values
