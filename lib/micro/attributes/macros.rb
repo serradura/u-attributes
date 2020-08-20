@@ -25,13 +25,8 @@ module Micro
         __attributes_data[name] = value if can_overwrite || !has_attribute
       end
 
-      def __attributes_def(arg, can_overwrite)
-        return __attribute_set(arg, nil, can_overwrite) unless arg.is_a?(::Hash)
-        arg.each { |key, val| __attribute_set(key, val, can_overwrite) }
-      end
-
       def __attributes_set(args, can_overwrite)
-        args.flatten.each { |arg| __attributes_def(arg, can_overwrite) }
+        args.flatten.each { |arg| __attribute_set(arg, nil, false) }
       end
 
       def attribute?(name)
@@ -46,6 +41,10 @@ module Micro
         return __attributes.to_a if args.empty?
 
         __attributes_set(args, can_overwrite: false)
+      end
+
+      def __inherited_attributes_set__(arg)
+        arg.each { |key, val| __attribute_set(key, val, true) }
       end
 
       def __attributes_data__(arg)

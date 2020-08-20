@@ -16,11 +16,11 @@ module Micro
       base.class_eval do
         private_class_method :__attributes_data, :__attributes
         private_class_method :__attributes_set, :__attribute_set
-        private_class_method :__attributes_def, :__attribute_reader
+        private_class_method :__attribute_reader
       end
 
       def base.inherited(subclass)
-        subclass.attributes(self.__attributes_data__({}))
+        subclass.__inherited_attributes_set__(self.__attributes_data__({}))
         subclass.extend ::Micro::Attributes.const_get('Macros::ForSubclasses'.freeze)
       end
     end
