@@ -64,7 +64,7 @@ module Micro
     protected
 
       def attributes=(arg)
-        hash = Utils.stringify_hash_keys!(arg)
+        hash = Utils.stringify_hash_keys(arg)
 
         __attributes_set(hash, self.class.__attributes_data__)
       end

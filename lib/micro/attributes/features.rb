@@ -59,13 +59,6 @@ module Micro
         end
       end
 
-      def options(init, diff, activemodel_validations)
-        [init].tap do |options|
-          options << :diff if diff
-          options << :activemodel_validations if activemodel_validations
-        end
-      end
-
       private
 
         def fetch_feature_name(name)
