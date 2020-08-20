@@ -64,14 +64,6 @@ module Micro
       __attributes.freeze
     end
 
-    private def __attributes
-      @__attributes ||= {}
-    end
-
-    private def __attribute_set(name, value)
-      __attributes[name] = instance_variable_set("@#{name}", value) if attribute?(name)
-    end
-
     def attributes(*names)
       return __attributes if names.empty?
 
@@ -97,5 +89,15 @@ module Micro
 
       raise NameError, "undefined attribute `#{name}"
     end
+
+    private
+
+      def __attributes
+        @__attributes ||= {}
+      end
+
+      def __attribute_set(name, value)
+        __attributes[name] = instance_variable_set("@#{name}", value) if attribute?(name)
+      end
   end
 end
