@@ -6,10 +6,10 @@ class Micro::Attributes::FeaturesTest < Minitest::Test
 
   def test_fetching_features_error
     err1 = assert_raises(ArgumentError) { Micro::Attributes.with(:foo) }
-    assert_equal('Invalid feature name! Available options: :activemodel_validations, :diff, :initialize, :strict_initialize', err1.message)
+    assert_equal('Invalid feature name! Available options: :activemodel_validations, :diff, :initialize', err1.message)
 
     err2 = assert_raises(ArgumentError) { Micro::Attributes.with() }
-    assert_equal('Invalid feature name! Available options: :activemodel_validations, :diff, :initialize, :strict_initialize', err2.message)
+    assert_equal('Invalid feature name! Available options: :activemodel_validations, :diff, :initialize', err2.message)
   end
 
   def test_fetching_all_features
@@ -30,7 +30,7 @@ class Micro::Attributes::FeaturesTest < Minitest::Test
   end
 
   class CStrict
-    include Micro::Attributes.with(:strict_initialize, :diff)
+    include Micro::Attributes.with(:diff, initialize: :strict)
   end
 
   class D
@@ -38,7 +38,7 @@ class Micro::Attributes::FeaturesTest < Minitest::Test
   end
 
   class DStrict
-    include Micro::Attributes.with(:strict_initialize, :activemodel_validations)
+    include Micro::Attributes.with(:activemodel_validations, initialize: :strict)
   end
 
   class E
@@ -50,7 +50,7 @@ class Micro::Attributes::FeaturesTest < Minitest::Test
   end
 
   class FStrict
-    include Micro::Attributes.with(:strict_initialize, :diff, :activemodel_validations)
+    include Micro::Attributes.with(:diff, :activemodel_validations, initialize: :strict)
   end
 
   def test_including_features
@@ -112,25 +112,25 @@ class Micro::Attributes::FeaturesTest < Minitest::Test
   def test_excluding_features
     assert_equal(Micro::Attributes.without(:diff), Micro::Attributes::With::ActiveModelValidationsAndStrictInitialize)
     assert_equal(Micro::Attributes.without(:initialize), With::ActiveModelValidationsAndDiff)
-    assert_equal(Micro::Attributes.without(:strict_initialize), With::ActiveModelValidationsAndDiffAndInitialize)
+    assert_equal(Micro::Attributes.without(initialize: :strict), With::ActiveModelValidationsAndDiffAndInitialize)
     assert_equal(Micro::Attributes.without(:activemodel_validations), With::DiffAndStrictInitialize)
 
     assert_equal(Micro::Attributes.without(:diff, :initialize), Micro::Attributes::With::ActiveModelValidations)
-    assert_equal(Micro::Attributes.without(:diff, :strict_initialize), Micro::Attributes::With::ActiveModelValidationsAndInitialize)
+    assert_equal(Micro::Attributes.without(:diff, initialize: :strict), Micro::Attributes::With::ActiveModelValidationsAndInitialize)
     assert_equal(Micro::Attributes.without(:diff, :activemodel_validations), Micro::Attributes::With::StrictInitialize)
 
     assert_equal(Micro::Attributes.without(:activemodel_validations, :initialize), Micro::Attributes::With::Diff)
-    assert_equal(Micro::Attributes.without(:activemodel_validations, :strict_initialize), Micro::Attributes::With::DiffAndInitialize)
+    assert_equal(Micro::Attributes.without(:activemodel_validations, initialize: :strict), Micro::Attributes::With::DiffAndInitialize)
 
     assert_equal(Micro::Attributes.without(:activemodel_validations, :diff, :initialize), Micro::Attributes)
-    assert_equal(Micro::Attributes.without(:activemodel_validations, :diff, :initialize, :strict_initialize), Micro::Attributes)
-    assert_equal(Micro::Attributes.without(:activemodel_validations, :diff, :strict_initialize), Micro::Attributes::With::Initialize)
+    assert_equal(Micro::Attributes.without(:activemodel_validations, :diff, :initialize, initialize: :strict), Micro::Attributes)
+    assert_equal(Micro::Attributes.without(:activemodel_validations, :diff, initialize: :strict), Micro::Attributes::With::Initialize)
   end
 
   def test_including_initialize_features
-    assert_equal(Micro::Attributes.with(:initialize, :strict_initialize), With::StrictInitialize)
-    assert_equal(Micro::Attributes.with(:initialize, :strict_initialize, :diff), With::DiffAndStrictInitialize)
-    assert_equal(Micro::Attributes.with(:initialize, :strict_initialize, :activemodel_validations), With::ActiveModelValidationsAndStrictInitialize)
-    assert_equal(Micro::Attributes.with(:initialize, :strict_initialize, :activemodel_validations, :diff), With::ActiveModelValidationsAndDiffAndStrictInitialize)
+    assert_equal(Micro::Attributes.with(initialize: :strict), With::StrictInitialize)
+    assert_equal(Micro::Attributes.with(:diff, initialize: :strict), With::DiffAndStrictInitialize)
+    assert_equal(Micro::Attributes.with(:activemodel_validations, initialize: :strict), With::ActiveModelValidationsAndStrictInitialize)
+    assert_equal(Micro::Attributes.with(:activemodel_validations, :diff, initialize: :strict), With::ActiveModelValidationsAndDiffAndStrictInitialize)
   end
 end
