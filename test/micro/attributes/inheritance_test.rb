@@ -47,8 +47,8 @@ class Micro::Attributes::InheritanceTest < Minitest::Test
     assert_equal(Sub.attributes, SubSub.attributes)
     refute_equal(Sub.attributes, SubSub2.attributes)
 
-    refute_equal(Sub.attributes_data({}), SubSub.attributes_data({}))
-    refute_equal(SubSub.attributes_data({}), SubSub2.attributes_data({}))
+    refute_equal(Sub.__attributes_data__({}), SubSub.__attributes_data__({}))
+    refute_equal(SubSub.__attributes_data__({}), SubSub2.__attributes_data__({}))
 
     object1 = SubSub.new(e: 3)
 

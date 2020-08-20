@@ -20,7 +20,7 @@ module Micro
       end
 
       def base.inherited(subclass)
-        subclass.attributes(self.attributes_data({}))
+        subclass.attributes(self.__attributes_data__({}))
         subclass.extend ::Micro::Attributes.const_get('Macros::ForSubclasses'.freeze)
       end
     end
@@ -39,7 +39,7 @@ module Micro
 
     protected def attributes=(arg)
       self.class
-          .attributes_data(Kind::Of.(::Hash, arg))
+          .__attributes_data__(Kind::Of.(::Hash, arg))
           .each { |name, value| __attribute_set(name, value) }
 
       __attributes.freeze

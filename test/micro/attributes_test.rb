@@ -231,11 +231,11 @@ class Micro::AttributesTest < Minitest::Test
 
   def test_attributes_data
     [Bar, Foo, Baz, Foz].each do |klass|
-      error = assert_raises(Kind::Error) { klass.attributes_data(1) }
+      error = assert_raises(Kind::Error) { klass.__attributes_data__(1) }
       assert '1 expected to be a kind of Hash', error.message
 
-      assert klass.attributes_data({}).is_a?(Hash)
-      refute klass.attributes_data({}).empty?
+      assert klass.__attributes_data__({}).is_a?(Hash)
+      refute klass.__attributes_data__({}).empty?
     end
   end
 end
