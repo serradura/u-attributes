@@ -2,8 +2,8 @@
 
 require 'micro/attributes/features/diff'
 require 'micro/attributes/features/initialize'
+require 'micro/attributes/features/initialize/strict'
 require 'micro/attributes/features/activemodel_validations'
-require 'micro/attributes/features/strict_initialize'
 
 module Micro
   module Attributes
@@ -35,7 +35,7 @@ module Micro
       module StrictInitialize
         def self.included(base)
           base.send(:include, Initialize)
-          base.send(:include, ::Micro::Attributes::Features::StrictInitialize)
+          base.send(:include, ::Micro::Attributes::Features::Initialize::Strict)
         end
       end
 
@@ -53,7 +53,7 @@ module Micro
       module DiffAndStrictInitialize
         def self.included(base)
           base.send(:include, DiffAndInitialize)
-          base.send(:include, ::Micro::Attributes::Features::StrictInitialize)
+          base.send(:include, ::Micro::Attributes::Features::Initialize::Strict)
         end
       end
 
@@ -76,7 +76,7 @@ module Micro
       module ActiveModelValidationsAndStrictInitialize
         def self.included(base)
           base.send(:include, ActiveModelValidationsAndInitialize)
-          base.send(:include, ::Micro::Attributes::Features::StrictInitialize)
+          base.send(:include, ::Micro::Attributes::Features::Initialize::Strict)
         end
       end
 
@@ -92,7 +92,7 @@ module Micro
       module ActiveModelValidationsAndDiffAndStrictInitialize
         def self.included(base)
           base.send(:include, ActiveModelValidationsAndDiffAndInitialize)
-          base.send(:include, ::Micro::Attributes::Features::StrictInitialize)
+          base.send(:include, ::Micro::Attributes::Features::Initialize::Strict)
         end
       end
     end

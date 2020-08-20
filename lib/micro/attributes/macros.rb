@@ -3,8 +3,8 @@
 module Micro
   module Attributes
     module Macros
-      def __attributes_data
-        @__attributes_data ||= {}
+      def __attributes_data__
+        @__attributes_data__ ||= {}
       end
 
       def __attributes
@@ -13,58 +13,60 @@ module Micro
 
       def __attribute_reader(name)
         __attributes.add(name)
+
         attr_reader(name)
       end
 
-      def __attribute_set(key, value, can_overwrite)
+      def __attribute_set(key, can_overwrite, options)
         name = key.to_s
         has_attribute = attribute?(name)
+
         __attribute_reader(name) unless has_attribute
-        __attributes_data[name] = value if can_overwrite || !has_attribute
+        __attributes_data__[name] = options[:default] if can_overwrite || !has_attribute
+
+        __call_after_attribute_set__(name, options)
       end
 
-      def __attributes_def(arg, can_overwrite)
-        return __attribute_set(arg, nil, can_overwrite) unless arg.is_a?(::Hash)
-        arg.each { |key, val| __attribute_set(key, val, can_overwrite) }
-      end
+      def __call_after_attribute_set__(attr_name, options); end
 
-      def __attributes_set(args, can_overwrite)
-        args.flatten.each { |arg| __attributes_def(arg, can_overwrite) }
+      def __attributes_set_after_inherit__(arg)
+        arg.each { |key, val| __attribute_set(key, true, default: val) }
       end
 
       def attribute?(name)
         __attributes.member?(name.to_s)
       end
 
-      def attribute(name, value=nil)
-        __attribute_set(name, value, false)
+      def attribute(name, options = Kind::Empty::HASH)
+        __attribute_set(name, false, options)
       end
 
       def attributes(*args)
         return __attributes.to_a if args.empty?
-        __attributes_set(args, can_overwrite: false)
-      end
 
-      def attributes_data(arg)
-        __attributes_data.merge(Hash.with_string_keys!(arg))
+        args.flatten!
+        args.each do |arg|
+          if arg.is_a?(String) || arg.is_a?(Symbol)
+            __attribute_set(arg, false, Kind::Empty::HASH)
+          else
+            raise Kind::Error.new('String/Symbol'.freeze, arg)
+          end
+        end
       end
 
       module ForSubclasses
         WRONG_NUMBER_OF_ARGS = 'wrong number of arguments (given 0, expected 1 or more)'.freeze
 
-        def attribute!(name, value=nil)
-          __attribute_set(name, value, true)
-        end
-
-        def attributes!(*args)
-          return __attributes_set(args, can_overwrite: true) unless args.empty?
-          raise ArgumentError, WRONG_NUMBER_OF_ARGS
+        def attribute!(name, options = Kind::Empty::HASH)
+          __attribute_set(name, true, options)
         end
 
         private_constant :WRONG_NUMBER_OF_ARGS
       end
+
       private_constant :ForSubclasses
     end
+
     private_constant :Macros
   end
 end

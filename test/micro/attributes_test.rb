@@ -24,7 +24,7 @@ class Micro::AttributesTest < Minitest::Test
   # ---
 
   class Bar
-    include Micro::Attributes.to_initialize
+    include Micro::Attributes.with(:initialize)
 
     attribute :a
     attribute 'b'
@@ -39,12 +39,18 @@ class Micro::AttributesTest < Minitest::Test
 
   # ---
 
+  class BValue
+    def self.call
+      'B'
+    end
+  end
+
   class Baz
-    include Micro::Attributes.to_initialize
+    include Micro::Attributes.with(:initialize)
 
     attribute :a
-    attribute :b, 'B'
-    attribute 'c', 'C'
+    attribute :b, default: BValue
+    attribute 'c', default: -> { 'C' }
   end
 
   def test_single_definitions_with_default_values
@@ -58,7 +64,7 @@ class Micro::AttributesTest < Minitest::Test
   # ---
 
   class Foo
-    include Micro::Attributes.to_initialize
+    include Micro::Attributes.with(:initialize)
 
     attributes :a, 'b'
   end
@@ -73,9 +79,11 @@ class Micro::AttributesTest < Minitest::Test
   # ---
 
   class Foz
-    include Micro::Attributes.to_initialize
+    include Micro::Attributes.with(:initialize)
 
-    attributes :a, b: '_b', 'c' => 'c_'
+    attribute :a, default: -> value { value.to_s }
+    attribute :b, default: proc { '_b' }
+    attribute 'c', default: 'c_'
   end
 
   def test_multiple_definitions_with_default_values
@@ -92,7 +100,7 @@ class Micro::AttributesTest < Minitest::Test
     bar = Bar.new(a: 'a')
     foo = Foo.new(a: 'a')
     baz = Baz.new(a: 'a')
-    foz = Foz.new(a: 'a')
+    foz = Foz.new(a: :a)
 
     assert_equal({'a'=>'a', 'b'=>nil}, bar.attributes)
     assert_equal({'a'=>'a', 'b'=>nil}, foo.attributes)
@@ -229,13 +237,19 @@ class Micro::AttributesTest < Minitest::Test
 
   # ---
 
-  def test_attributes_data
-    [Bar, Foo, Baz, Foz].each do |klass|
-      error = assert_raises(Kind::Error) { klass.attributes_data(1) }
-      assert '1 expected to be a kind of Hash', error.message
+  begin
+    class InvalidAttributesDefinition
+      include Micro::Attributes
 
-      assert klass.attributes_data({}).is_a?(Hash)
-      refute klass.attributes_data({}).empty?
+      attributes foo: :bar
     end
+  rescue => err
+    @@__invalid_attributes_definition = err
+  end
+
+  def test_invalid_attributes_definition
+    assert_instance_of(Kind::Error, @@__invalid_attributes_definition)
+
+    assert_equal('{:foo=>:bar} expected to be a kind of String/Symbol', @@__invalid_attributes_definition.message)
   end
 end

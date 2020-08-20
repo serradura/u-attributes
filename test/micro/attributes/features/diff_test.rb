@@ -2,7 +2,7 @@ require 'test_helper'
 
 class Micro::Attributes::Features::DiffTest < Minitest::Test
   class Foo
-    include Micro::Attributes.to_initialize(diff: true)
+    include Micro::Attributes.with(:initialize, :diff)
 
     attribute :a
     attribute 'b'
