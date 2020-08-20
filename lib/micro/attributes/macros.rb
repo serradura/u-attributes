@@ -25,10 +25,6 @@ module Micro
         __attributes_data[name] = value if can_overwrite || !has_attribute
       end
 
-      def __attributes_set(args, can_overwrite)
-        args.flatten.each { |arg| __attribute_set(arg, nil, false) }
-      end
-
       def attribute?(name)
         __attributes.member?(name.to_s)
       end
@@ -40,7 +36,7 @@ module Micro
       def attributes(*args)
         return __attributes.to_a if args.empty?
 
-        __attributes_set(args, can_overwrite: false)
+        args.flatten.each { |arg| __attribute_set(arg, nil, false) }
       end
 
       def __inherited_attributes_set__(arg)
@@ -56,12 +52,6 @@ module Micro
 
         def attribute!(name, default: nil)
           __attribute_set(name, default, true)
-        end
-
-        def attributes!(*args)
-          return __attributes_set(args, can_overwrite: true) unless args.empty?
-
-          raise ArgumentError, WRONG_NUMBER_OF_ARGS
         end
 
         private_constant :WRONG_NUMBER_OF_ARGS

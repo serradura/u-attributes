@@ -15,7 +15,6 @@ class Micro::Attributes::InheritanceTest < Minitest::Test
   def test_base_classes_cant_access_the_methods_to_override_attributes_data
     [Base, AnotherClassWithAttributes].each do |klass|
       refute klass.respond_to?(:attribute!, true)
-      refute klass.respond_to?(:attributes!, true)
     end
   end
 
@@ -65,10 +64,5 @@ class Micro::Attributes::InheritanceTest < Minitest::Test
     assert_equal(99, object2.g)
     assert_nil(object2.h)
     assert_equal(-99, object2.i)
-  end
-
-  def test_the_argument_error_of_attributes!
-    error = assert_raises(ArgumentError) { SubSub.attributes! }
-    assert_equal('wrong number of arguments (given 0, expected 1 or more)', error.message)
   end
 end
