@@ -30,9 +30,11 @@ module Micro
     end
 
     def self.with(*names)
-      return Features.all if names.size == 1 && names[0] == :everything
-
       Features.with(names)
+    end
+
+    def self.with_all_features
+      Features.all
     end
 
     protected def attributes=(arg)

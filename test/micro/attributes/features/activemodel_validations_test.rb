@@ -30,7 +30,7 @@ class Micro::Attributes::Features::ActiveModelValidationsTest < MiniTest::Test
     end
 
     class C
-      include Micro::Attributes.with(:everything)
+      include Micro::Attributes.with_all_features
 
       attributes :c
       validates! :c, presence: true
