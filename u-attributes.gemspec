@@ -9,8 +9,11 @@ Gem::Specification.new do |spec|
   spec.authors       = ['Rodrigo Serradura']
   spec.email         = ['rodrigo.serradura@gmail.com']
 
-  spec.summary       = %q{Define read-only attributes}
-  spec.description   = %q{This gem allows defining read-only attributes, that is, your objects will have only getters to access their attributes data.}
+  spec.summary       = %q{Create "immutable" objects. No setters, just getters!}
+  spec.description   =
+    "This gem allows you to define \"immutable\" objects, and your objects will have only getters and no setters. "\
+    "So, if you change some object attribute, you will have a new object instance. " \
+    "That is, you transform the object instead of modifying it."
   spec.homepage      = 'https://github.com/serradura/u-attributes'
   spec.license       = 'MIT'
 
