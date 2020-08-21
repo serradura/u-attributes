@@ -1,16 +1,34 @@
-![Ruby](https://img.shields.io/badge/ruby-2.2+-ruby.svg?colorA=99004d&colorB=cc0066)
-[![Gem](https://img.shields.io/gem/v/u-attributes.svg?style=flat-square)](https://rubygems.org/gems/u-attributes)
-[![Build Status](https://travis-ci.com/serradura/u-attributes.svg?branch=main)](https://travis-ci.com/serradura/u-attributes)
-[![Maintainability](https://api.codeclimate.com/v1/badges/b562e6b877a9edf4dbf6/maintainability)](https://codeclimate.com/github/serradura/u-attributes/maintainability)
-[![Test Coverage](https://api.codeclimate.com/v1/badges/b562e6b877a9edf4dbf6/test_coverage)](https://codeclimate.com/github/serradura/u-attributes/test_coverage)
+<p align="center">
+  <img src="./assets/u-attributes_logo_v1.png" alt='Create "immutable" objects. No setters, just getters!'>
 
-μ-attributes (Micro::Attributes) <!-- omit in toc -->
-================================
+  <p align="center"><i>Create "immutable" objects. No setters, just getters!</i></p>
+  <br>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/ruby-2.2+-ruby.svg?colorA=99004d&colorB=cc0066" alt="Ruby">
+
+  <a href="https://rubygems.org/gems/u-attributes">
+    <img alt="Gem" src="https://img.shields.io/gem/v/u-attributes.svg?style=flat-square">
+  </a>
+
+  <a href="https://travis-ci.com/serradura/u-attributes">
+    <img alt="Build Status" src="https://travis-ci.com/serradura/u-attributes.svg?branch=main">
+  </a>
+
+  <a href="https://codeclimate.com/github/serradura/u-attributes/maintainability">
+    <img alt="Maintainability" src="https://api.codeclimate.com/v1/badges/b562e6b877a9edf4dbf6/maintainability">
+  </a>
+
+  <a href="https://codeclimate.com/github/serradura/u-attributes/test_coverage">
+    <img alt="Test Coverage" src="https://api.codeclimate.com/v1/badges/b562e6b877a9edf4dbf6/test_coverage">
+  </a>
+</p>
 
 This gem allows you to define "immutable" objects, and your objects will have only getters and no setters.
 So, if you change [[1](#with_attribute)] [[2](#with_attributes)] some object attribute, you will have a new object instance. That is, you transform the object instead of modifying it.
 
-## Table of contents <!-- omit in toc -->
+# Table of contents <!-- omit in toc -->
 - [Installation](#installation)
 - [Compatibility](#compatibility)
 - [Usage](#usage)
