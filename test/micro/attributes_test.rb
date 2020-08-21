@@ -31,17 +31,23 @@ class Micro::AttributesTest < Minitest::Test
   end
 
   def test_single_definitions
-    object = Bar.new(a: 'a', b: 'b')
+    bar1 = Bar.new(a: 'a', b: 'b')
 
-    assert_equal 'a', object.a
-    assert_equal 'b', object.b
+    assert_equal 'a', bar1.a
+    assert_equal 'b', bar1.b
+
+    # ---
+
+    bar2 = Bar.new(a: false)
+
+    assert_equal false, bar2.a
   end
 
   # ---
 
-  class BValue
+  class FalseValue
     def self.call
-      'B'
+      false
     end
   end
 
@@ -49,7 +55,7 @@ class Micro::AttributesTest < Minitest::Test
     include Micro::Attributes.with(:initialize)
 
     attribute :a
-    attribute :b, default: BValue
+    attribute :b, default: FalseValue
     attribute 'c', default: -> { 'C' }
   end
 
@@ -57,7 +63,7 @@ class Micro::AttributesTest < Minitest::Test
     object = Baz.new(a: 'a')
 
     assert_equal 'a', object.a
-    assert_equal 'B', object.b
+    assert_equal false, object.b
     assert_equal 'C', object.c
   end
 
@@ -104,7 +110,7 @@ class Micro::AttributesTest < Minitest::Test
 
     assert_equal({'a'=>'a', 'b'=>nil}, bar.attributes)
     assert_equal({'a'=>'a', 'b'=>nil}, foo.attributes)
-    assert_equal({'b'=>'B', 'c'=>'C', 'a'=>'a'}, baz.attributes)
+    assert_equal({'b'=>false, 'c'=>'C', 'a'=>'a'}, baz.attributes)
     assert_equal({'b'=>'_b', 'c'=>'c_', 'a'=>'a'}, foz.attributes)
 
     assert(bar.attributes.frozen?)
@@ -121,7 +127,7 @@ class Micro::AttributesTest < Minitest::Test
 
     assert_equal({a: 'a'}, bar.attributes(:a))
     assert_equal({'a'=>'a', 'b'=>nil}, foo.attributes('a', 'b'))
-    assert_equal({'b'=>'B', 'c'=>'C'}, baz.attributes('b', 'c'))
+    assert_equal({'b'=>false, 'c'=>'C'}, baz.attributes('b', 'c'))
     assert_equal({b: '_b', c: 'c_', a: 'a'}, foz.attributes(:b, :c, :a))
   end
 
