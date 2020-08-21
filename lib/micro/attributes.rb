@@ -89,7 +89,7 @@ module Micro
               callable = default.is_a?(Proc) ? default : default.method(:call)
               callable.arity > 0 ? callable.call(value) : callable.call
             else
-              value || default
+              value.nil? ? default : value
             end
 
           __attribute_set(key, final_value)
