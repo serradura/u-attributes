@@ -18,9 +18,16 @@ if activemodel_version < '6.1'
   gem 'activesupport', activemodel, require: false
 end
 
+simplecov_version =
+  case RUBY_VERSION
+  when /\A2.[23]/ then '~> 0.17.1'
+  when /\A2.4/ then '~> 0.18.5'
+  else '~> 0.19'
+  end
+
 group :test do
   gem 'minitest', activemodel_version < '4.1' ? '~> 4.2' : '~> 5.0'
-  gem 'simplecov', require: false
+  gem 'simplecov', simplecov_version, require: false
 end
 
 # Specify your gem's dependencies in u-attributes.gemspec

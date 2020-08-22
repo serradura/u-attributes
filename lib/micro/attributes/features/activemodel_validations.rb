@@ -14,7 +14,7 @@ module Micro::Attributes
       end
 
       module ClassMethods
-        def __call_after_attribute_set__(attr_name, options)
+        def __call_after_attribute_assign__(attr_name, options)
           validate, validates = options.values_at(:validate, :validates)
 
           self.validate(validate) if validate
