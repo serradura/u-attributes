@@ -43,6 +43,47 @@ class Micro::AttributesTest < Minitest::Test
     assert_equal false, bar2.a
   end
 
+  class Bar2
+    include Micro::Attributes.with(:initialize)
+
+    attribute :a
+    attribute 'b', required: true
+  end
+
+  def test_bar2_attributes_assignment
+    bar1 = Bar2.new(a: 'a', b: 'b')
+
+    assert_equal 'a', bar1.a
+    assert_equal 'b', bar1.b
+
+    # ---
+
+    err = assert_raises(ArgumentError) { Bar2.new(a: false) }
+    assert_equal('missing keyword: :b', err.message)
+  end
+
+  class Bar3
+    include Micro::Attributes.with(:initialize)
+
+    attribute :a, required: true
+    attribute 'b', required: true
+  end
+
+  def test_bar2_attributes_assignment
+    bar1 = Bar3.new(a: 'a', b: 'b')
+
+    assert_equal 'a', bar1.a
+    assert_equal 'b', bar1.b
+
+    # ---
+
+    err1 = assert_raises(ArgumentError) { Bar3.new(a: false) }
+    assert_equal('missing keyword: :b', err1.message)
+
+    err2 = assert_raises(ArgumentError) { Bar3.new({}) }
+    assert_equal('missing keywords: :a, :b', err2.message)
+  end
+
   # ---
 
   class FalseValue
