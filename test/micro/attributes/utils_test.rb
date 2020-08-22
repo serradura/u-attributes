@@ -26,4 +26,19 @@ class Micro::Attributes::UtilsTest < Minitest::Test
       assert_equal({ 'a' => 1 }, new_hash)
     end
   end
+
+  # --
+
+  def test_allow_hash_access_with_string_or_symbol_keys
+    hash = { :symbol => 'symbol', 'string' => 'string', false: false }
+
+    assert_equal('symbol', Micro::Attributes::Utils::HashAccess.(hash, 'symbol'))
+    assert_equal('symbol', Micro::Attributes::Utils::HashAccess.(hash, :symbol))
+    assert_equal('string', Micro::Attributes::Utils::HashAccess.(hash, 'string'))
+    assert_equal('string', Micro::Attributes::Utils::HashAccess.(hash, :string))
+    assert_equal(false, Micro::Attributes::Utils::HashAccess.(hash, 'false'))
+    assert_equal(false, Micro::Attributes::Utils::HashAccess.(hash, :false))
+    assert_nil(Micro::Attributes::Utils::HashAccess.(hash, 'not_here'))
+    assert_nil(Micro::Attributes::Utils::HashAccess.(hash, :not_here))
+  end
 end
