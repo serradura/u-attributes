@@ -14,6 +14,12 @@ module Micro
           hash.each_with_object({}) { |(key, val), memo| memo[key.to_s] = val }
         end
       end
+
+      HashAccess = -> (hash, key) {
+        return hash[key.to_s] unless hash[key.to_s].nil?
+
+        hash[key.to_sym]
+      }
     end
   end
 end
