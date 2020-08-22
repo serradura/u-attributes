@@ -15,7 +15,7 @@ module Micro
 
       base.class_eval do
         private_class_method :__attributes, :__attribute_reader
-        private_class_method :__attribute_assign, :__attributes_data_add
+        private_class_method :__attribute_assign, :__attributes_data_to_assign
       end
 
       def base.inherited(subclass)
@@ -66,7 +66,11 @@ module Micro
     protected
 
       def attributes=(arg)
-        __attributes_assign(Utils.stringify_hash_keys(arg))
+        hash = Utils.stringify_hash_keys(arg)
+
+        __attributes_missing!(hash)
+
+        __attributes_assign(hash)
       end
 
     private
@@ -97,6 +101,24 @@ module Micro
         __attributes[name] = instance_variable_set("@#{name}", value)
       end
 
-      private_constant :FetchValueToAssign
+      MISSING_KEYWORD = 'missing keyword'.freeze
+      MISSING_KEYWORDS = 'missing keywords'.freeze
+
+      def __attributes_missing!(hash)
+        required_keys = self.class.__attributes_required__
+
+        return if required_keys.empty?
+
+        missing_keys = required_keys.map { |name| ":#{name}" if !hash.key?(name) }
+        missing_keys.compact!
+
+        return if missing_keys.empty?
+
+        label = missing_keys.size == 1 ? MISSING_KEYWORD : MISSING_KEYWORDS
+
+        raise ArgumentError, "#{label}: #{missing_keys.join(', ')}"
+      end
+
+      private_constant :FetchValueToAssign, :MISSING_KEYWORD, :MISSING_KEYWORDS
   end
 end

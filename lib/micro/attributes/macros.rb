@@ -3,9 +3,31 @@
 module Micro
   module Attributes
     module Macros
+      def attributes_are_all_required?
+        false
+      end
+
       # NOTE: can't be renamed! It is used by u-case v4.
       def __attributes_data__
         @__attributes_data__ ||= {}
+      end
+
+      def __attributes_required__
+        @__attributes_required__ ||= Set.new
+      end
+
+      def __attributes_required_add(name, is_required, hasnt_default)
+        if is_required || (attributes_are_all_required? && hasnt_default)
+          __attributes_required__.add(name)
+        end
+
+        nil
+      end
+
+      def __attributes_data_to_assign(name, options)
+        hasnt_default = !options.key?(:default)
+
+        hasnt_default ? __attributes_required_add(name, options[:required], hasnt_default) : options[:default]
       end
 
       def __attributes
@@ -18,27 +40,13 @@ module Micro
         attr_reader(name)
       end
 
-      def __attribute_names_without_default__
-        @__attribute_names_without_default__ ||= Set.new
-      end
-
-      def __attributes_data_add(name, options)
-        __attributes_data__[name] =
-          if options.key?(:default)
-            options[:default]
-          else
-            __attribute_names_without_default__.add(name)
-            nil
-          end
-      end
-
       def __attribute_assign(key, can_overwrite, options)
         name = key.to_s
         has_attribute = attribute?(name)
 
         __attribute_reader(name) unless has_attribute
 
-        __attributes_data_add(name, options) if can_overwrite || !has_attribute
+        __attributes_data__[name] = __attributes_data_to_assign(name, options) if can_overwrite || !has_attribute
 
         __call_after_attribute_assign__(name, options)
       end
