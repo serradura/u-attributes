@@ -31,8 +31,8 @@ class Micro::Attributes::PrivateMembersTest < Minitest::Test
       assert klass.respond_to?(:__attribute_reader, true)
       assert_raises(NoMethodError) { klass.__attribute_reader }
 
-      assert klass.respond_to?(:__attribute_set, true)
-      assert_raises(NoMethodError) { klass.__attribute_set }
+      assert klass.respond_to?(:__attribute_assign, true)
+      assert_raises(NoMethodError) { klass.__attribute_assign }
     end
   end
 

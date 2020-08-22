@@ -14,11 +14,11 @@ module Micro
       base.extend(::Micro::Attributes.const_get(:Macros))
 
       base.class_eval do
-        private_class_method :__attributes, :__attribute_set, :__attribute_reader
+        private_class_method :__attributes, :__attribute_assign, :__attribute_reader
       end
 
       def base.inherited(subclass)
-        subclass.__attributes_set_after_inherit__(self.__attributes_data__)
+        subclass.__attributes_assign_after_inherit__(self.__attributes_data__)
 
         subclass.extend ::Micro::Attributes.const_get('Macros::ForSubclasses'.freeze)
       end
@@ -67,7 +67,7 @@ module Micro
       def attributes=(arg)
         hash = Utils.stringify_hash_keys(arg)
 
-        __attributes_set(hash, self.class.__attributes_data__)
+        __attributes_assign(hash, self.class.__attributes_data__)
       end
 
     private
@@ -76,26 +76,28 @@ module Micro
         @__attributes ||= {}
       end
 
-      def __attribute_set(name, value)
+      def __attribute_assign(name, value)
         __attributes[name] = instance_variable_set("@#{name}", value) if attribute?(name)
       end
 
-      def __attributes_set(hash, att_data)
+      FetchValueToAssign = -> (value, default) do
+        if default.respond_to?(:call)
+          callable = default.is_a?(Proc) ? default : default.method(:call)
+
+          callable.arity > 0 ? callable.call(value) : callable.call
+        else
+          value.nil? ? default : value
+        end
+      end
+
+      def __attributes_assign(hash, att_data)
         att_data.each do |key, default|
-          value = hash[key]
-
-          final_value =
-            if default.respond_to?(:call)
-              callable = default.is_a?(Proc) ? default : default.method(:call)
-              callable.arity > 0 ? callable.call(value) : callable.call
-            else
-              value.nil? ? default : value
-            end
-
-          __attribute_set(key, final_value)
+          __attribute_assign(key, FetchValueToAssign.(hash[key], default))
         end
 
         __attributes.freeze
       end
+
+      private_constant :FetchValueToAssign
   end
 end

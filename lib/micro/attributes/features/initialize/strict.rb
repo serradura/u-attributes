@@ -13,7 +13,7 @@ module Micro::Attributes
 
           attributes_missing!(ref: att_data, arg: arg_hash)
 
-          __attributes_set(arg_hash, att_data)
+          __attributes_assign(arg_hash, att_data)
         end
 
         private def attributes_missing!(ref:, arg:)
