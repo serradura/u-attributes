@@ -14,7 +14,8 @@ module Micro
       base.extend(::Micro::Attributes.const_get(:Macros))
 
       base.class_eval do
-        private_class_method :__attributes, :__attribute_assign, :__attribute_reader
+        private_class_method :__attributes, :__attribute_reader
+        private_class_method :__attribute_assign, :__attributes_data_add
       end
 
       def base.inherited(subclass)
@@ -65,19 +66,13 @@ module Micro
     protected
 
       def attributes=(arg)
-        hash = Utils.stringify_hash_keys(arg)
-
-        __attributes_assign(hash, self.class.__attributes_data__)
+        __attributes_assign(Utils.stringify_hash_keys(arg))
       end
 
     private
 
       def __attributes
         @__attributes ||= {}
-      end
-
-      def __attribute_assign(name, value)
-        __attributes[name] = instance_variable_set("@#{name}", value) if attribute?(name)
       end
 
       FetchValueToAssign = -> (value, default) do
@@ -90,12 +85,16 @@ module Micro
         end
       end
 
-      def __attributes_assign(hash, att_data)
-        att_data.each do |key, default|
-          __attribute_assign(key, FetchValueToAssign.(hash[key], default))
+      def __attributes_assign(hash)
+        self.class.__attributes_data__.each do |name, default|
+          __attribute_assign(name, FetchValueToAssign.(hash[name], default)) if attribute?(name)
         end
 
         __attributes.freeze
+      end
+
+      def __attribute_assign(name, value)
+        __attributes[name] = instance_variable_set("@#{name}", value)
       end
 
       private_constant :FetchValueToAssign

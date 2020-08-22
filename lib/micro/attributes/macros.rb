@@ -18,12 +18,27 @@ module Micro
         attr_reader(name)
       end
 
+      def __attribute_names_without_default__
+        @__attribute_names_without_default__ ||= Set.new
+      end
+
+      def __attributes_data_add(name, options)
+        __attributes_data__[name] =
+          if options.key?(:default)
+            options[:default]
+          else
+            __attribute_names_without_default__.add(name)
+            nil
+          end
+      end
+
       def __attribute_assign(key, can_overwrite, options)
         name = key.to_s
         has_attribute = attribute?(name)
 
         __attribute_reader(name) unless has_attribute
-        __attributes_data__[name] = options[:default] if can_overwrite || !has_attribute
+
+        __attributes_data_add(name, options) if can_overwrite || !has_attribute
 
         __call_after_attribute_assign__(name, options)
       end
