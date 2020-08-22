@@ -3,6 +3,7 @@
 module Micro
   module Attributes
     module Macros
+      # NOTE: can't be renamed! It is used by u-case v4.
       def __attributes_data__
         @__attributes_data__ ||= {}
       end
@@ -29,7 +30,8 @@ module Micro
 
       def __call_after_attribute_assign__(attr_name, options); end
 
-      def __attributes_assign_after_inherit__(arg)
+      # NOTE: can't be renamed! It is used by u-case v4.
+      def __attributes_set_after_inherit__(arg)
         arg.each { |key, val| __attribute_assign(key, true, default: val) }
       end
 
@@ -54,6 +56,7 @@ module Micro
         end
       end
 
+      # NOTE: can't be renamed! It is used by u-case v4.
       module ForSubclasses
         WRONG_NUMBER_OF_ARGS = 'wrong number of arguments (given 0, expected 1 or more)'.freeze
 
