@@ -63,6 +63,10 @@ module Micro
       end
     end
 
+    def defined_attributes
+      @defined_attributes ||= self.class.attributes
+    end
+
     protected
 
       def attributes=(arg)
@@ -74,6 +78,18 @@ module Micro
       end
 
     private
+
+      ExtractAttribute = -> (other, key) {
+        return Utils::HashAccess.(other, key) if other.respond_to?(:[])
+
+        other.public_send(key) if other.respond_to?(key)
+      }
+
+      def extract_attributes_from(other)
+        defined_attributes.each_with_object({}) do |key, memo|
+          memo[key] = ExtractAttribute.(other, key)
+        end
+      end
 
       def __attributes
         @__attributes ||= {}
