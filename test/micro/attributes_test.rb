@@ -174,6 +174,20 @@ class Micro::AttributesTest < Minitest::Test
 
   # ---
 
+  def test_instance_defined_attributes
+    bar = Bar.new(a: 'a')
+    foo = Foo.new(a: 'a')
+    baz = Baz.new(a: 'a')
+    foz = Foz.new(a: :a)
+
+    assert_equal(%w[a b], bar.defined_attributes)
+    assert_equal(%w[a b], foo.defined_attributes)
+    assert_equal(%w[a b c], baz.defined_attributes)
+    assert_equal(%w[a b c], foz.defined_attributes)
+  end
+
+  # ---
+
   def test_attribute?
     #
     # Classes
