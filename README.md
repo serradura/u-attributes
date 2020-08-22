@@ -451,6 +451,12 @@ Person.attribute?(:foo)  # false
 
 person = Person.new(age: 20)
 
+#---------------------#
+# #defined_attributes #
+#---------------------#
+
+person.defined_attributes # ['name', 'age']
+
 #---------------#
 # #attribute?() #
 #---------------#

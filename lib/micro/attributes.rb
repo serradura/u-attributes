@@ -63,6 +63,10 @@ module Micro
       end
     end
 
+    def defined_attributes
+      @defined_attributes ||= self.class.attributes
+    end
+
     protected
 
       def attributes=(arg)
@@ -82,7 +86,7 @@ module Micro
       }
 
       def extract_attributes_from(other)
-        self.class.attributes.each_with_object({}) do |key, memo|
+        defined_attributes.each_with_object({}) do |key, memo|
           memo[key] = ExtractAttribute.(other, key)
         end
       end
