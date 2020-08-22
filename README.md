@@ -34,6 +34,7 @@ So, if you change [[1](#with_attribute)] [[2](#with_attributes)] some object att
 - [Usage](#usage)
   - [How to define attributes?](#how-to-define-attributes)
     - [`Micro::Attributes#attributes=`](#microattributesattributes)
+      - [Is it possible to define an attribute as required?](#is-it-possible-to-define-an-attribute-as-required)
     - [`Micro::Attributes#attribute`](#microattributesattribute)
     - [`Micro::Attributes#attribute!`](#microattributesattribute-1)
   - [How to define multiple attributes?](#how-to-define-multiple-attributes)
@@ -84,9 +85,9 @@ gem 'u-attributes'
 
 ## How to define attributes?
 
-```ruby
-# By default you must to define the class constructor.
+By default, you must define the class constructor.
 
+```ruby
 class Person
   include Micro::Attributes
 
@@ -132,6 +133,27 @@ person = Person.new(age: 20)
 
 person.age  # 20
 person.name # John Doe
+```
+
+#### Is it possible to define an attribute as required?
+
+You only need to use the `required: true` option.
+
+But to this work, you need to assign the attributes using the [`#attributes=`](#microattributesattributes) method or the extensions: [initialize](#initialize-extension), [activemodel_validations](#activemodelvalidation-extension).
+
+```ruby
+class Person
+  include Micro::Attributes
+
+  attribute :age
+  attribute :name, required: true
+
+  def initialize(attributes)
+    self.attributes = attributes
+  end
+end
+
+Person.new(age: 32) # ArgumentError (missing keyword: :name)
 ```
 
 [⬆️ Back to Top](#table-of-contents-)
@@ -203,7 +225,7 @@ Use `Micro::Attributes.with(:initialize)` to define a constructor to assign the 
 class Person
   include Micro::Attributes.with(:initialize)
 
-  attribute :age
+  attribute :age, required: true
   attribute :name, default: 'John Doe'
 end
 
@@ -276,7 +298,9 @@ end
 
 ## The strict initializer
 
-Use `.with(initialize: :strict)` to forbids an instantiation without all the attribute keywords. e.g.
+Use `.with(initialize: :strict)` to forbids an instantiation without all the attribute keywords.
+
+In other words, it is equivalent to you define all the attributes using the [`required: true` option](#is-it-possible-to-define-an-attribute-as-required).
 
 ```ruby
 class StrictPerson
