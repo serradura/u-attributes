@@ -34,6 +34,7 @@ So, if you change [[1](#with_attribute)] [[2](#with_attributes)] some object att
 - [Usage](#usage)
   - [How to define attributes?](#how-to-define-attributes)
     - [`Micro::Attributes#attributes=`](#microattributesattributes)
+      - [How to extract attributes from an object or hash?](#how-to-extract-attributes-from-an-object-or-hash)
       - [Is it possible to define an attribute as required?](#is-it-possible-to-define-an-attribute-as-required)
     - [`Micro::Attributes#attribute`](#microattributesattribute)
     - [`Micro::Attributes#attribute!`](#microattributesattribute-1)
@@ -133,6 +134,45 @@ person = Person.new(age: 20)
 
 person.age  # 20
 person.name # John Doe
+```
+
+#### How to extract attributes from an object or hash?
+
+You can extract attributes using the `extract_attributes_from` method, it will try to fetch attributes from the
+object using either the `object[attribute_key]` accessor or the reader method `object.attribute_key`.
+
+```ruby
+class Person
+  include Micro::Attributes
+
+  attribute :age
+  attribute :name, default: 'John Doe'
+
+  def initialize(user:)
+    self.attributes = extract_attributes_from(user)
+  end
+end
+
+# extracting from an object
+
+class User
+  attr_accessor :age, :name
+end
+
+user = User.new
+user.age = 20
+
+person = Person.new(user: user)
+
+person.age  # 20
+person.name # John Doe
+
+# extracting from a hash
+
+another_person = Person.new(user: { age: 55, name: 'Julia Not Roberts' })
+
+another_person.age  # 55
+another_person.name # Julia Not Roberts
 ```
 
 #### Is it possible to define an attribute as required?

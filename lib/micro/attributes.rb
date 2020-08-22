@@ -75,6 +75,18 @@ module Micro
 
     private
 
+      ExtractAttribute = -> (other, key) {
+        return Utils::HashAccess.(other, key) if other.respond_to?(:[])
+
+        other.public_send(key) if other.respond_to?(key)
+      }
+
+      def extract_attributes_from(other)
+        self.class.attributes.each_with_object({}) do |key, memo|
+          memo[key] = ExtractAttribute.(other, key)
+        end
+      end
+
       def __attributes
         @__attributes ||= {}
       end

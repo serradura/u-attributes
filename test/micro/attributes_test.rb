@@ -284,6 +284,46 @@ class Micro::AttributesTest < Minitest::Test
 
   # ---
 
+  class Post
+    attr_reader :title, :published
+
+    def initialize(title:, published: false)
+      @title, @published = title, published
+    end
+  end
+
+  class ExtractingAttributes
+    include Micro::Attributes
+
+    attributes :title, :body, :published
+    attribute :category, default: :foods_and_drinks
+
+    def initialize(post)
+      self.attributes = extract_attributes_from(post)
+    end
+  end
+
+  def test_extract_attributes_using_readers
+    post = Post.new(title: 'Such post')
+    object = ExtractingAttributes.new(post)
+
+    assert_equal('Such post', object.title)
+    assert_nil(object.body)
+    assert_equal(false, object.published)
+    assert_equal(:foods_and_drinks, object.category)
+  end
+
+  def test_extract_attributes_using_hash_access
+    object = ExtractingAttributes.new({ title: "Melkor's demise", published: false })
+
+    assert_equal("Melkor's demise", object.title)
+    assert_nil(object.body)
+    assert_equal(false, object.published)
+    assert_equal(:foods_and_drinks, object.category)
+  end
+
+  # ---
+
   begin
     class InvalidAttributesDefinition
       include Micro::Attributes
