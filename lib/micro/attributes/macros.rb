@@ -55,7 +55,9 @@ module Micro
 
       # NOTE: can't be renamed! It is used by u-case v4.
       def __attributes_set_after_inherit__(arg)
-        arg.each { |key, val| __attribute_assign(key, true, default: val) }
+        arg.each do |key, val|
+          __attribute_assign(key, true, val ? { default: val } : {})
+        end
       end
 
       def attribute?(name)

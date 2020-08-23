@@ -1,5 +1,7 @@
 source 'https://rubygems.org'
 
+gem 'u-case', '~> 4.0'
+
 activemodel_version = ENV.fetch('ACTIVEMODEL_VERSION', '6.1')
 
 activemodel = case activemodel_version
