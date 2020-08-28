@@ -16,7 +16,7 @@ class Micro::Attributes::Features::ActiveModelValidationsTest < MiniTest::Test
     require 'active_model/validations'
 
     class A
-      include Micro::Attributes.with(:initialize, :activemodel_validations)
+      include Micro::Attributes.with(:activemodel_validations)
 
       attribute :a, validates: { presence: true }
     end
