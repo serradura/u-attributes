@@ -72,9 +72,13 @@ module Micro
         return __attributes.to_a if args.empty?
 
         args.flatten!
+
+        options =
+          args.size > 1 && args.last.is_a?(::Hash) ? args.pop : Kind::Empty::HASH
+
         args.each do |arg|
           if arg.is_a?(String) || arg.is_a?(Symbol)
-            __attribute_assign(arg, false, Kind::Empty::HASH)
+            __attribute_assign(arg, false, options)
           else
             raise Kind::Error.new('String/Symbol'.freeze, arg)
           end
