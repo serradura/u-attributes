@@ -320,10 +320,9 @@ class Person
 end
 ```
 
-There are 3 different strategies to define default values.
+There are two different strategies to define default values.
 1. Pass a regular object, like in the previous example.
 2. Pass a `proc`/`lambda`, and if it has an argument you will receive the attribute value to do something before assign it.
-3. Pass a **callable**, that is, a `class`, `module` or `instance` which responds to the `call` method. The behavior will be like the previous item (`proc`/`lambda`).
 
 ```ruby
 class Person
