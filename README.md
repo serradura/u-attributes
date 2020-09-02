@@ -75,7 +75,7 @@ gem 'u-attributes'
 
 | u-attributes   | branch  | ruby     |  activemodel  |
 | -------------- | ------- | -------- | ------------- |
-| 2.1.1          | main    | >= 2.2.0 | >= 3.2, < 6.1 |
+| 2.2.0          | main    | >= 2.2.0 | >= 3.2, < 6.1 |
 | 1.2.0          | v1.x    | >= 2.2.0 | >= 3.2, < 6.1 |
 
 > **Note**: The activemodel is an optional dependency, this module [can be enabled](#activemodelvalidation-extension) to validate the attributes.
