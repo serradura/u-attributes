@@ -16,11 +16,7 @@ class Micro::Attributes::Features::InitializeTest < Minitest::Test
     attribute 'c', default: 'C'
   end
 
-  class BValue
-    def self.call(value)
-      value || 'B'
-    end
-  end
+  BValue = Proc.new { |value| value || 'B' }
 
   class Buz
     include Micro::Attributes
