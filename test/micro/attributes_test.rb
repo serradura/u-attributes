@@ -304,6 +304,12 @@ class Micro::AttributesTest < Minitest::Test
     def initialize(title:, published: false)
       @title, @published = title, published
     end
+
+    def [](name)
+      return if String(name) !~ /title|published/
+
+      raise NotImplementedError
+    end
   end
 
   class ExtractingAttributes
