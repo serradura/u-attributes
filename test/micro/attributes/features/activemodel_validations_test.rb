@@ -62,5 +62,56 @@ class Micro::Attributes::Features::ActiveModelValidationsTest < MiniTest::Test
       assert_equal("C can't be blank", err2.message)
     end
 
+    class Add
+      include Micro::Attributes.with(:activemodel_validations)
+
+      attribute :a, default: 1, validates: { kind: Numeric }
+      attribute :b, default: 1, validates: { kind: Numeric }
+
+      def call
+        return 0 if errors.present?
+
+        a + b
+      end
+    end
+
+    def test_defaults_defined_via_the_attribute_method
+      assert_equal(1, Add.new({}).call)
+      assert_equal(3, Add.new(a: 2).call)
+      assert_equal(4, Add.new(b: 3).call)
+      assert_equal(5, Add.new(a: 2, b: 3).call)
+
+      # --
+
+      assert_equal(0, Add.new(a: '2').call)
+      assert_equal(0, Add.new(b: '3').call)
+      assert_equal(0, Add.new(a: /2/, b: 3).call)
+    end
+
+    class Sum
+      include Micro::Attributes.with(:initialize, :activemodel_validations)
+
+      attributes :a, :b, default: 2, validates: { kind: Numeric }
+
+      def call
+        return 0 if errors.present?
+
+        a + b
+      end
+    end
+
+    def test_defaults_defined_via_the_attribute_method
+      assert_equal(4, Sum.new({}).call)
+      assert_equal(3, Sum.new(a: 1).call)
+      assert_equal(5, Sum.new(b: 3).call)
+      assert_equal(5, Sum.new(a: 2, b: 3).call)
+
+      # --
+
+      assert_equal(0, Sum.new(a: '2').call)
+      assert_equal(0, Sum.new(b: '3').call)
+      assert_equal(0, Sum.new(a: /2/, b: 3).call)
+    end
+
   end
 end

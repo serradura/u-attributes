@@ -18,7 +18,7 @@ module Micro::Attributes
           validate, validates = options.values_at(:validate, :validates)
 
           self.validate(validate) if validate
-          self.validates(attr_name, validates) if validates
+          self.validates(attr_name, validates.dup) if validates
         end
       end
 
