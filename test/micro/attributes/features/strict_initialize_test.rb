@@ -16,11 +16,7 @@ class Micro::Attributes::Features::StrictInitializeTest < Minitest::Test
     attribute 'c', default: 'C'
   end
 
-  class BValue
-    def self.call(value)
-      value || 'B'
-    end
-  end
+  BValue = lambda { |value| value || 'B' }
 
   class Buz
     include Micro::Attributes

@@ -88,10 +88,8 @@ module Micro
       end
 
       FetchValueToAssign = -> (value, default) do
-        if default.respond_to?(:call)
-          callable = default.is_a?(Proc) ? default : default.method(:call)
-
-          callable.arity > 0 ? callable.call(value) : callable.call
+        if default.is_a?(Proc)
+          default.arity > 0 ? default.call(value) : default.call
         else
           value.nil? ? default : value
         end
