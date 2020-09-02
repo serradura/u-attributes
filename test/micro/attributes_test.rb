@@ -86,11 +86,7 @@ class Micro::AttributesTest < Minitest::Test
 
   # ---
 
-  class FalseValue
-    def self.call
-      false
-    end
-  end
+  FalseValue = proc { false }
 
   class Baz
     include Micro::Attributes.with(:initialize)
