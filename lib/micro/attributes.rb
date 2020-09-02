@@ -70,7 +70,7 @@ module Micro
     protected
 
       def attributes=(arg)
-        hash = Utils.stringify_hash_keys(arg)
+        hash = Utils::Hashes.stringify_keys(arg)
 
         __attributes_missing!(hash)
 
@@ -79,16 +79,8 @@ module Micro
 
     private
 
-      ExtractAttribute = -> (other, key) {
-        return Utils::HashAccess.(other, key) if other.respond_to?(:[])
-
-        other.public_send(key) if other.respond_to?(key)
-      }
-
       def extract_attributes_from(other)
-        defined_attributes.each_with_object({}) do |key, memo|
-          memo[key] = ExtractAttribute.(other, key)
-        end
+        Utils::ExtractAttribute.from(other, keys: defined_attributes)
       end
 
       def __attributes
