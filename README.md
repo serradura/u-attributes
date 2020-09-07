@@ -54,7 +54,7 @@ So, if you change [[1](#with_attribute)] [[2](#with_attributes)] some object att
       - [`#attributes(keys_as:)`](#attributeskeys_as)
       - [`#attributes(*names)`](#attributesnames)
       - [`#attributes([names])`](#attributesnames-1)
-      - [`#attributes(with:, without)`](#attributeswith-without)
+      - [`#attributes(with:, without:)`](#attributeswith-without)
     - [`#defined_attributes`](#defined_attributes)
 - [Built-in extensions](#built-in-extensions)
   - [Picking specific features](#picking-specific-features)
@@ -544,7 +544,7 @@ person.attributes([:age, 'last_name']) # {:age => 20, "last_name" => "Doe"}
 person.attributes([:age, 'last_name'], keys_as: Symbol) # {:age=>20, :last_name=>"Doe"}
 ```
 
-#### `#attributes(with:, without)`
+#### `#attributes(with:, without:)`
 
 Use the `with:` option to include any method value of the instance inside of the hash, and,
 you can use the `without:` option to exclude one or more attribute keys from the final hash.
