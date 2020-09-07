@@ -55,16 +55,32 @@ module Micro
       raise NameError, "undefined attribute `#{name}"
     end
 
+    def defined_attributes
+      @defined_attributes ||= self.class.attributes
+    end
+
     def attributes(*names)
       return __attributes if names.empty?
 
-      names.each_with_object({}) do |name, memo|
-        memo[name] = attribute(name) if attribute?(name)
-      end
-    end
+      options = names.last.is_a?(Hash) ? names.pop : Kind::Empty::HASH
 
-    def defined_attributes
-      @defined_attributes ||= self.class.attributes
+      names.flatten!
+
+      without_option = Array(options.fetch(:without, Kind::Empty::ARRAY))
+
+      keys = names.empty? ? defined_attributes - without_option.map(&:to_s) : names - without_option
+
+      data = keys.each_with_object({}) { |key, memo| memo[key] = attribute(key) if attribute?(key) }
+
+      with_option = Array(options.fetch(:with, Kind::Empty::ARRAY))
+
+      unless with_option.empty?
+        extra = with_option.each_with_object({}) { |key, memo| memo[key.to_s] = public_send(key) }
+
+        data.merge!(extra)
+      end
+
+      Utils::Hashes.keys_as(options[:keys_as], data)
     end
 
     protected
