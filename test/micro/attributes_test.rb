@@ -163,9 +163,89 @@ class Micro::AttributesTest < Minitest::Test
     foz = Foz.new(a: 'a')
 
     assert_equal({a: 'a'}, bar.attributes(:a))
-    assert_equal({'a'=>'a', 'b'=>nil}, foo.attributes('a', 'b'))
+    assert_equal({'a'=>'a', 'b'=>nil}, foo.attributes(['a', 'b']))
     assert_equal({'b'=>false, 'c'=>'C'}, baz.attributes('b', 'c'))
     assert_equal({b: '_b', c: 'c_', a: 'a'}, foz.attributes(:b, :c, :a))
+  end
+
+  class Person
+    include Micro::Attributes.with(:initialize)
+
+    attribute :first_name, default: 'John'
+    attribute :last_name, default: 'Doe'
+
+    def name
+      "#{first_name} #{last_name}"
+    end
+  end
+
+  def test_the_slicing_options
+    person1 = Person.new({})
+    person2 = Person.new(first_name: 'Rodrigo', last_name: 'Rodrigues')
+
+    # --
+
+    assert_equal({'first_name' => 'John'   , 'last_name' => 'Doe'      }, person1.attributes)
+    assert_equal({'first_name' => 'Rodrigo', 'last_name' => 'Rodrigues'}, person2.attributes)
+
+    # --
+
+    assert_equal({'first_name' => 'John'   , 'last_name' => 'Doe'      }, person1.attributes(keys_as: String))
+    assert_equal({'first_name' => 'Rodrigo', 'last_name' => 'Rodrigues'}, person2.attributes(keys_as: String))
+
+    assert_equal({:first_name => 'John'   , :last_name => 'Doe'      }, person1.attributes(keys_as: Symbol))
+    assert_equal({:first_name => 'Rodrigo', :last_name => 'Rodrigues'}, person2.attributes(keys_as: Symbol))
+
+
+    assert_equal({'last_name'  => 'Doe'     }, person1.attributes([:last_name], keys_as: String))
+    assert_equal({'first_name' => 'Rodrigo' }, person2.attributes(:first_name, keys_as: String))
+
+    assert_equal({:last_name  => 'Doe'     }, person1.attributes('last_name', keys_as: Symbol))
+    assert_equal({:first_name => 'Rodrigo' }, person2.attributes(['first_name'], keys_as: Symbol))
+
+    # --
+
+    assert_equal({'first_name' => 'John'   }, person1.attributes(without: :last_name))
+    assert_equal({'first_name' => 'Rodrigo'}, person2.attributes(without: [:last_name]))
+
+    assert_equal({}, person1.attributes(without: [:first_name, :last_name]))
+    assert_equal({}, person2.attributes(without: [:first_name, :last_name]))
+
+    # --
+
+    assert_equal({'first_name' => 'John'   , 'last_name' => 'Doe'      , 'name'=> 'John Doe'          }, person1.attributes(with: :name))
+    assert_equal({'first_name' => 'John'   , 'last_name' => 'Doe'      , 'name'=> 'John Doe'          }, person1.attributes(with: 'name'))
+    assert_equal({'first_name' => 'Rodrigo', 'last_name' => 'Rodrigues', 'name' => 'Rodrigo Rodrigues'}, person2.attributes(with: [:name]))
+    assert_equal({'first_name' => 'Rodrigo', 'last_name' => 'Rodrigues', 'name' => 'Rodrigo Rodrigues'}, person2.attributes(with: ['name']))
+
+    # --
+
+    assert_equal({:first_name  => 'John'   , 'name' => 'John Doe'         }, person1.attributes(:first_name, with: :name))
+    assert_equal({'first_name' => 'John'   , 'name' => 'John Doe'         }, person1.attributes('first_name', with: 'name'))
+    assert_equal({:first_name  => 'Rodrigo', 'name' => 'Rodrigo Rodrigues'}, person2.attributes(:first_name, with: ['name']))
+    assert_equal({'first_name' => 'Rodrigo', 'name' => 'Rodrigo Rodrigues'}, person2.attributes('first_name', with: [:name]))
+
+    assert_equal({'first_name' => 'John'   , 'name' => 'John Doe'         }, person1.attributes(with: [:name], without: :last_name))
+    assert_equal({'first_name' => 'John'   , 'name' => 'John Doe'         }, person1.attributes(with: ['name'], without: 'last_name'))
+    assert_equal({'first_name' => 'Rodrigo', 'name' => 'Rodrigo Rodrigues'}, person2.attributes(with: ['name'], without: 'last_name'))
+    assert_equal({'first_name' => 'Rodrigo', 'name' => 'Rodrigo Rodrigues'}, person2.attributes(with: [:name], without: :last_name))
+
+    # --
+
+    assert_equal({:first_name => 'John'   , :name => 'John Doe'         }, person1.attributes(:first_name, with: :name, keys_as: Symbol))
+    assert_equal({:first_name => 'John'   , :name => 'John Doe'         }, person1.attributes('first_name', with: 'name', keys_as: Symbol))
+    assert_equal({:first_name => 'Rodrigo', :name => 'Rodrigo Rodrigues'}, person2.attributes(:first_name, with: ['name'], keys_as: Symbol))
+    assert_equal({:first_name => 'Rodrigo', :name => 'Rodrigo Rodrigues'}, person2.attributes('first_name', with: [:name], keys_as: Symbol))
+
+    assert_equal({:first_name => 'John'   , :name => 'John Doe'         }, person1.attributes(with: [:name], without: :last_name, keys_as: Symbol))
+    assert_equal({:first_name => 'John'   , :name => 'John Doe'         }, person1.attributes(with: ['name'], without: 'last_name', keys_as: Symbol))
+    assert_equal({:first_name => 'Rodrigo', :name => 'Rodrigo Rodrigues'}, person2.attributes(with: ['name'], without: 'last_name', keys_as: Symbol))
+    assert_equal({:first_name => 'Rodrigo', :name => 'Rodrigo Rodrigues'}, person2.attributes(with: [:name], without: :last_name, keys_as: Symbol))
+
+    # --
+
+    assert_equal({'first_name' => 'John'   , 'name' => 'John Doe'         }, person1.attributes(:first_name, with: :name, keys_as: String))
+    assert_equal({'first_name' => 'Rodrigo', 'name' => 'Rodrigo Rodrigues'}, person2.attributes(:first_name, with: ['name'], keys_as: String))
   end
 
   # ---

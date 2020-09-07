@@ -47,6 +47,15 @@ So, if you change [[1](#with_attribute)] [[2](#with_attributes)] some object att
   - [Is it possible to inherit the attributes?](#is-it-possible-to-inherit-the-attributes)
     - [`.attribute!()`](#attribute)
   - [How to query the attributes?](#how-to-query-the-attributes)
+    - [`.attributes`](#attributes)
+    - [`.attribute?()`](#attribute-1)
+    - [`#attribute?()`](#attribute-2)
+    - [`#attributes()`](#attributes-1)
+      - [`#attributes(keys_as:)`](#attributeskeys_as)
+      - [`#attributes(*names)`](#attributesnames)
+      - [`#attributes([names])`](#attributesnames-1)
+      - [`#attributes(with:, without)`](#attributeswith-without)
+    - [`#defined_attributes`](#defined_attributes)
 - [Built-in extensions](#built-in-extensions)
   - [Picking specific features](#picking-specific-features)
     - [`Micro::Attributes.with`](#microattributeswith)
@@ -75,7 +84,7 @@ gem 'u-attributes'
 
 | u-attributes   | branch  | ruby     |  activemodel  |
 | -------------- | ------- | -------- | ------------- |
-| 2.2.0          | main    | >= 2.2.0 | >= 3.2, < 6.1 |
+| 2.3.0          | main    | >= 2.2.0 | >= 3.2, < 6.1 |
 | 1.2.0          | v1.x    | >= 2.2.0 | >= 3.2, < 6.1 |
 
 > **Note**: The activemodel is an optional dependency, this module [can be enabled](#activemodelvalidation-extension) to validate the attributes.
@@ -419,69 +428,152 @@ beta_person.age  # 0
 
 ## How to query the attributes?
 
+All of the methods that will be explained can be used with any of the built-in extensions.
+
+**PS:** We will use the class below for all of the next examples.
+
 ```ruby
 class Person
   include Micro::Attributes
 
   attribute :age
-  attribute :name, default: 'John Doe'
+  attribute :first_name, default: 'John'
+  attribute :last_name, default: 'Doe'
 
   def initialize(options)
     self.attributes = options
   end
+
+  def name
+    "#{first_name} #{last_name}"
+  end
 end
+```
 
-#---------------#
-# .attributes() #
-#---------------#
+### `.attributes`
 
-Person.attributes # ['name', 'age']
+Listing all the class attributes.
 
-#---------------#
-# .attribute?() #
-#---------------#
+```ruby
+Person.attributes # ["age", "first_name", "last_name"]
+```
 
-Person.attribute?(:name)  # true
-Person.attribute?('name') # true
+### `.attribute?()`
+
+Checking the existence of some attribute.
+
+```ruby
+Person.attribute?(:first_name)  # true
+Person.attribute?('first_name') # true
+
 Person.attribute?('foo') # false
 Person.attribute?(:foo)  # false
+```
 
-# ---
+### `#attribute?()`
 
+Checking the existence of some attribute in an instance.
+
+```ruby
 person = Person.new(age: 20)
-
-#---------------------#
-# #defined_attributes #
-#---------------------#
-
-person.defined_attributes # ['name', 'age']
-
-#---------------#
-# #attribute?() #
-#---------------#
 
 person.attribute?(:name)  # true
 person.attribute?('name') # true
+
 person.attribute?('foo') # false
 person.attribute?(:foo)  # false
+```
 
-#---------------#
-# #attributes() #
-#---------------#
+### `#attributes()`
 
-person.attributes                   # {'age'=>20, 'name'=>'John Doe'}
-Person.new(name: 'John').attributes # {'age'=>nil, 'name'=>'John'}
+Fetching all the attributes with their values.
 
-#---------------------#
-# #attributes(*names) #
-#---------------------#
+```ruby
+person1 = Person.new(age: 20)
+person1.attributes # {"age"=>20, "first_name"=>"John", "last_name"=>"Doe"}
 
-# Slices the attributes to include only the given keys.
-# Returns a hash containing the given keys (in their types).
+person2 = Person.new(first_name: 'Rodrigo', last_name: 'Rodrigues')
+person2.attributes # {"age"=>nil, "first_name"=>"Rodrigo", "last_name"=>"Rodrigues"}
+```
 
-person.attributes(:age)             # {age: 20}
-person.attributes(:age, :name)      # {age: 20, name: 'John Doe'}
-person.attributes('age', 'name')    # {'age'=>20, 'name'=>'John Doe'}
+#### `#attributes(keys_as:)`
+
+Use the `keys_as:` option with `Symbol` or `String` to transform the attributes hash keys.
+
+```ruby
+person1 = Person.new(age: 20)
+person1.attributes(keys_as: Symbol) # {:age=>20, :first_name=>"John", :last_name=>"Doe"}
+
+person2 = Person.new(first_name: 'Rodrigo', last_name: 'Rodrigues')
+person2.attributes(keys_as: String) # {"age"=>nil, "first_name"=>"Rodrigo", "last_name"=>"Rodrigues"}
+```
+
+#### `#attributes(*names)`
+
+Slices the attributes to include only the given keys (in their types).
+
+```ruby
+person = Person.new(age: 20)
+
+person.attributes(:age)               # {:age => 20}
+person.attributes(:age, :first_name)  # {:age => 20, :first_name => "John"}
+person.attributes('age', 'last_name') # {"age" => 20, "last_name" => "Doe"}
+
+person.attributes(:age, 'last_name') # {:age => 20, "last_name" => "Doe"}
+
+# You could also use the keys_as: option to ensure the same type for all of the hash keys.
+
+person.attributes(:age, 'last_name', keys_as: Symbol) # {:age=>20, :last_name=>"Doe"}
+```
+
+#### `#attributes([names])`
+
+As the previous example, this methods accepts a list of keys to slice the attributes.
+
+```ruby
+person = Person.new(age: 20)
+
+person.attributes([:age])               # {:age => 20}
+person.attributes([:age, :first_name])  # {:age => 20, :first_name => "John"}
+person.attributes(['age', 'last_name']) # {"age" => 20, "last_name" => "Doe"}
+
+person.attributes([:age, 'last_name']) # {:age => 20, "last_name" => "Doe"}
+
+# You could also use the keys_as: option to ensure the same type for all of the hash keys.
+
+person.attributes([:age, 'last_name'], keys_as: Symbol) # {:age=>20, :last_name=>"Doe"}
+```
+
+#### `#attributes(with:, without)`
+
+Use the `with:` option to include any method value of the instance inside of the hash, and,
+you can use the `without:` option to exclude one or more attribute keys from the final hash.
+
+```ruby
+person = Person.new(age: 20)
+
+person.attributes(without: :age)               # {"first_name"=>"John", "last_name"=>"Doe"}
+person.attributes(without: [:age, :last_name]) # {"first_name"=>"John"}
+
+person.attributes(with: [:name], without: [:first_name, :last_name]) # {"age"=>20, "name"=>"John Doe"}
+
+# To achieves the same output of the previous example, use the attribute names to slice only them.
+
+person.attributes(:age, with: [:name]) # {:age=>20, "name"=>"John Doe"}
+
+# You could also use the keys_as: option to ensure the same type for all of the hash keys.
+
+person.attributes(:age, with: [:name], keys_as: Symbol) # {:age=>20, :name=>"John Doe"}
+```
+
+### `#defined_attributes`
+
+Listing all the available attributes.
+
+```ruby
+person = Person.new(age: 20)
+
+person.defined_attributes # ["age", "first_name", "last_name"]
 ```
 
 [⬆️ Back to Top](#table-of-contents-)
