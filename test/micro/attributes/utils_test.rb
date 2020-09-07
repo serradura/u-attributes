@@ -27,7 +27,31 @@ class Micro::Attributes::UtilsTest < Minitest::Test
     end
   end
 
-  # --
+  def test_symbolize_hash_keys
+    err = assert_raises(Kind::Error) { Micro::Attributes::Utils::Hashes.symbolize_keys([]) }
+
+    assert_equal('[] expected to be a kind of Hash', err.message)
+
+    # --
+
+    hash = { 'a' => 1 }
+
+    new_hash = Micro::Attributes::Utils::Hashes.symbolize_keys(hash)
+
+    refute_same(hash, new_hash)
+    assert_equal({ :a => 1 }, new_hash)
+
+    if hash.respond_to?(:transform_keys)
+      def hash.respond_to?(method)
+        method == :transform_keys ? false : super
+      end
+
+      new_hash = Micro::Attributes::Utils::Hashes.symbolize_keys(hash)
+
+      refute_same(hash, new_hash)
+      assert_equal({ :a => 1 }, new_hash)
+    end
+  end
 
   def test_allow_hash_access_with_string_or_symbol_keys
     hash = { :symbol => 'symbol', 'string' => 'string', false: false }

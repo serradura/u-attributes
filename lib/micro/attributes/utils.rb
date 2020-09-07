@@ -12,6 +12,15 @@ module Micro::Attributes
         hash.each_with_object({}) { |(key, val), memo| memo[key.to_s] = val }
       end
 
+      def self.symbolize_keys(arg)
+        hash = Kind::Of.(::Hash, arg)
+
+        return hash if hash.empty?
+        return hash.transform_keys(&:to_sym) if hash.respond_to?(:transform_keys)
+
+        hash.each_with_object({}) { |(key, val), memo| memo[key.to_sym] = val }
+      end
+
       def self.get(hash, key)
         value = hash[key.to_s]
 
