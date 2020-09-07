@@ -21,6 +21,15 @@ module Micro::Attributes
         hash.each_with_object({}) { |(key, val), memo| memo[key.to_sym] = val }
       end
 
+      def self.keys_as(type, hash)
+        return Kind::Of.(::Hash, hash) unless type
+
+        return symbolize_keys(hash) if type == Symbol
+        return stringify_keys(hash) if type == String
+
+        raise ArgumentError, 'first argument must be the class String or Symbol'.freeze
+      end
+
       def self.get(hash, key)
         value = hash[key.to_s]
 
