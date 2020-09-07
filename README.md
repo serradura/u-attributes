@@ -555,7 +555,7 @@ person = Person.new(age: 20)
 person.attributes(without: :age)               # {"first_name"=>"John", "last_name"=>"Doe"}
 person.attributes(without: [:age, :last_name]) # {"first_name"=>"John"}
 
-person.attributes(with: [:name], without: [:first_name, :last_name]) # {:age=>20, "name"=>"John Doe"}
+person.attributes(with: [:name], without: [:first_name, :last_name]) # {"age"=>20, "name"=>"John Doe"}
 
 # To achieves the same output of the previous example, use the attribute names to slice only them.
 
@@ -563,7 +563,7 @@ person.attributes(:age, with: [:name]) # {:age=>20, "name"=>"John Doe"}
 
 # You could also use the keys_as: option to ensure the same type for all of the hash keys.
 
-person.attributes([:age], with: [:name], keys_as: Symbol) # {:age=>20, :name=>"John Doe"}
+person.attributes(:age, with: [:name], keys_as: Symbol) # {:age=>20, :name=>"John Doe"}
 ```
 
 ### `#defined_attributes`
