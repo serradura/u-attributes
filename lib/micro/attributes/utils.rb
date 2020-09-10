@@ -30,7 +30,7 @@ module Micro::Attributes
         raise ArgumentError, 'argument must be one of these values: :symbol, :string, Symbol, String'.freeze
       end
 
-      def self.get(hash, key)
+      def self.assoc(hash, key)
         value = hash[key.to_s]
 
         value.nil? ? hash[key.to_sym] : value
@@ -41,7 +41,7 @@ module Micro::Attributes
       def self.call(object, key:)
         return object.public_send(key) if object.respond_to?(key)
 
-        Hashes.get(object, key) if object.respond_to?(:[])
+        Hashes.assoc(object, key) if object.respond_to?(:[])
       end
 
       def self.from(object, keys:)

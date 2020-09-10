@@ -89,13 +89,13 @@ class Micro::Attributes::UtilsTest < Minitest::Test
   def test_allow_hash_access_with_string_or_symbol_keys
     hash = { :symbol => 'symbol', 'string' => 'string', false: false }
 
-    assert_equal('symbol', Micro::Attributes::Utils::Hashes.get(hash, 'symbol'))
-    assert_equal('symbol', Micro::Attributes::Utils::Hashes.get(hash, :symbol))
-    assert_equal('string', Micro::Attributes::Utils::Hashes.get(hash, 'string'))
-    assert_equal('string', Micro::Attributes::Utils::Hashes.get(hash, :string))
-    assert_equal(false, Micro::Attributes::Utils::Hashes.get(hash, 'false'))
-    assert_equal(false, Micro::Attributes::Utils::Hashes.get(hash, :false))
-    assert_nil(Micro::Attributes::Utils::Hashes.get(hash, 'not_here'))
-    assert_nil(Micro::Attributes::Utils::Hashes.get(hash, :not_here))
+    assert_equal('symbol', Micro::Attributes::Utils::Hashes.assoc(hash, 'symbol'))
+    assert_equal('symbol', Micro::Attributes::Utils::Hashes.assoc(hash, :symbol))
+    assert_equal('string', Micro::Attributes::Utils::Hashes.assoc(hash, 'string'))
+    assert_equal('string', Micro::Attributes::Utils::Hashes.assoc(hash, :string))
+    assert_equal(false, Micro::Attributes::Utils::Hashes.assoc(hash, 'false'))
+    assert_equal(false, Micro::Attributes::Utils::Hashes.assoc(hash, :false))
+    assert_nil(Micro::Attributes::Utils::Hashes.assoc(hash, 'not_here'))
+    assert_nil(Micro::Attributes::Utils::Hashes.assoc(hash, :not_here))
   end
 end
