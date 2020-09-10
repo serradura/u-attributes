@@ -232,20 +232,24 @@ class Micro::AttributesTest < Minitest::Test
 
     # --
 
-    assert_equal({:first_name => 'John'   , :name => 'John Doe'         }, person1.attributes(:first_name, with: :name, keys_as: Symbol))
-    assert_equal({:first_name => 'John'   , :name => 'John Doe'         }, person1.attributes('first_name', with: 'name', keys_as: Symbol))
-    assert_equal({:first_name => 'Rodrigo', :name => 'Rodrigo Rodrigues'}, person2.attributes(:first_name, with: ['name'], keys_as: Symbol))
-    assert_equal({:first_name => 'Rodrigo', :name => 'Rodrigo Rodrigues'}, person2.attributes('first_name', with: [:name], keys_as: Symbol))
+    [Symbol, :symbol].each do |keys_as|
+      assert_equal({:first_name => 'John'   , :name => 'John Doe'         }, person1.attributes(:first_name, with: :name, keys_as: keys_as))
+      assert_equal({:first_name => 'John'   , :name => 'John Doe'         }, person1.attributes('first_name', with: 'name', keys_as: keys_as))
+      assert_equal({:first_name => 'Rodrigo', :name => 'Rodrigo Rodrigues'}, person2.attributes(:first_name, with: ['name'], keys_as: keys_as))
+      assert_equal({:first_name => 'Rodrigo', :name => 'Rodrigo Rodrigues'}, person2.attributes('first_name', with: [:name], keys_as: keys_as))
 
-    assert_equal({:first_name => 'John'   , :name => 'John Doe'         }, person1.attributes(with: [:name], without: :last_name, keys_as: Symbol))
-    assert_equal({:first_name => 'John'   , :name => 'John Doe'         }, person1.attributes(with: ['name'], without: 'last_name', keys_as: Symbol))
-    assert_equal({:first_name => 'Rodrigo', :name => 'Rodrigo Rodrigues'}, person2.attributes(with: ['name'], without: 'last_name', keys_as: Symbol))
-    assert_equal({:first_name => 'Rodrigo', :name => 'Rodrigo Rodrigues'}, person2.attributes(with: [:name], without: :last_name, keys_as: Symbol))
+      assert_equal({:first_name => 'John'   , :name => 'John Doe'         }, person1.attributes(with: [:name], without: :last_name, keys_as: keys_as))
+      assert_equal({:first_name => 'John'   , :name => 'John Doe'         }, person1.attributes(with: ['name'], without: 'last_name', keys_as: keys_as))
+      assert_equal({:first_name => 'Rodrigo', :name => 'Rodrigo Rodrigues'}, person2.attributes(with: ['name'], without: 'last_name', keys_as: keys_as))
+      assert_equal({:first_name => 'Rodrigo', :name => 'Rodrigo Rodrigues'}, person2.attributes(with: [:name], without: :last_name, keys_as: keys_as))
+    end
 
     # --
 
-    assert_equal({'first_name' => 'John'   , 'name' => 'John Doe'         }, person1.attributes(:first_name, with: :name, keys_as: String))
-    assert_equal({'first_name' => 'Rodrigo', 'name' => 'Rodrigo Rodrigues'}, person2.attributes(:first_name, with: ['name'], keys_as: String))
+    [String, :string].each do |keys_as|
+      assert_equal({'first_name' => 'John'   , 'name' => 'John Doe'         }, person1.attributes(:first_name, with: :name, keys_as: keys_as))
+      assert_equal({'first_name' => 'Rodrigo', 'name' => 'Rodrigo Rodrigues'}, person2.attributes(:first_name, with: ['name'], keys_as: keys_as))
+    end
   end
 
   # ---

@@ -74,8 +74,8 @@ class Micro::Attributes::UtilsTest < Minitest::Test
     err4 = assert_raises(ArgumentError) { Micro::Attributes::Utils::Hashes.keys_as(Hash, hash1) }
     err5 = assert_raises(ArgumentError) { Micro::Attributes::Utils::Hashes.keys_as(Array, hash2) }
 
-    assert_equal('first argument must be the class String or Symbol', err4.message)
-    assert_equal('first argument must be the class String or Symbol', err5.message)
+    assert_equal('argument must be one of these values: :symbol, :string, Symbol, String', err4.message)
+    assert_equal('argument must be one of these values: :symbol, :string, Symbol, String', err5.message)
 
     # --
 

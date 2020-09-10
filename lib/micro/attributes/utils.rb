@@ -24,10 +24,10 @@ module Micro::Attributes
       def self.keys_as(type, hash)
         return Kind::Of.(::Hash, hash) unless type
 
-        return symbolize_keys(hash) if type == Symbol
-        return stringify_keys(hash) if type == String
+        return symbolize_keys(hash) if type == Symbol || type == :symbol
+        return stringify_keys(hash) if type == String || type == :string
 
-        raise ArgumentError, 'first argument must be the class String or Symbol'.freeze
+        raise ArgumentError, 'argument must be one of these values: :symbol, :string, Symbol, String'.freeze
       end
 
       def self.get(hash, key)
