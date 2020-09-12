@@ -3,8 +3,12 @@
 module Micro::Attributes
   module Utils
     module Hashes
+      def self.kind(hash)
+        Kind::Of.(::Hash, hash)
+      end
+
       def self.stringify_keys(arg)
-        hash = Kind::Of.(::Hash, arg)
+        hash = kind(arg)
 
         return hash if hash.empty?
         return hash.transform_keys(&:to_s) if hash.respond_to?(:transform_keys)
@@ -13,7 +17,7 @@ module Micro::Attributes
       end
 
       def self.symbolize_keys(arg)
-        hash = Kind::Of.(::Hash, arg)
+        hash = kind(arg)
 
         return hash if hash.empty?
         return hash.transform_keys(&:to_sym) if hash.respond_to?(:transform_keys)
@@ -22,7 +26,7 @@ module Micro::Attributes
       end
 
       def self.keys_as(type, hash)
-        return Kind::Of.(::Hash, hash) unless type
+        return kind(hash) unless type
 
         return symbolize_keys(hash) if type == Symbol || type == :symbol
         return stringify_keys(hash) if type == String || type == :string
