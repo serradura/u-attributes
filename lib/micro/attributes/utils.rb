@@ -3,8 +3,12 @@
 module Micro::Attributes
   module Utils
     module Hashes
+      def self.kind(hash)
+        Kind::Of.(::Hash, hash)
+      end
+
       def self.stringify_keys(arg)
-        hash = Kind::Of.(::Hash, arg)
+        hash = kind(arg)
 
         return hash if hash.empty?
         return hash.transform_keys(&:to_s) if hash.respond_to?(:transform_keys)
@@ -13,7 +17,7 @@ module Micro::Attributes
       end
 
       def self.symbolize_keys(arg)
-        hash = Kind::Of.(::Hash, arg)
+        hash = kind(arg)
 
         return hash if hash.empty?
         return hash.transform_keys(&:to_sym) if hash.respond_to?(:transform_keys)
@@ -22,15 +26,15 @@ module Micro::Attributes
       end
 
       def self.keys_as(type, hash)
-        return Kind::Of.(::Hash, hash) unless type
+        return kind(hash) unless type
 
-        return symbolize_keys(hash) if type == Symbol
-        return stringify_keys(hash) if type == String
+        return symbolize_keys(hash) if type == Symbol || type == :symbol
+        return stringify_keys(hash) if type == String || type == :string
 
-        raise ArgumentError, 'first argument must be the class String or Symbol'.freeze
+        raise ArgumentError, 'argument must be one of these values: :symbol, :string, Symbol, String'.freeze
       end
 
-      def self.get(hash, key)
+      def self.assoc(hash, key)
         value = hash[key.to_s]
 
         value.nil? ? hash[key.to_sym] : value
@@ -41,7 +45,7 @@ module Micro::Attributes
       def self.call(object, key:)
         return object.public_send(key) if object.respond_to?(key)
 
-        Hashes.get(object, key) if object.respond_to?(:[])
+        Hashes.assoc(object, key) if object.respond_to?(:[])
       end
 
       def self.from(object, keys:)

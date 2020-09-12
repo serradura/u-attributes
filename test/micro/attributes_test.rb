@@ -232,20 +232,24 @@ class Micro::AttributesTest < Minitest::Test
 
     # --
 
-    assert_equal({:first_name => 'John'   , :name => 'John Doe'         }, person1.attributes(:first_name, with: :name, keys_as: Symbol))
-    assert_equal({:first_name => 'John'   , :name => 'John Doe'         }, person1.attributes('first_name', with: 'name', keys_as: Symbol))
-    assert_equal({:first_name => 'Rodrigo', :name => 'Rodrigo Rodrigues'}, person2.attributes(:first_name, with: ['name'], keys_as: Symbol))
-    assert_equal({:first_name => 'Rodrigo', :name => 'Rodrigo Rodrigues'}, person2.attributes('first_name', with: [:name], keys_as: Symbol))
+    [Symbol, :symbol].each do |keys_as|
+      assert_equal({:first_name => 'John'   , :name => 'John Doe'         }, person1.attributes(:first_name, with: :name, keys_as: keys_as))
+      assert_equal({:first_name => 'John'   , :name => 'John Doe'         }, person1.attributes('first_name', with: 'name', keys_as: keys_as))
+      assert_equal({:first_name => 'Rodrigo', :name => 'Rodrigo Rodrigues'}, person2.attributes(:first_name, with: ['name'], keys_as: keys_as))
+      assert_equal({:first_name => 'Rodrigo', :name => 'Rodrigo Rodrigues'}, person2.attributes('first_name', with: [:name], keys_as: keys_as))
 
-    assert_equal({:first_name => 'John'   , :name => 'John Doe'         }, person1.attributes(with: [:name], without: :last_name, keys_as: Symbol))
-    assert_equal({:first_name => 'John'   , :name => 'John Doe'         }, person1.attributes(with: ['name'], without: 'last_name', keys_as: Symbol))
-    assert_equal({:first_name => 'Rodrigo', :name => 'Rodrigo Rodrigues'}, person2.attributes(with: ['name'], without: 'last_name', keys_as: Symbol))
-    assert_equal({:first_name => 'Rodrigo', :name => 'Rodrigo Rodrigues'}, person2.attributes(with: [:name], without: :last_name, keys_as: Symbol))
+      assert_equal({:first_name => 'John'   , :name => 'John Doe'         }, person1.attributes(with: [:name], without: :last_name, keys_as: keys_as))
+      assert_equal({:first_name => 'John'   , :name => 'John Doe'         }, person1.attributes(with: ['name'], without: 'last_name', keys_as: keys_as))
+      assert_equal({:first_name => 'Rodrigo', :name => 'Rodrigo Rodrigues'}, person2.attributes(with: ['name'], without: 'last_name', keys_as: keys_as))
+      assert_equal({:first_name => 'Rodrigo', :name => 'Rodrigo Rodrigues'}, person2.attributes(with: [:name], without: :last_name, keys_as: keys_as))
+    end
 
     # --
 
-    assert_equal({'first_name' => 'John'   , 'name' => 'John Doe'         }, person1.attributes(:first_name, with: :name, keys_as: String))
-    assert_equal({'first_name' => 'Rodrigo', 'name' => 'Rodrigo Rodrigues'}, person2.attributes(:first_name, with: ['name'], keys_as: String))
+    [String, :string].each do |keys_as|
+      assert_equal({'first_name' => 'John'   , 'name' => 'John Doe'         }, person1.attributes(:first_name, with: :name, keys_as: keys_as))
+      assert_equal({'first_name' => 'Rodrigo', 'name' => 'Rodrigo Rodrigues'}, person2.attributes(:first_name, with: ['name'], keys_as: keys_as))
+    end
   end
 
   # ---
@@ -434,5 +438,11 @@ class Micro::AttributesTest < Minitest::Test
     assert_instance_of(Kind::Error, @@__invalid_attributes_definition)
 
     assert_equal('{:foo=>:bar} expected to be a kind of String/Symbol', @@__invalid_attributes_definition.message)
+  end
+
+  def test_the_attributes_access
+    [Biz, Bar, Bar2, Bar3, Foo, Foz, ExtractingAttributes].each do |klass|
+      assert_equal(:indifferent, klass.attributes_access)
+    end
   end
 end
