@@ -67,6 +67,7 @@ So, if you change [[1](#with_attribute)] [[2](#with_attributes)] some object att
     - [Diff extension](#diff-extension)
     - [Initialize extension](#initialize-extension)
       - [Strict mode](#strict-mode)
+    - [Keys as symbol extension](#keys-as-symbol-extension)
 - [Development](#development)
 - [Contributing](#contributing)
 - [License](#license)
@@ -84,7 +85,7 @@ gem 'u-attributes'
 
 | u-attributes   | branch  | ruby     |  activemodel  |
 | -------------- | ------- | -------- | ------------- |
-| 2.3.0          | main    | >= 2.2.0 | >= 3.2, < 6.1 |
+| 2.4.0          | main    | >= 2.2.0 | >= 3.2, < 6.1 |
 | 1.2.0          | v1.x    | >= 2.2.0 | >= 3.2, < 6.1 |
 
 > **Note**: The activemodel is an optional dependency, this module [can be enabled](#activemodelvalidation-extension) to validate the attributes.
@@ -498,14 +499,17 @@ person2.attributes # {"age"=>nil, "first_name"=>"Rodrigo", "last_name"=>"Rodrigu
 
 #### `#attributes(keys_as:)`
 
-Use the `keys_as:` option with `Symbol` or `String` to transform the attributes hash keys.
+Use the `keys_as:` option with `Symbol`/`:symbol` or `String`/`:string` to transform the attributes hash keys.
 
 ```ruby
 person1 = Person.new(age: 20)
-person1.attributes(keys_as: Symbol) # {:age=>20, :first_name=>"John", :last_name=>"Doe"}
-
 person2 = Person.new(first_name: 'Rodrigo', last_name: 'Rodrigues')
+
+person1.attributes(keys_as: Symbol) # {:age=>20, :first_name=>"John", :last_name=>"Doe"}
 person2.attributes(keys_as: String) # {"age"=>nil, "first_name"=>"Rodrigo", "last_name"=>"Rodrigues"}
+
+person1.attributes(keys_as: :symbol) # {:age=>20, :first_name=>"John", :last_name=>"Doe"}
+person2.attributes(keys_as: :string) # {"age"=>nil, "first_name"=>"Rodrigo", "last_name"=>"Rodrigues"}
 ```
 
 #### `#attributes(*names)`
@@ -591,24 +595,30 @@ But, if you desire except one or more features, use the `Micro::Attributes.witho
 ```ruby
 Micro::Attributes.with(:initialize)
 
-Micro::Attributes.with(initialize: :strict)
+Micro::Attributes.with(:initialize, :keys_as_symbol)
+
+Micro::Attributes.with(:keys_as_symbol, initialize: :strict)
 
 Micro::Attributes.with(:diff, :initialize)
 
 Micro::Attributes.with(:diff, initialize: :strict)
+
+Micro::Attributes.with(:diff, :keys_as_symbol, initialize: :strict)
 
 Micro::Attributes.with(:activemodel_validations)
 
 Micro::Attributes.with(:activemodel_validations, :diff)
 
 Micro::Attributes.with(:activemodel_validations, :diff, initialize: :strict)
+
+Micro::Attributes.with(:activemodel_validations, :diff, :keys_as_symbol, initialize: :strict)
 ```
 
 The method `Micro::Attributes.with()` will raise an exception if no arguments/features were declared.
 
 ```ruby
 class Job
-  include Micro::Attributes.with() # ArgumentError (Invalid feature name! Available options: :activemodel_validations, :diff, :initialize)
+  include Micro::Attributes.with() # ArgumentError (Invalid feature name! Available options: :activemodel_validations, :diff, :initialize, :keys_as_symbol)
 end
 ```
 
@@ -617,15 +627,19 @@ end
 Picking *except* one or more features
 
 ```ruby
-Micro::Attributes.without(:diff) # will load :activemodel_validations and initialize: :strict
+Micro::Attributes.without(:diff) # will load :activemodel_validations, :keys_as_symbol and initialize: :strict
 
-Micro::Attributes.without(initialize: :strict) # will load :activemodel_validations and :diff
+Micro::Attributes.without(initialize: :strict) # will load :activemodel_validations, :diff and :keys_as_symbol
 ```
 
 ## Picking all the features
 
 ```ruby
 Micro::Attributes.with_all_features
+
+# This method returns the same of:
+
+Micro::Attributes.with(:activemodel_validations, :diff, :keys_as_symbol, initialize: :strict)
 ```
 
 [⬆️ Back to Top](#table-of-contents-)
@@ -814,6 +828,40 @@ job.state # 'sleeping'
 ```
 
 > **Note**: This extension works like the `initialize` extension. So, look at its section to understand all of the other features.
+
+[⬆️ Back to Top](#table-of-contents-)
+
+### Keys as symbol extension
+
+Disables the indifferent access requiring the declaration/usage of the attributes as symbols.
+
+The advantage of this extension over the default behavior is because it avoids an unnecessary allocation in memory of strings. All the keys are transformed into strings in the indifferent access mode, but, with this extension, this typecasting will be avoided. So, it has a better performance and reduces the usage of memory/Garbage collector, but gives for you the responsibility to always use symbols to set/access the attributes.
+
+```ruby
+class Job
+  include Micro::Attributes.with(:initialize, :keys_as_symbol)
+
+  attribute :id
+  attribute :state, default: 'sleeping'
+end
+
+job = Job.new(id: 1)
+
+job.attributes # {:id => 1, :state => "sleeping"}
+
+job.attribute?(:id) # true
+job.attribute?('id') # false
+
+job.attribute(:id) # 1
+job.attribute('id') # nil
+
+job.attribute!(:id) # 1
+job.attribute!('id') # NameError (undefined attribute `id)
+```
+
+As you could see in the previous example only symbols will work to do something with the attributes.
+
+This extension also changes the `diff extension` making everything (arguments, outputs) working only with symbols.
 
 [⬆️ Back to Top](#table-of-contents-)
 

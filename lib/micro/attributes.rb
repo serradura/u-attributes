@@ -68,14 +68,14 @@ module Micro
 
       without_option = Array(options.fetch(:without, Kind::Empty::ARRAY))
 
-      keys = names.empty? ? defined_attributes - without_option.map(&:to_s) : names - without_option
+      keys = names.empty? ? defined_attributes - without_option.map { |value| __attribute_key(value) } : names - without_option
 
       data = keys.each_with_object({}) { |key, memo| memo[key] = attribute(key) if attribute?(key) }
 
       with_option = Array(options.fetch(:with, Kind::Empty::ARRAY))
 
       unless with_option.empty?
-        extra = with_option.each_with_object({}) { |key, memo| memo[key.to_s] = public_send(key) }
+        extra = with_option.each_with_object({}) { |key, memo| memo[__attribute_key(key)] = public_send(key) }
 
         data.merge!(extra)
       end
@@ -86,7 +86,7 @@ module Micro
     protected
 
       def attributes=(arg)
-        hash = Utils::Hashes.stringify_keys(arg)
+        hash = self.class.__attributes_keys__(arg)
 
         __attributes_missing!(hash)
 
@@ -97,6 +97,10 @@ module Micro
 
       def extract_attributes_from(other)
         Utils::ExtractAttribute.from(other, keys: defined_attributes)
+      end
+
+      def __attribute_key(value)
+        self.class.__attribute_key__(value)
       end
 
       def __attributes

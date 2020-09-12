@@ -7,6 +7,22 @@ module Micro
         false
       end
 
+      def attributes_access
+        :indifferent
+      end
+
+      def __attribute_access__(value)
+        value
+      end
+
+      def __attribute_key__(value)
+        value.to_s
+      end
+
+      def __attributes_keys__(hash)
+        Utils::Hashes.stringify_keys(hash)
+      end
+
       # NOTE: can't be renamed! It is used by u-case v4.
       def __attributes_data__
         @__attributes_data__ ||= {}
@@ -41,7 +57,7 @@ module Micro
       end
 
       def __attribute_assign(key, can_overwrite, options)
-        name = key.to_s
+        name = __attribute_access__(__attribute_key__(key))
         has_attribute = attribute?(name)
 
         __attribute_reader(name) unless has_attribute
@@ -61,7 +77,7 @@ module Micro
       end
 
       def attribute?(name)
-        __attributes.member?(name.to_s)
+        __attributes.member?(__attribute_key__(name))
       end
 
       def attribute(name, options = Kind::Empty::HASH)
