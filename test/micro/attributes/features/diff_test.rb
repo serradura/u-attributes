@@ -9,7 +9,7 @@ class Micro::Attributes::Features::DiffTest < Minitest::Test
   end
 
   class Bar
-    include Micro::Attributes::With::DiffAndInitialize
+    include Micro::Attributes.with(:initialize, :diff)
 
     attributes :a, 'b'
   end
@@ -32,11 +32,11 @@ class Micro::Attributes::Features::DiffTest < Minitest::Test
     err2 = assert_raises(ArgumentError) { @foo_1.diff_attributes({}) }
     assert_equal('{} must implement Micro::Attributes', err2.message)
 
-    err3 = assert_raises(ArgumentError) { @foo_1.diff_attributes(@bar_1) }
-    assert_equal('expected an instance of Micro::Attributes::Features::DiffTest::Foo', err3.message)
+    err3 = assert_raises(Kind::Error) { @foo_1.diff_attributes(@bar_1) }
+    assert_match(/.*Bar.* expected to be a kind of Micro::Attributes::Features::DiffTest::Foo/,err3.message)
 
-    err4 = assert_raises(ArgumentError) { @bar_2.diff_attributes(@foo_2) }
-    assert_equal('expected an instance of Micro::Attributes::Features::DiffTest::Bar', err4.message)
+    err4 = assert_raises(Kind::Error) { @bar_2.diff_attributes(@foo_2) }
+    assert_match(/.*Foo.* expected to be a kind of Micro::Attributes::Features::DiffTest::Bar/, err4.message)
   end
 
   def test_from
@@ -55,8 +55,9 @@ class Micro::Attributes::Features::DiffTest < Minitest::Test
 
     assert_equal({'a' => {'from' => 1, 'to' => -1}}, @foo_changes.differences)
     assert_equal({'a' => {'from' => 3, 'to' => -3}, 'b' => {'from' => 4, 'to' => -4 }}, @bar_changes.differences)
-    assert(@foo_changes.differences.frozen?)
-    assert(@bar_changes.differences.frozen?)
+
+    assert_predicate(@foo_changes.differences, :frozen?)
+    assert_predicate(@bar_changes.differences, :frozen?)
   end
 
   def test_present?
