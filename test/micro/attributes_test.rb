@@ -439,4 +439,10 @@ class Micro::AttributesTest < Minitest::Test
 
     assert_equal('{:foo=>:bar} expected to be a kind of String/Symbol', @@__invalid_attributes_definition.message)
   end
+
+  def test_the_attributes_access
+    [Biz, Bar, Bar2, Bar3, Foo, Foz, ExtractingAttributes].each do |klass|
+      assert_equal(:indifferent, klass.attributes_access)
+    end
+  end
 end

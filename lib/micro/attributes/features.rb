@@ -7,105 +7,100 @@ module Micro
     module Features
       extend self
 
-      STRICT_INITIALIZE = 'strict_initialize'.freeze
-
-      ALL_VISIBLE = [
-        DIFF = 'diff'.freeze,
-        INITIALIZE = 'initialize'.freeze,
-        ACTIVEMODEL_VALIDATIONS = 'activemodel_validations'.freeze
-      ].sort.freeze
-
-      ALL = (ALL_VISIBLE + [STRICT_INITIALIZE]).sort.freeze
-
-      INVALID_NAME = [
-        'Invalid feature name! Available options: ',
-        ALL_VISIBLE.map { |feature_name| ":#{feature_name}" }.join(', ')
-      ].join
-
-      OPTIONS = {
-        # Features
-        DIFF => With::Diff,
-        INITIALIZE => With::Initialize,
-        STRICT_INITIALIZE => With::StrictInitialize,
-        ACTIVEMODEL_VALIDATIONS => With::ActiveModelValidations,
-        # Combinations
-        'diff:initialize' => With::DiffAndInitialize,
-        'diff:strict_initialize' => With::DiffAndStrictInitialize,
-        'activemodel_validations:diff' => With::ActiveModelValidationsAndDiff,
-        'activemodel_validations:initialize' => With::ActiveModelValidationsAndInitialize,
-        'activemodel_validations:strict_initialize' => With::ActiveModelValidationsAndStrictInitialize,
-        'activemodel_validations:diff:initialize' => With::ActiveModelValidationsAndDiffAndInitialize,
-        'activemodel_validations:diff:strict_initialize' => With::ActiveModelValidationsAndDiffAndStrictInitialize
-      }.freeze
-
-      private_constant :OPTIONS, :INVALID_NAME
-
-      def all
-        @all ||= self.with(ALL)
+      module Name
+        ALL = [
+          DIFF = 'diff'.freeze,
+          INITIALIZE = 'initialize'.freeze,
+          KEYS_AS_SYMBOL = 'keys_as_symbol'.freeze,
+          ACTIVEMODEL_VALIDATIONS = 'activemodel_validations'.freeze
+        ].sort.freeze
       end
 
-      def with(args)
-        valid_names!(args) do |names|
-          delete_initialize_if_has_strict_initialize(names)
+      module Options
+        KEYS = [
+          DIFF = 'Diff'.freeze,
+          INIT = 'Init'.freeze,
+          INIT_STRICT = 'InitStrict'.freeze,
+          KEYS_AS_SYMBOL = 'KeysAsSymbol'.freeze,
+          AM_VALIDATIONS = 'AMValidations'.freeze
+        ].sort.freeze
 
-          OPTIONS.fetch(names.sort.join(':'))
-        end
-      end
+        NAMES_TO_KEYS = {
+          Name::DIFF => DIFF,
+          Name::INITIALIZE => INIT,
+          Name::KEYS_AS_SYMBOL => KEYS_AS_SYMBOL,
+          Name::ACTIVEMODEL_VALIDATIONS => AM_VALIDATIONS
+        }.freeze
 
-      def without(args)
-        valid_names!(args) do |names_to_exclude|
-          names = except_options(names_to_exclude)
-          names.empty? ? ::Micro::Attributes : self.with(names)
-        end
-      end
+        KEYS_TO_MODULES = {
+          DIFF => With::Diff,
+          INIT => With::Initialize,
+          INIT_STRICT => With::StrictInitialize,
+          KEYS_AS_SYMBOL => With::KeysAsSymbol,
+          AM_VALIDATIONS => With::ActiveModelValidations
+        }.freeze
 
-      private
+        def self.fetch_key(arg)
+          if arg.is_a?(Hash)
+            INIT_STRICT if arg[:initialize] == :strict
+          else
+            name = String(arg)
 
-        def fetch_feature_name(name)
-          return name unless name.is_a?(Hash)
+            return name if KEYS_TO_MODULES.key?(name)
 
-          STRICT_INITIALIZE if name[:initialize] == :strict
-        end
-
-        def normalize_names(args)
-          names = Array(args).dup
-
-          last_feature = fetch_feature_name(names.pop)
-
-          features = names.empty? ? [last_feature] : names + [last_feature]
-          features.map! { |name| name.to_s.downcase }
-          features.uniq
-        end
-
-        def valid_names?(names)
-          names.all? { |name| ALL.include?(name) }
-        end
-
-        def valid_names!(args)
-          names = normalize_names(args)
-
-          raise ArgumentError, INVALID_NAME if names.empty? || !valid_names?(names)
-
-          yield(names)
-        end
-
-        def an_initialize?(name)
-          name == INITIALIZE || name == STRICT_INITIALIZE
-        end
-
-        def delete_initialize_if_has_strict_initialize(names)
-          return unless names.include?(STRICT_INITIALIZE)
-
-          names.delete_if { |name| name == INITIALIZE }
-        end
-
-        def except_options(names_to_exclude)
-          (ALL - names_to_exclude).tap do |names|
-            names.delete_if { |name| an_initialize?(name) } if names_to_exclude.include?(INITIALIZE)
-
-            delete_initialize_if_has_strict_initialize(names)
+            NAMES_TO_KEYS[name]
           end
         end
+
+        INVALID_NAME = [
+          'Invalid feature name! Available options: ',
+          Name::ALL.map { |feature_name| ":#{feature_name}" }.join(', ')
+        ].join
+
+        def self.fetch_keys(args)
+          keys = Array(args).dup.map { |name| fetch_key(name) }
+
+          raise ArgumentError, INVALID_NAME if keys.empty? || !(keys - KEYS).empty?
+
+          yield(keys)
+        end
+
+        def self.remove_init_keys(keys, if_has_init_in:)
+          keys.delete_if { |key| key == INIT || key == INIT_STRICT } if if_has_init_in.include?(INIT)
+        end
+
+        def self.without_keys(keys_to_exclude)
+          (KEYS - keys_to_exclude).tap do |keys|
+            remove_init_keys(keys, if_has_init_in: keys_to_exclude)
+          end
+        end
+
+        def self.fetch_module_by_keys(keys)
+          keys.delete_if { |key| key == INIT } if keys.include?(INIT_STRICT)
+
+          option = keys.sort.join('_')
+
+          KEYS_TO_MODULES.fetch(option) { With.const_get(option, false) }
+        end
+      end
+
+      def all
+        @all ||= self.with(Options::KEYS)
+      end
+
+      def with(names)
+        Options.fetch_keys(names) do |keys|
+          Options.fetch_module_by_keys(keys)
+        end
+      end
+
+      def without(names)
+        Options.fetch_keys(names) do |keys|
+          keys = Options.without_keys(keys)
+
+          keys.empty? ? ::Micro::Attributes : Options.fetch_module_by_keys(keys)
+        end
+      end
     end
   end
 end
