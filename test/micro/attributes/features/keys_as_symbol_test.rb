@@ -150,4 +150,49 @@ class Micro::Attributes::Features::AttributesKeysIndifferentTest < Minitest::Tes
     assert_instance_of(Kind::Error, @@__invalid_attribute_key)
     assert_equal('"only_symbol" expected to be a kind of Symbol', @@__invalid_attribute_key.message)
   end
+
+  class Biz
+    include Micro::Attributes.with(:initialize, :keys_as_symbol, :diff)
+
+    attributes :a, :b, required: true
+  end
+
+  def test_the_impact_in_the_diff_extension
+    biz1 = Biz.new(a: 1, b: 2)
+    biz2 = biz1.with_attribute(:a, 2)
+
+    diff = biz1.diff_attributes(biz2)
+
+    # --
+
+    assert_same(biz1, diff.from)
+    assert_same(biz2, diff.to)
+
+    # --
+
+    assert_equal({a: {from: 1, to: 2}}, diff.differences)
+    assert_predicate(diff.differences, :frozen?)
+
+    # --
+
+    refute_predicate(diff, :empty?)
+    refute_predicate(diff, :blank?)
+    assert_predicate(diff, :present?)
+
+    # --
+
+    assert diff.changed?
+    assert diff.changed?(:a)
+    assert diff.changed?(:a, from: 1, to: 2)
+
+    refute diff.changed?('a')
+
+    err2 = assert_raises(ArgumentError) { diff.changed?(from: 2, to: -2) }
+    assert_equal('pass the attribute name with the :from and :to values', err2.message)
+
+    # ---
+
+    err = assert_raises(ArgumentError) { Biz.new(a: false) }
+    assert_equal('missing keyword: :b', err.message)
+  end
 end
