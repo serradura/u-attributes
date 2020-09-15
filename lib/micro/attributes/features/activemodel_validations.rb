@@ -24,7 +24,7 @@ module Micro::Attributes
 
       private
 
-        def __call_after_micro_attribute
+        def __call_after_attributes_assign
           run_validations! if respond_to?(:run_validations!, true)
         end
     end

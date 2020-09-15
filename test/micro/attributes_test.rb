@@ -69,7 +69,7 @@ class Micro::AttributesTest < Minitest::Test
     attribute 'b', required: true
   end
 
-  def test_bar2_attributes_assignment
+  def test_bar3_attributes_assignment
     bar1 = Bar3.new(a: 'a', b: 'b')
 
     assert_equal 'a', bar1.a

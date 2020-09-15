@@ -12,8 +12,8 @@ class Micro::Attributes::DefaultsTest < Minitest::Test
     end
   end
 
-  def test_defaults_defined_via_the_attribute_method
-    assert_equal(1, Add.new({}).call)
+  def test_defaults_defined_via_the_attribute_methods
+    assert_equal(2, Add.new({}).call)
     assert_equal(3, Add.new(a: 2).call)
     assert_equal(4, Add.new(b: 3).call)
     assert_equal(5, Add.new(a: 2, b: 3).call)
@@ -29,7 +29,7 @@ class Micro::Attributes::DefaultsTest < Minitest::Test
     end
   end
 
-  def test_defaults_defined_via_the_attribute_method
+  def test_defaults_defined_via_the_attributes_method
     assert_equal(4, Sum.new({}).call)
     assert_equal(3, Sum.new(a: 1).call)
     assert_equal(5, Sum.new(b: 3).call)
