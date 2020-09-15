@@ -1,6 +1,6 @@
 require 'test_helper'
 
-class Micro::Attributes::Features::AttributesKeysIndifferentTest < Minitest::Test
+class Micro::Attributes::Features::KeysAsSymbolTest < Minitest::Test
   class Bar
     include Micro::Attributes.with(:keys_as_symbol)
 
