@@ -19,6 +19,10 @@ class Micro::Attributes::Features::ActiveModelValidationsTest < MiniTest::Test
       include Micro::Attributes.with(:activemodel_validations)
 
       attribute :a, validates: { presence: true }
+
+      def initialize(data)
+        self.attributes = data
+      end
     end
 
     class B

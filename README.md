@@ -618,7 +618,7 @@ The method `Micro::Attributes.with()` will raise an exception if no arguments/fe
 
 ```ruby
 class Job
-  include Micro::Attributes.with() # ArgumentError (Invalid feature name! Available options: :activemodel_validations, :diff, :initialize, :keys_as_symbol)
+  include Micro::Attributes.with() # ArgumentError (Invalid feature name! Available options: :accept, :activemodel_validations, :diff, :initialize, :keys_as_symbol)
 end
 ```
 

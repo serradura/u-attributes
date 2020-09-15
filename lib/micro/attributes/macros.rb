@@ -11,15 +11,15 @@ module Micro
         :indifferent
       end
 
-      def __attribute_access__(value)
+      def __attribute_key_check__(value)
         value
       end
 
-      def __attribute_key__(value)
+      def __attribute_key_transform__(value)
         value.to_s
       end
 
-      def __attributes_keys__(hash)
+      def __attribute_keys_transform__(hash)
         Utils::Hashes.stringify_keys(hash)
       end
 
@@ -32,18 +32,28 @@ module Micro
         @__attributes_required__ ||= Set.new
       end
 
-      def __attributes_required_add(name, is_required, hasnt_default)
-        if is_required || (attributes_are_all_required? && hasnt_default)
+      def __attributes_required_add(name, opt, hasnt_default)
+        if opt[:required] || (attributes_are_all_required? && hasnt_default)
           __attributes_required__.add(name)
         end
 
         nil
       end
 
-      def __attributes_data_to_assign(name, options)
-        hasnt_default = !options.key?(:default)
+      GetAcceptOrReject = -> opt do
+        return [:accept, opt[:accept]] if opt.key?(:accept)
+        return [:reject, opt[:reject]] if opt.key?(:reject)
 
-        hasnt_default ? __attributes_required_add(name, options[:required], hasnt_default) : options[:default]
+        Kind::Empty::ARRAY
+      end
+
+      def __attributes_data_to_assign(name, opt)
+        hasnt_default = !opt.key?(:default)
+
+        [
+          hasnt_default ? __attributes_required_add(name, opt, hasnt_default) : opt[:default],
+          GetAcceptOrReject.call(opt)
+        ]
       end
 
       def __attributes
@@ -57,7 +67,7 @@ module Micro
       end
 
       def __attribute_assign(key, can_overwrite, options)
-        name = __attribute_access__(__attribute_key__(key))
+        name = __attribute_key_check__(__attribute_key_transform__(key))
         has_attribute = attribute?(name)
 
         __attribute_reader(name) unless has_attribute
@@ -72,12 +82,20 @@ module Micro
       # NOTE: can't be renamed! It is used by u-case v4.
       def __attributes_set_after_inherit__(arg)
         arg.each do |key, val|
-          __attribute_assign(key, true, val ? { default: val } : {})
+          opt = if default = val[0]
+            requ_key, requ_val = val[1]
+
+            hash = requ_key ? { requ_key => requ_val } : {}
+            hash[:default] = default
+            hash
+          end
+
+          __attribute_assign(key, true, opt || Kind::Empty::HASH)
         end
       end
 
       def attribute?(name)
-        __attributes.member?(__attribute_key__(name))
+        __attributes.member?(__attribute_key_transform__(name))
       end
 
       def attribute(name, options = Kind::Empty::HASH)
@@ -112,7 +130,7 @@ module Micro
         private_constant :WRONG_NUMBER_OF_ARGS
       end
 
-      private_constant :ForSubclasses
+      private_constant :ForSubclasses, :GetAcceptOrReject
     end
 
     private_constant :Macros

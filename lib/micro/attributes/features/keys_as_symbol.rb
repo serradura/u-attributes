@@ -9,15 +9,15 @@ module Micro::Attributes
           :symbol
         end
 
-        def __attribute_access__(value)
+        def __attribute_key_check__(value)
           Kind::Of.(::Symbol, value)
         end
 
-        def __attribute_key__(value)
+        def __attribute_key_transform__(value)
           value
         end
 
-        def __attributes_keys__(hash)
+        def __attribute_keys_transform__(hash)
           Utils::Hashes.kind(hash)
         end
       end
