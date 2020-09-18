@@ -68,7 +68,7 @@ module Micro::Attributes
             if expected.is_a?(Class) || expected.is_a?(Module)
               validate_with_kind_of(is_accept, value, expected)
             elsif expected.is_a?(Symbol) && expected.to_s.end_with?(QUESTION_MARK)
-              validate_with_predicate_symbol(is_accept, value, expected)
+              validate_with_predicate(is_accept, value, expected)
             end
           end
 
@@ -82,7 +82,7 @@ module Micro::Attributes
               "expected to not be a kind of #{expected}" if test
             end
 
-            def validate_with_predicate_symbol(is_accept, value, expected)
+            def validate_with_predicate(is_accept, value, expected)
               test = value.public_send(expected)
 
               return test ? nil : "expected to be #{expected}" if is_accept

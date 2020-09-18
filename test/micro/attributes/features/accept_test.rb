@@ -154,7 +154,7 @@ class Micro::Attributes::Features::AcceptTest < Minitest::Test
     attribute :age, accept: :integer?
   end
 
-  def test_the_accept_with_to_proc_and_indifferent_access
+  def test_the_accept_with_predicate_and_indifferent_access
     person1 = PersonWithIndifferentAccess.new(name: 'Rodrigo', age: 33)
 
     assert_equal({}, person1.attributes_errors)
@@ -200,7 +200,7 @@ class Micro::Attributes::Features::AcceptTest < Minitest::Test
     attribute :age, accept: :integer?
   end
 
-  def test_the_accept_with_to_proc_and_keys_as_symbol
+  def test_the_accept_with_predicate_and_keys_as_symbol
     person1 = PersonKeysAsSymbol.new(name: 'Rodrigo', age: 33)
 
     assert_equal({}, person1.attributes_errors)
@@ -237,5 +237,34 @@ class Micro::Attributes::Features::AcceptTest < Minitest::Test
     assert_predicate(person2, :rejected_attributes?)
 
     refute_predicate(person2, :accepted_attributes?)
+  end
+
+  class ValidateAfterDefaultValueWithIndifferentAccess
+    include Micro::Attributes.with(:accept, :initialize)
+
+    attribute :value, reject: Numeric, default: -> value { value.to_s }
+  end
+
+  class ValidateAfterDefaultValueKeysAsSymbol
+    include Micro::Attributes.with(:accept, :initialize, :keys_as_symbol)
+
+    attribute :value, reject: Numeric, default: -> value { value.to_s }
+  end
+
+  def test_that_the_validation_runs_after_resolve_the_default_value
+    obj1 = ValidateAfterDefaultValueWithIndifferentAccess.new(value: 1)
+    obj2 = ValidateAfterDefaultValueKeysAsSymbol.new(value: 1.0)
+
+    assert_equal(['value'], obj1.accepted_attributes)
+    assert_equal([:value], obj2.accepted_attributes)
+
+    [obj1, obj2].each do |obj|
+      assert_equal({}, obj.attributes_errors)
+      assert_equal([], obj.rejected_attributes)
+
+      refute_predicate(obj, :attributes_errors?)
+      refute_predicate(obj, :rejected_attributes?)
+      assert_predicate(obj, :accepted_attributes?)
+    end
   end
 end
