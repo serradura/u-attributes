@@ -54,7 +54,7 @@ module Micro
 
         [
           hasnt_default ? __attributes_required_add(name, opt, hasnt_default) : opt[:default],
-          GetAcceptOrReject.call(opt)
+          GetAcceptOrReject.(opt)
         ]
       end
 
@@ -68,15 +68,30 @@ module Micro
         attr_reader(name)
       end
 
-      def __attribute_assign(key, can_overwrite, options)
+      PERMITTED_OPTIONS = [
+        :default, :required,
+        :validate, :validates, # activemodel_validations
+        :accept, :reject, :allow_nil # accept
+      ].freeze
+      INVALID_OPTIONS_MSG = [
+        'Found one or more invalid options! The valid ones are: ',
+        PERMITTED_OPTIONS.map { |key| ":#{key}" }.join(', ')
+      ].join.freeze
+
+      def __attribute_assign(key, can_overwrite, opt)
         name = __attribute_key_check__(__attribute_key_transform__(key))
+
+        invalid_keys = opt.keys - PERMITTED_OPTIONS
+
+        raise ArgumentError, INVALID_OPTIONS_MSG unless invalid_keys.empty?
+
         has_attribute = attribute?(name)
 
         __attribute_reader(name) unless has_attribute
 
-        __attributes_data__[name] = __attributes_data_to_assign(name, options) if can_overwrite || !has_attribute
+        __attributes_data__[name] = __attributes_data_to_assign(name, opt) if can_overwrite || !has_attribute
 
-        __call_after_attribute_assign__(name, options)
+        __call_after_attribute_assign__(name, opt)
       end
 
       def __call_after_attribute_assign__(attr_name, options); end
@@ -132,7 +147,7 @@ module Micro
         private_constant :WRONG_NUMBER_OF_ARGS
       end
 
-      private_constant :ForSubclasses, :GetAcceptOrReject
+      private_constant :PERMITTED_OPTIONS, :ForSubclasses, :GetAcceptOrReject
     end
 
     private_constant :Macros
