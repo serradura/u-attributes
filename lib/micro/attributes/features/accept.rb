@@ -61,7 +61,9 @@ module Micro::Attributes
 
             return if value.nil? && allow_nil
 
-            if expected.is_a?(Class) || expected.is_a?(Module)
+            if expected.respond_to?(:call)
+              validate_callable_with(expected, value, validation)
+            elsif expected.is_a?(Class) || expected.is_a?(Module)
               validate_kind_of_with(expected, value, validation)
             elsif expected.is_a?(Symbol) && expected.to_s.end_with?(QUESTION_MARK)
               validate_predicate_with(expected, value, validation)
@@ -88,6 +90,16 @@ module Micro::Attributes
               return test ? nil : "expected to be #{expected}" if accept?(validation)
 
               "expected to not be #{expected}" if test
+            end
+
+            IS_INVALID_MSG = 'is invalid'.freeze
+
+            def validate_callable_with(expected, value, validation)
+              test = expected.call(value)
+
+              return test ? nil : IS_INVALID_MSG if accept?(validation)
+
+              IS_INVALID_MSG if test
             end
         end
 
