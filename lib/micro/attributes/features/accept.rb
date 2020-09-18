@@ -46,7 +46,7 @@ module Micro::Attributes
         end
 
         def __attribute_accept_or_reject(name, value, validation_data)
-          error_msg = AcceptOrReject.call(value, validation_data)
+          error_msg = AcceptOrReject.call(name, value, validation_data)
 
           @__attributes_errors[name] = error_msg if error_msg
         end
@@ -56,13 +56,13 @@ module Micro::Attributes
 
           QUESTION_MARK = '?'.freeze
 
-          def call(value, validation_data)
+          def call(name, value, validation_data)
             validation, expected, allow_nil = validation_data
 
             return if value.nil? && allow_nil
 
             if expected.respond_to?(:call)
-              validate_callable_with(expected, value, validation)
+              validate_callable_with(expected, value, validation, name)
             elsif expected.is_a?(Class) || expected.is_a?(Module)
               validate_kind_of_with(expected, value, validation)
             elsif expected.is_a?(Symbol) && expected.to_s.end_with?(QUESTION_MARK)
@@ -74,6 +74,20 @@ module Micro::Attributes
 
             def accept?(validation)
               validation == :accept
+            end
+
+            def validate_callable_with(expected, value, validation, name)
+              test = expected.call(value)
+
+              return test ? nil : is_invalid_msg(expected, name) if accept?(validation)
+
+              is_invalid_msg(expected, name) if test
+            end
+
+            IS_INVALID_MSG = 'is invalid'.freeze
+
+            def is_invalid_msg(expected, name)
+              handle_rejection_message(expected, name, default: IS_INVALID_MSG)
             end
 
             def validate_kind_of_with(expected, value, validation)
@@ -92,14 +106,14 @@ module Micro::Attributes
               "expected to not be #{expected}" if test
             end
 
-            IS_INVALID_MSG = 'is invalid'.freeze
+            def handle_rejection_message(expected, name, default:)
+              return default unless expected.respond_to?(:rejection_message)
 
-            def validate_callable_with(expected, value, validation)
-              test = expected.call(value)
+              rejection_msg = expected.rejection_message
 
-              return test ? nil : IS_INVALID_MSG if accept?(validation)
+              return rejection_msg unless rejection_msg.is_a?(Proc)
 
-              IS_INVALID_MSG if test
+              rejection_msg.arity == 0 ? rejection_msg.call : rejection_msg.call(name)
             end
         end
 

@@ -372,9 +372,19 @@ class Micro::Attributes::Features::AcceptTest < Minitest::Test
   end
 
   module EmptyStr
-    def self.call(value)
+    extend self
+
+    def call(value)
       is_str = value.is_a?(String)
       !is_str || (is_str && value.empty?)
+    end
+  end
+
+  class EmptyStr2
+    extend EmptyStr
+
+    def self.rejection_message
+      "can't be an empty string"
     end
   end
 
@@ -382,17 +392,27 @@ class Micro::Attributes::Features::AcceptTest < Minitest::Test
     value.is_a?(String) && !value.empty?
   end
 
+  class FilledStr2
+    def call(value)
+      FilledStr.(value)
+    end
+
+    def rejection_message
+      -> name { "#{name}: can't be an empty string" }
+    end
+  end
+
   class ValidateUsingACallableWithIndifferentAccess
     include Micro::Attributes.with(:accept, :initialize)
 
     attribute :a, reject: EmptyStr
-    attribute :b, accept: FilledStr
+    attribute :b, accept: FilledStr2.new
   end
 
   class ValidateUsingACallableWithKeysAsSymbol
     include Micro::Attributes.with(:accept, :initialize, :keys_as_symbol)
 
-    attribute :a, reject: EmptyStr
+    attribute :a, reject: EmptyStr2
     attribute :b, accept: FilledStr
   end
 
@@ -404,13 +424,13 @@ class Micro::Attributes::Features::AcceptTest < Minitest::Test
 
     assert_equal({
       'a' => 'is invalid',
-      'b' => 'is invalid'
+      'b' => "b: can't be an empty string"
     }, obj1.attributes_errors)
 
     assert_equal([:a, :b], obj2.rejected_attributes)
 
     assert_equal({
-      a: 'is invalid',
+      a: "can't be an empty string",
       b: 'is invalid'
     }, obj2.attributes_errors)
 
