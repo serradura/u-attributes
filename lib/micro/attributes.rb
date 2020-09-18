@@ -115,8 +115,8 @@ module Micro
         @__attributes ||= {}
       end
 
-      FetchValueToAssign = -> (value, default) do
-        if default.is_a?(Proc)
+      FetchValueToAssign = -> (value, default, keep_proc = false) do
+        if default.is_a?(Proc) && !keep_proc
           default.arity > 0 ? default.call(value) : default.call
         else
           value.nil? ? default : value

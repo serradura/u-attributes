@@ -33,12 +33,14 @@ module Micro::Attributes
           @__attributes_errors = {}
         end
 
+        KeepProc = -> validation_data { validation_data[0] == :accept && validation_data[1] == Proc }
+
         def __attribute_assign(name, initialize_value, attribute_data)
-          value_to_assign = FetchValueToAssign.(initialize_value, attribute_data[0])
+          validation_data = attribute_data[1]
+
+          value_to_assign = FetchValueToAssign.(initialize_value, attribute_data[0], KeepProc.(validation_data))
 
           value = __attributes[name] = instance_variable_set("@#{name}", value_to_assign)
-
-          validation_data = attribute_data[1]
 
           __attribute_accept_or_reject(name, value, validation_data) if !validation_data.empty?
         end
@@ -89,7 +91,7 @@ module Micro::Attributes
             end
         end
 
-        private_constant :AcceptOrReject
+        private_constant :AcceptOrReject, :KeepProc
     end
   end
 end
