@@ -370,4 +370,56 @@ class Micro::Attributes::Features::AcceptTest < Minitest::Test
     refute_equal(LAMBDA_HANDLER, obj4.lambda_handler)
     assert_equal(4, obj4.lambda_handler.call)
   end
+
+  module EmptyStr
+    def self.call(value)
+      is_str = value.is_a?(String)
+      !is_str || (is_str && value.empty?)
+    end
+  end
+
+  FilledStr = -> value do
+    value.is_a?(String) && !value.empty?
+  end
+
+  class ValidateUsingACallableWithIndifferentAccess
+    include Micro::Attributes.with(:accept, :initialize)
+
+    attribute :a, reject: EmptyStr
+    attribute :b, accept: FilledStr
+  end
+
+  class ValidateUsingACallableWithKeysAsSymbol
+    include Micro::Attributes.with(:accept, :initialize, :keys_as_symbol)
+
+    attribute :a, reject: EmptyStr
+    attribute :b, accept: FilledStr
+  end
+
+  def test_the_validation_using_callables
+    obj1 = ValidateUsingACallableWithIndifferentAccess.new(a: nil, b: '')
+    obj2 = ValidateUsingACallableWithKeysAsSymbol.new(a: '', b: nil)
+
+    assert_equal(['a', 'b'], obj1.rejected_attributes)
+
+    assert_equal({
+      'a' => 'is invalid',
+      'b' => 'is invalid'
+    }, obj1.attributes_errors)
+
+    assert_equal([:a, :b], obj2.rejected_attributes)
+
+    assert_equal({
+      a: 'is invalid',
+      b: 'is invalid'
+    }, obj2.attributes_errors)
+
+    [obj1, obj2].each do |obj|
+      assert_equal([], obj.accepted_attributes)
+
+      assert_predicate(obj, :attributes_errors?)
+      assert_predicate(obj, :rejected_attributes?)
+      refute_predicate(obj, :accepted_attributes?)
+    end
+  end
 end
