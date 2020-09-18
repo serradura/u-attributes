@@ -46,13 +46,13 @@ module Micro::Attributes
 
           value = __attributes[name] = instance_variable_set("@#{name}", value_to_assign)
 
-          requrmt_strategy, requrmt_expected = attribute_data[1]
+          validation, expected = attribute_data[1]
 
-          __attribute_validate(name, value, requrmt_strategy, requrmt_expected) if requrmt_strategy
+          __attribute_accept_or_reject(name, value, expected, validation) if validation
         end
 
-        def __attribute_validate(name, value, strategy, expected)
-          error_msg = AcceptOrReject.call(strategy, value, expected)
+        def __attribute_accept_or_reject(name, value, expected, validation)
+          error_msg = AcceptOrReject.call(value, expected, validation)
 
           @__attributes_errors[name] = error_msg if error_msg
         end
@@ -62,30 +62,32 @@ module Micro::Attributes
 
           QUESTION_MARK = '?'.freeze
 
-          def call(strategy, value, expected)
-            is_accept = strategy == :accept
-
+          def call(value, expected, validation)
             if expected.is_a?(Class) || expected.is_a?(Module)
-              validate_with_kind_of(is_accept, value, expected)
+              validate_kind_of_with(expected, value, validation)
             elsif expected.is_a?(Symbol) && expected.to_s.end_with?(QUESTION_MARK)
-              validate_with_predicate(is_accept, value, expected)
+              validate_predicate_with(expected, value, validation)
             end
           end
 
           private
 
-            def validate_with_kind_of(is_accept, value, expected)
+            def accept?(validation)
+              validation == :accept
+            end
+
+            def validate_kind_of_with(expected, value, validation)
               test = value.kind_of?(expected)
 
-              return test ? nil : "expected to be a kind of #{expected}" if is_accept
+              return test ? nil : "expected to be a kind of #{expected}" if accept?(validation)
 
               "expected to not be a kind of #{expected}" if test
             end
 
-            def validate_with_predicate(is_accept, value, expected)
+            def validate_predicate_with(expected, value, validation)
               test = value.public_send(expected)
 
-              return test ? nil : "expected to be #{expected}" if is_accept
+              return test ? nil : "expected to be #{expected}" if accept?(validation)
 
               "expected to not be #{expected}" if test
             end
