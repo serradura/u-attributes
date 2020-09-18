@@ -87,7 +87,7 @@ module Micro
     protected
 
       def attributes=(arg)
-        hash = self.class.__attribute_keys_transform__(arg)
+        hash = self.class.__attributes_keys_transform__(arg)
 
         __attributes_missing!(hash)
 

@@ -17,7 +17,7 @@ module Micro::Attributes
           value
         end
 
-        def __attribute_keys_transform__(hash)
+        def __attributes_keys_transform__(hash)
           Utils::Hashes.kind(hash)
         end
       end

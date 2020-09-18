@@ -19,7 +19,7 @@ module Micro
         value.to_s
       end
 
-      def __attribute_keys_transform__(hash)
+      def __attributes_keys_transform__(hash)
         Utils::Hashes.stringify_keys(hash)
       end
 
