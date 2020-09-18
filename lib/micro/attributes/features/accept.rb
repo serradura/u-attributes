@@ -3,14 +3,6 @@
 module Micro::Attributes
   module Features
     module Accept
-
-      module ClassMethods
-      end
-
-      def self.included(base)
-        base.send(:extend, ClassMethods)
-      end
-
       def attributes_errors
         @__attributes_errors
       end
@@ -46,13 +38,13 @@ module Micro::Attributes
 
           value = __attributes[name] = instance_variable_set("@#{name}", value_to_assign)
 
-          validation, expected = attribute_data[1]
+          validation_data = attribute_data[1]
 
-          __attribute_accept_or_reject(name, value, expected, validation) if validation
+          __attribute_accept_or_reject(name, value, validation_data) if !validation_data.empty?
         end
 
-        def __attribute_accept_or_reject(name, value, expected, validation)
-          error_msg = AcceptOrReject.call(value, expected, validation)
+        def __attribute_accept_or_reject(name, value, validation_data)
+          error_msg = AcceptOrReject.call(value, validation_data)
 
           @__attributes_errors[name] = error_msg if error_msg
         end
@@ -62,7 +54,11 @@ module Micro::Attributes
 
           QUESTION_MARK = '?'.freeze
 
-          def call(value, expected, validation)
+          def call(value, validation_data)
+            validation, expected, allow_nil = validation_data
+
+            return if value.nil? && allow_nil
+
             if expected.is_a?(Class) || expected.is_a?(Module)
               validate_kind_of_with(expected, value, validation)
             elsif expected.is_a?(Symbol) && expected.to_s.end_with?(QUESTION_MARK)
