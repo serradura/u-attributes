@@ -313,4 +313,61 @@ class Micro::Attributes::Features::AcceptTest < Minitest::Test
       refute_predicate(obj, :accepted_attributes?)
     end
   end
+
+  PROC_HANDLER = proc { 1 }
+  LAMBDA_HANDLER = lambda { 2 }
+
+  class SkipDefaultValueResolutionWhenAcceptAProcWithIndifferentAccess
+    include Micro::Attributes.with(:accept, :initialize)
+
+    attribute :str, accept: String, default: -> value { value.to_s }
+    attribute :proc_handler, accept: Proc, default: PROC_HANDLER
+    attribute :lambda_handler, accept: Proc, default: LAMBDA_HANDLER
+  end
+
+  class SkipDefaultValueResolutionWhenAcceptAProcWithKeysAsSymbol
+    include Micro::Attributes.with(:accept, :initialize, :keys_as_symbol)
+
+    attribute :str, accept: String, default: -> value { value.to_s }
+    attribute :proc_handler, accept: Proc, default: PROC_HANDLER
+    attribute :lambda_handler, accept: Proc, default: LAMBDA_HANDLER
+  end
+
+  def test_that_the_validation_skip_nil_if_it_was_allowed
+    obj1 = SkipDefaultValueResolutionWhenAcceptAProcWithIndifferentAccess.new(str: 0)
+    obj2 = SkipDefaultValueResolutionWhenAcceptAProcWithKeysAsSymbol.new(str: 0)
+
+    assert_equal(['str', 'proc_handler', 'lambda_handler'], obj1.accepted_attributes)
+    assert_equal([:str, :proc_handler, :lambda_handler], obj2.accepted_attributes)
+
+    [obj1, obj2].each do |obj|
+      assert_equal('0', obj.str)
+      assert_equal(PROC_HANDLER, obj.proc_handler)
+      assert_equal(1, obj.proc_handler.call)
+
+      assert_equal(LAMBDA_HANDLER, obj.lambda_handler)
+      assert_equal(2, obj.lambda_handler.call)
+
+      assert_equal({}, obj.attributes_errors)
+      assert_equal([], obj.rejected_attributes)
+
+      refute_predicate(obj, :attributes_errors?)
+      refute_predicate(obj, :rejected_attributes?)
+      assert_predicate(obj, :accepted_attributes?)
+    end
+
+    # --
+
+    obj3 = SkipDefaultValueResolutionWhenAcceptAProcWithKeysAsSymbol.new(str: 0, proc_handler: proc { 3 })
+    obj4 = SkipDefaultValueResolutionWhenAcceptAProcWithKeysAsSymbol.new(str: 0, lambda_handler: -> { 4 })
+
+    assert_predicate(obj3, :accepted_attributes?)
+    assert_predicate(obj4, :accepted_attributes?)
+
+    refute_equal(PROC_HANDLER, obj3.proc_handler)
+    assert_equal(3, obj3.proc_handler.call)
+
+    refute_equal(LAMBDA_HANDLER, obj4.lambda_handler)
+    assert_equal(4, obj4.lambda_handler.call)
+  end
 end
