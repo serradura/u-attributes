@@ -267,4 +267,50 @@ class Micro::Attributes::Features::AcceptTest < Minitest::Test
       assert_predicate(obj, :accepted_attributes?)
     end
   end
+
+  class ValidationAllowsNilWithIndifferentAccess
+    include Micro::Attributes.with(:accept, :initialize)
+
+    attribute :number, accept: Numeric, allow_nil: true
+  end
+
+  class ValidationAllowsNilKeysAsSymbol
+    include Micro::Attributes.with(:accept, :initialize, :keys_as_symbol)
+
+    attribute :number, accept: Numeric, allow_nil: true
+  end
+
+  def test_that_the_validation_skip_nil_if_it_was_allowed
+    nil1 = ValidationAllowsNilWithIndifferentAccess.new(number: nil)
+    nil2 = ValidationAllowsNilKeysAsSymbol.new(value: nil)
+
+    assert_equal(['number'], nil1.accepted_attributes)
+    assert_equal([:number], nil2.accepted_attributes)
+
+    [nil1, nil2].each do |obj|
+      assert_equal({}, obj.attributes_errors)
+      assert_equal([], obj.rejected_attributes)
+
+      refute_predicate(obj, :attributes_errors?)
+      refute_predicate(obj, :rejected_attributes?)
+      assert_predicate(obj, :accepted_attributes?)
+    end
+
+    # --
+
+    obj1 = ValidationAllowsNilWithIndifferentAccess.new(number: '1')
+    obj2 = ValidationAllowsNilKeysAsSymbol.new(number: :a)
+
+    assert_equal(['number'], obj1.rejected_attributes)
+    assert_equal({'number' => 'expected to be a kind of Numeric'}, obj1.attributes_errors)
+
+    assert_equal([:number], obj2.rejected_attributes)
+    assert_equal({number: 'expected to be a kind of Numeric'}, obj2.attributes_errors)
+
+    [obj1, obj2].each do |obj|
+      assert_predicate(obj, :attributes_errors?)
+      assert_predicate(obj, :rejected_attributes?)
+      refute_predicate(obj, :accepted_attributes?)
+    end
+  end
 end

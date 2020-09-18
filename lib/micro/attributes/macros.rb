@@ -41,8 +41,10 @@ module Micro
       end
 
       GetAcceptOrReject = -> opt do
-        return [:accept, opt[:accept]] if opt.key?(:accept)
-        return [:reject, opt[:reject]] if opt.key?(:reject)
+        allow_nil = opt[:allow_nil]
+
+        return [:accept, opt[:accept], allow_nil] if opt.key?(:accept)
+        return [:reject, opt[:reject], allow_nil] if opt.key?(:reject)
 
         Kind::Empty::ARRAY
       end
