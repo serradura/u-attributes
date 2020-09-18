@@ -48,7 +48,7 @@ class Micro::Attributes::Features::AcceptTest < Minitest::Test
 
     assert_equal({
       'a' => 'expected to be a kind of Numeric',
-      'operator'=>'expected to not be a kind of Numeric'
+      'operator' => 'expected to not be a kind of Numeric'
     }, calc2.attributes_errors)
 
     assert_equal({
@@ -145,5 +145,97 @@ class Micro::Attributes::Features::AcceptTest < Minitest::Test
 
     refute_predicate(calc2, :accepted_attributes?)
     refute_predicate(calc3, :accepted_attributes?)
+  end
+
+  class PersonWithIndifferentAccess
+    include Micro::Attributes.with(:accept, :initialize)
+
+    attribute :name, reject: :empty?
+    attribute :age, accept: :integer?
+  end
+
+  def test_the_accept_with_to_proc_and_indifferent_access
+    person1 = PersonWithIndifferentAccess.new(name: 'Rodrigo', age: 33)
+
+    assert_equal({}, person1.attributes_errors)
+
+    assert_equal([], person1.rejected_attributes)
+
+    assert_equal(['name', 'age'], person1.accepted_attributes)
+
+    # --
+
+    refute_predicate(person1, :attributes_errors?)
+
+    refute_predicate(person1, :rejected_attributes?)
+
+    assert_predicate(person1, :accepted_attributes?)
+
+    # -- --
+
+    person2 = PersonWithIndifferentAccess.new(name: '', age: 33.0)
+
+    assert_equal({
+      'name' => 'expected to not be empty?',
+      'age' => 'expected to be integer?'
+    }, person2.attributes_errors)
+
+    assert_equal(['name', 'age'], person2.rejected_attributes)
+
+    assert_equal([], person2.accepted_attributes)
+
+    # --
+
+    assert_predicate(person2, :attributes_errors?)
+
+    assert_predicate(person2, :rejected_attributes?)
+
+    refute_predicate(person2, :accepted_attributes?)
+  end
+
+  class PersonKeysAsSymbol
+    include Micro::Attributes.with(:accept, :initialize, :keys_as_symbol)
+
+    attribute :name, reject: :empty?
+    attribute :age, accept: :integer?
+  end
+
+  def test_the_accept_with_to_proc_and_keys_as_symbol
+    person1 = PersonKeysAsSymbol.new(name: 'Rodrigo', age: 33)
+
+    assert_equal({}, person1.attributes_errors)
+
+    assert_equal([], person1.rejected_attributes)
+
+    assert_equal([:name, :age], person1.accepted_attributes)
+
+    # --
+
+    refute_predicate(person1, :attributes_errors?)
+
+    refute_predicate(person1, :rejected_attributes?)
+
+    assert_predicate(person1, :accepted_attributes?)
+
+    # -- --
+
+    person2 = PersonKeysAsSymbol.new(name: '', age: 33.0)
+
+    assert_equal({
+      name: 'expected to not be empty?',
+      age: 'expected to be integer?'
+    }, person2.attributes_errors)
+
+    assert_equal([:name, :age], person2.rejected_attributes)
+
+    assert_equal([], person2.accepted_attributes)
+
+    # --
+
+    assert_predicate(person2, :attributes_errors?)
+
+    assert_predicate(person2, :rejected_attributes?)
+
+    refute_predicate(person2, :accepted_attributes?)
   end
 end

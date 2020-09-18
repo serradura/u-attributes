@@ -52,18 +52,46 @@ module Micro::Attributes
         end
 
         def __attribute_validate(name, value, strategy, expected)
-          if strategy == :accept
-            return if value.kind_of?(expected)
+          error_msg = AcceptOrReject.call(strategy, value, expected)
 
-            @__attributes_errors[name] = "expected to be a kind of #{expected}"
-          end
-
-          if strategy == :reject
-            return if !value.kind_of?(expected)
-
-            @__attributes_errors[name] = "expected to not be a kind of #{expected}"
-          end
+          @__attributes_errors[name] = error_msg if error_msg
         end
+
+        module AcceptOrReject
+          extend self
+
+          QUESTION_MARK = '?'.freeze
+
+          def call(strategy, value, expected)
+            is_accept = strategy == :accept
+
+            if expected.is_a?(Class) || expected.is_a?(Module)
+              validate_with_kind_of(is_accept, value, expected)
+            elsif expected.is_a?(Symbol) && expected.to_s.end_with?(QUESTION_MARK)
+              validate_with_predicate_symbol(is_accept, value, expected)
+            end
+          end
+
+          private
+
+            def validate_with_kind_of(is_accept, value, expected)
+              test = value.kind_of?(expected)
+
+              return test ? nil : "expected to be a kind of #{expected}" if is_accept
+
+              "expected to not be a kind of #{expected}" if test
+            end
+
+            def validate_with_predicate_symbol(is_accept, value, expected)
+              test = value.public_send(expected)
+
+              return test ? nil : "expected to be #{expected}" if is_accept
+
+              "expected to not be #{expected}" if test
+            end
+        end
+
+        private_constant :AcceptOrReject
     end
   end
 end
