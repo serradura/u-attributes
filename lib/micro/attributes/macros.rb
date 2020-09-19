@@ -40,13 +40,39 @@ module Micro
         nil
       end
 
-      GetAcceptOrReject = -> opt do
-        allow_nil = opt[:allow_nil]
+      module Options
+        PERMITTED = [
+          :default, :required,
+          :validate, :validates, # activemodel_validations
+          :accept, :reject, :allow_nil, :rejection_message # accept
+        ].freeze
 
-        return [:accept, opt[:accept], allow_nil] if opt.key?(:accept)
-        return [:reject, opt[:reject], allow_nil] if opt.key?(:reject)
+        INVALID_MESSAGE = [
+          "Found one or more invalid options: %{invalid_options}\n\nThe valid ones are: ",
+          PERMITTED.map { |key| ":#{key}" }.join(', ')
+        ].join.freeze
 
-        Kind::Empty::ARRAY
+        def self.check(opt)
+          keys = opt.keys
+
+          invalid_keys = opt.keys - PERMITTED
+
+          return if invalid_keys.empty?
+
+          invalid_options = { invalid_options: invalid_keys.inspect.tr('[', '').tr(']', '') }
+
+          raise ArgumentError, (INVALID_MESSAGE % invalid_options)
+        end
+
+        def self.for_accept(opt)
+          allow_nil = opt[:allow_nil]
+          rejection_message = opt[:rejection_message]
+
+          return [:accept, opt[:accept], allow_nil, rejection_message] if opt.key?(:accept)
+          return [:reject, opt[:reject], allow_nil, rejection_message] if opt.key?(:reject)
+
+          Kind::Empty::ARRAY
+        end
       end
 
       def __attributes_data_to_assign(name, opt)
@@ -54,7 +80,7 @@ module Micro
 
         [
           hasnt_default ? __attributes_required_add(name, opt, hasnt_default) : opt[:default],
-          GetAcceptOrReject.(opt)
+          Options.for_accept(opt)
         ]
       end
 
@@ -68,22 +94,10 @@ module Micro
         attr_reader(name)
       end
 
-      PERMITTED_OPTIONS = [
-        :default, :required,
-        :validate, :validates, # activemodel_validations
-        :accept, :reject, :allow_nil # accept
-      ].freeze
-      INVALID_OPTIONS_MSG = [
-        'Found one or more invalid options! The valid ones are: ',
-        PERMITTED_OPTIONS.map { |key| ":#{key}" }.join(', ')
-      ].join.freeze
-
       def __attribute_assign(key, can_overwrite, opt)
         name = __attribute_key_check__(__attribute_key_transform__(key))
 
-        invalid_keys = opt.keys - PERMITTED_OPTIONS
-
-        raise ArgumentError, INVALID_OPTIONS_MSG unless invalid_keys.empty?
+        Options.check(opt)
 
         has_attribute = attribute?(name)
 
@@ -147,7 +161,7 @@ module Micro
         private_constant :WRONG_NUMBER_OF_ARGS
       end
 
-      private_constant :PERMITTED_OPTIONS, :ForSubclasses, :GetAcceptOrReject
+      private_constant :Options, :ForSubclasses
     end
 
     private_constant :Macros

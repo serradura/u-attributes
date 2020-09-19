@@ -464,7 +464,7 @@ class Micro::AttributesTest < Minitest::Test
     assert_instance_of(ArgumentError, @@__invalid_attributes_options)
 
     assert_equal(
-      'Found one or more invalid options! The valid ones are: :default, :required, :validate, :validates, :accept, :reject, :allow_nil',
+      "Found one or more invalid options: :foo\n\nThe valid ones are: :default, :required, :validate, :validates, :accept, :reject, :allow_nil, :rejection_message",
       @@__invalid_attributes_options.message
     )
   end
