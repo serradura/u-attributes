@@ -46,98 +46,87 @@ module Micro::Attributes
         end
 
         def __attribute_accept_or_reject(key, value, validation_data)
-          error_msg = AcceptOrReject.call(key, value, validation_data)
+          context = Context.with(key, value, validation_data)
+
+          error_msg = context.rejection_message(Validate.call(context))
 
           @__attributes_errors[key] = error_msg if error_msg
         end
 
-        module AcceptOrReject
-          extend self
-
-          Context = Struct.new(:key, :value, :validation, :expected, :allow_nil, :rejection) do
-            def self.with(key, value, data)
-              new(key, value, data[0], data[1], data[2], data[3])
-            end
-
-            def accept?
-              validation == :accept
-            end
-
-            def rejection_message(default)
-              return default unless rejection || expected.respond_to?(:rejection_message)
-
-              rejection_msg = rejection || expected.rejection_message
-
-              return rejection_msg unless rejection_msg.is_a?(Proc)
-
-              rejection_msg.arity == 0 ? rejection_msg.call : rejection_msg.call(key)
-            end
+        Context = Struct.new(:key, :value, :validation, :expected, :allow_nil, :rejection) do
+          def self.with(key, value, data)
+            new(key, value, data[0], data[1], data[2], data[3])
           end
 
-          QUESTION_MARK = '?'.freeze
-
-          def call(key, value, validation_data)
-            context = Context.with(key, value, validation_data)
-
-            return if value.nil? && context.allow_nil
-
-            expected = context.expected
-
-            if expected.respond_to?(:call)
-              validate_callable_with(context)
-            elsif expected.is_a?(Class) || expected.is_a?(Module)
-              validate_kind_of_with(context)
-            elsif expected.is_a?(Symbol) && expected.to_s.end_with?(QUESTION_MARK)
-              validate_predicate_with(context)
-            end
+          def allow_nil?
+            allow_nil && value.nil?
           end
 
-          private
+          def accept?
+            validation == :accept
+          end
 
-            def validate_callable_with(context)
-              expected = context.expected
+          def rejection_message(default_msg)
+            return unless default_msg
 
-              test = expected.call(context.value)
+            return default_msg unless rejection || expected.respond_to?(:rejection_message)
 
-              return test ? nil : is_invalid_msg(context) if context.accept?
+            rejection_msg = rejection || expected.rejection_message
 
-              is_invalid_msg(context) if test
-            end
+            return rejection_msg unless rejection_msg.is_a?(Proc)
 
-            IS_INVALID_MSG = 'is invalid'.freeze
-
-            def is_invalid_msg(context)
-              context.rejection_message(IS_INVALID_MSG)
-            end
-
-            def validate_kind_of_with(context)
-              expected = context.expected
-
-              test = context.value.kind_of?(expected)
-
-              if context.accept?
-                test ? nil : context.rejection_message("expected to be a kind of #{expected}")
-              else
-                context.rejection_message("expected to not be a kind of #{expected}") if test
-              end
-            end
-
-            def validate_predicate_with(context)
-              expected = context.expected
-
-              test = context.value.public_send(expected)
-
-              if context.accept?
-                test ? nil : context.rejection_message("expected to be #{expected}")
-              else
-                context.rejection_message("expected to not be #{expected}") if test
-              end
-            end
-
-          private_constant :Context, :QUESTION_MARK, :IS_INVALID_MSG
+            rejection_msg.arity == 0 ? rejection_msg.call : rejection_msg.call(key)
+          end
         end
 
-        private_constant :AcceptOrReject, :KeepProc
+        module Validate
+          module Callable
+            MESSAGE = 'is invalid'.freeze
+
+            def self.call?(exp); exp.respond_to?(:call); end
+            def self.call(exp, val); exp.call(val); end
+            def self.accept_failed(_exp); MESSAGE; end
+            def self.reject_failed(_exp); MESSAGE; end
+          end
+
+          module KindOf
+            def self.call?(exp); exp.is_a?(Class) || exp.is_a?(Module); end
+            def self.call(exp, val); val.kind_of?(exp); end
+            def self.accept_failed(exp); "expected to be a kind of #{exp}"; end
+            def self.reject_failed(exp); "expected to not be a kind of #{exp}"; end
+          end
+
+          module Predicate
+            QUESTION_MARK = '?'.freeze
+
+            def self.call?(exp); exp.is_a?(Symbol) && exp.to_s.end_with?(QUESTION_MARK); end
+            def self.call(exp, val); val.public_send(exp); end
+            def self.accept_failed(exp); "expected to be #{exp}"; end
+            def self.reject_failed(exp); "expected to not be #{exp}"; end
+          end
+
+          def self.with(expected)
+            return Callable if Callable.call?(expected)
+            return KindOf if KindOf.call?(expected)
+            return Predicate if Predicate.call?(expected)
+          end
+
+          def self.call(context)
+            return if context.allow_nil?
+
+            validate = self.with(expected = context.expected)
+
+            return unless validate
+
+            truthy = validate.call(expected, context.value)
+
+            return truthy ? nil : validate.accept_failed(expected) if context.accept?
+
+            validate.reject_failed(expected) if truthy
+          end
+        end
+
+        private_constant :KeepProc, :Context, :Validate
     end
   end
 end
