@@ -11,12 +11,12 @@ module Micro::Attributes
         RUBY
       end
 
-      def with_attribute(key, val)
-        self.class.new(attributes.merge(key => val))
-      end
-
       def with_attributes(arg)
         self.class.new(attributes.merge(arg))
+      end
+
+      def with_attribute(key, val)
+        with_attributes(key => val)
       end
     end
   end
