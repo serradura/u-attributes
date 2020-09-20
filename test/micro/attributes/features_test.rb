@@ -26,7 +26,7 @@ class Micro::Attributes::FeaturesTest < Minitest::Test
 
   def test_fetching_all_features
     assert_equal(Features.all, Micro::Attributes.with_all_features)
-    assert_equal(Features.all, Micro::Attributes::With::Accept_ActiveModelValidations_Diff_InitializeStrict_KeysAsSymbol)
+    assert_equal(Features.all, Micro::Attributes::With::AcceptStrict_ActiveModelValidations_Diff_InitializeStrict_KeysAsSymbol)
   end
 
   def test_with_Diff
@@ -191,49 +191,49 @@ class Micro::Attributes::FeaturesTest < Minitest::Test
   end
 
   def test_excluding_features
-    assert_equal(Micro::Attributes.without(:diff), With::Accept_ActiveModelValidations_InitializeStrict_KeysAsSymbol)
-    assert_equal(Micro::Attributes.without(:initialize), With::Accept_ActiveModelValidations_Diff_KeysAsSymbol)
-    assert_equal(Micro::Attributes.without(initialize: :strict), With::Accept_ActiveModelValidations_Diff_Initialize_KeysAsSymbol)
-    assert_equal(Micro::Attributes.without(:keys_as_symbol), With::Accept_ActiveModelValidations_Diff_InitializeStrict)
-    assert_equal(Micro::Attributes.without(:activemodel_validations), With::Accept_Diff_InitializeStrict_KeysAsSymbol)
+    assert_equal(Micro::Attributes.without(:diff), With::AcceptStrict_ActiveModelValidations_InitializeStrict_KeysAsSymbol)
+    assert_equal(Micro::Attributes.without(:initialize), With::AcceptStrict_ActiveModelValidations_Diff_KeysAsSymbol)
+    assert_equal(Micro::Attributes.without(initialize: :strict), With::AcceptStrict_ActiveModelValidations_Diff_Initialize_KeysAsSymbol)
+    assert_equal(Micro::Attributes.without(:keys_as_symbol), With::AcceptStrict_ActiveModelValidations_Diff_InitializeStrict)
+    assert_equal(Micro::Attributes.without(:activemodel_validations), With::AcceptStrict_Diff_InitializeStrict_KeysAsSymbol)
 
     # --
 
-    assert_equal(Micro::Attributes.without(:activemodel_validations, :diff), With::Accept_InitializeStrict_KeysAsSymbol)
-    assert_equal(Micro::Attributes.without(:activemodel_validations, :diff, :initialize), With::Accept_KeysAsSymbol)
-    assert_equal(Micro::Attributes.without(:activemodel_validations, :diff, :initialize, :keys_as_symbol), With::Accept)
-    assert_equal(Micro::Attributes.without(:activemodel_validations, :diff, initialize: :strict), With::Accept_Initialize_KeysAsSymbol)
-    assert_equal(Micro::Attributes.without(:activemodel_validations, :diff, :keys_as_symbol, initialize: :strict), With::Accept_Initialize)
+    assert_equal(Micro::Attributes.without(:activemodel_validations, :diff), With::AcceptStrict_InitializeStrict_KeysAsSymbol)
+    assert_equal(Micro::Attributes.without(:activemodel_validations, :diff, :initialize), With::AcceptStrict_KeysAsSymbol)
+    assert_equal(Micro::Attributes.without(:activemodel_validations, :diff, :initialize, :keys_as_symbol), With::AcceptStrict)
+    assert_equal(Micro::Attributes.without(:activemodel_validations, :diff, initialize: :strict), With::AcceptStrict_Initialize_KeysAsSymbol)
+    assert_equal(Micro::Attributes.without(:activemodel_validations, :diff, :keys_as_symbol, initialize: :strict), With::AcceptStrict_Initialize)
 
-    assert_equal(Micro::Attributes.without(:activemodel_validations, :initialize), With::Accept_Diff_KeysAsSymbol)
-    assert_equal(Micro::Attributes.without(:activemodel_validations, :initialize, :keys_as_symbol), With::Accept_Diff)
+    assert_equal(Micro::Attributes.without(:activemodel_validations, :initialize), With::AcceptStrict_Diff_KeysAsSymbol)
+    assert_equal(Micro::Attributes.without(:activemodel_validations, :initialize, :keys_as_symbol), With::AcceptStrict_Diff)
 
-    assert_equal(Micro::Attributes.without(:activemodel_validations, initialize: :strict), With::Accept_Diff_Initialize_KeysAsSymbol)
+    assert_equal(Micro::Attributes.without(:activemodel_validations, initialize: :strict), With::AcceptStrict_Diff_Initialize_KeysAsSymbol)
 
-    assert_equal(Micro::Attributes.without(:activemodel_validations, :keys_as_symbol), With::Accept_Diff_InitializeStrict)
-    assert_equal(Micro::Attributes.without(:activemodel_validations, :keys_as_symbol, initialize: :strict), With::Accept_Diff_Initialize)
-
-    # --
-
-    assert_equal(Micro::Attributes.without(:diff, :initialize), With::Accept_ActiveModelValidations_KeysAsSymbol)
-    assert_equal(Micro::Attributes.without(:diff, :initialize, :keys_as_symbol), With::Accept_ActiveModelValidations)
-
-    assert_equal(Micro::Attributes.without(:diff, :keys_as_symbol), With::Accept_ActiveModelValidations_InitializeStrict)
-    assert_equal(Micro::Attributes.without(:diff, :keys_as_symbol, initialize: :strict), With::Accept_ActiveModelValidations_Initialize)
-
-    assert_equal(Micro::Attributes.without(:diff, initialize: :strict), With::Accept_ActiveModelValidations_Initialize_KeysAsSymbol)
+    assert_equal(Micro::Attributes.without(:activemodel_validations, :keys_as_symbol), With::AcceptStrict_Diff_InitializeStrict)
+    assert_equal(Micro::Attributes.without(:activemodel_validations, :keys_as_symbol, initialize: :strict), With::AcceptStrict_Diff_Initialize)
 
     # --
 
-    assert_equal(Micro::Attributes.without(:initialize), With::Accept_ActiveModelValidations_Diff_KeysAsSymbol)
-    assert_equal(Micro::Attributes.without(:initialize, :keys_as_symbol), With::Accept_ActiveModelValidations_Diff)
+    assert_equal(Micro::Attributes.without(:diff, :initialize), With::AcceptStrict_ActiveModelValidations_KeysAsSymbol)
+    assert_equal(Micro::Attributes.without(:diff, :initialize, :keys_as_symbol), With::AcceptStrict_ActiveModelValidations)
+
+    assert_equal(Micro::Attributes.without(:diff, :keys_as_symbol), With::AcceptStrict_ActiveModelValidations_InitializeStrict)
+    assert_equal(Micro::Attributes.without(:diff, :keys_as_symbol, initialize: :strict), With::AcceptStrict_ActiveModelValidations_Initialize)
+
+    assert_equal(Micro::Attributes.without(:diff, initialize: :strict), With::AcceptStrict_ActiveModelValidations_Initialize_KeysAsSymbol)
 
     # --
 
-    assert_equal(Micro::Attributes.without(initialize: :strict), With::Accept_ActiveModelValidations_Diff_Initialize_KeysAsSymbol)
+    assert_equal(Micro::Attributes.without(:initialize), With::AcceptStrict_ActiveModelValidations_Diff_KeysAsSymbol)
+    assert_equal(Micro::Attributes.without(:initialize, :keys_as_symbol), With::AcceptStrict_ActiveModelValidations_Diff)
 
     # --
 
-    assert_equal(Micro::Attributes.without(:keys_as_symbol, initialize: :strict), With::Accept_ActiveModelValidations_Diff_Initialize)
+    assert_equal(Micro::Attributes.without(initialize: :strict), With::AcceptStrict_ActiveModelValidations_Diff_Initialize_KeysAsSymbol)
+
+    # --
+
+    assert_equal(Micro::Attributes.without(:keys_as_symbol, initialize: :strict), With::AcceptStrict_ActiveModelValidations_Diff_Initialize)
   end
 end

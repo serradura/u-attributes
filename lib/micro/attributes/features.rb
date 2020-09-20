@@ -8,6 +8,7 @@ module Micro
     module Features
       require 'micro/attributes/features/diff'
       require 'micro/attributes/features/accept'
+      require 'micro/attributes/features/accept/strict'
       require 'micro/attributes/features/initialize'
       require 'micro/attributes/features/initialize/strict'
       require 'micro/attributes/features/keys_as_symbol'
@@ -31,6 +32,7 @@ module Micro
           INIT = 'Initialize'.freeze,
           ACCEPT = 'Accept'.freeze,
           INIT_STRICT = 'InitializeStrict'.freeze,
+          ACCEPT_STRICT = 'AcceptStrict'.freeze,
           KEYS_AS_SYMBOL = 'KeysAsSymbol'.freeze,
           AM_VALIDATIONS = 'ActiveModelValidations'.freeze
         ].sort.freeze
@@ -40,6 +42,7 @@ module Micro
           INIT => Features::Initialize,
           ACCEPT => Features::Accept,
           INIT_STRICT => Features::Initialize::Strict,
+          ACCEPT_STRICT => Features::Accept::Strict,
           KEYS_AS_SYMBOL => Features::KeysAsSymbol,
           AM_VALIDATIONS => Features::ActiveModelValidations
         }.freeze
@@ -52,14 +55,19 @@ module Micro
           Name::ACTIVEMODEL_VALIDATIONS => AM_VALIDATIONS
         }.freeze
 
+        INIT_INIT_STRICT = "#{INIT}_#{INIT_STRICT}".freeze
+        ACCEPT_ACCEPT_STRICT = "#{ACCEPT}_#{ACCEPT_STRICT}".freeze
+
         BuildKey = -> combination do
-          key = combination.sort.join('_')
-          key.sub("#{INIT}_#{INIT_STRICT}", INIT_STRICT)
+          combination.sort.join('_')
+            .sub(INIT_INIT_STRICT, INIT_STRICT)
+            .sub(ACCEPT_ACCEPT_STRICT, ACCEPT_STRICT)
         end
 
         KEYS_TO_MODULES = begin
           combinations = (1..KEYS.size).map { |n| KEYS.combination(n).to_a }.flatten(1).sort_by { |i| "#{i.size}#{i.join}" }
           combinations.delete_if { |combination| combination.include?(INIT_STRICT) && !combination.include?(INIT) }
+          combinations.delete_if { |combination| combination.include?(ACCEPT_STRICT) && !combination.include?(ACCEPT) }
           combinations.each_with_object({}) do |combination, features|
             included = [
               'def self.included(base)',
@@ -78,6 +86,8 @@ module Micro
 
         def self.fetch_key(arg)
           if arg.is_a?(Hash)
+            return ACCEPT_STRICT if arg[:accept] == :strict
+
             INIT_STRICT if arg[:initialize] == :strict
           else
             name = String(arg)
@@ -99,18 +109,16 @@ module Micro
           yield(keys)
         end
 
-        def self.remove_init_key_if_has_init_strict(keys)
+        def self.remove_base_if_has_strict(keys)
           keys.delete_if { |key| key == INIT } if keys.include?(INIT_STRICT)
-        end
-
-        def self.remove_init_keys(keys, if_has_init_in:)
-          keys.delete_if { |key| key == INIT || key == INIT_STRICT } if if_has_init_in.include?(INIT)
+          keys.delete_if { |key| key == ACCEPT } if keys.include?(ACCEPT_STRICT)
         end
 
         def self.without_keys(keys_to_exclude)
-          (KEYS - keys_to_exclude).tap do |keys|
-            remove_init_keys(keys, if_has_init_in: keys_to_exclude)
-          end
+          keys = (KEYS - keys_to_exclude)
+          keys.delete_if { |key| key == INIT || key == INIT_STRICT } if keys_to_exclude.include?(INIT)
+          keys.delete_if { |key| key == ACCEPT || key == ACCEPT_STRICT } if keys_to_exclude.include?(ACCEPT)
+          keys
         end
 
         def self.fetch_module_by_keys(combination)
@@ -118,6 +126,9 @@ module Micro
 
           KEYS_TO_MODULES.fetch(key)
         end
+
+        private_constant :KEYS_TO_FEATURES, :NAMES_TO_KEYS, :INVALID_NAME
+        private_constant :INIT_INIT_STRICT, :ACCEPT_ACCEPT_STRICT, :BuildKey
       end
 
       def all
@@ -126,7 +137,7 @@ module Micro
 
       def with(names)
         Options.fetch_keys(names) do |keys|
-          Options.remove_init_key_if_has_init_strict(keys)
+          Options.remove_base_if_has_strict(keys)
 
           Options.fetch_module_by_keys(keys)
         end
@@ -141,6 +152,9 @@ module Micro
           Options.fetch_module_by_keys(keys_to_fetch)
         end
       end
+
+      private_constant :Name
     end
+
   end
 end
