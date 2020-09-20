@@ -460,7 +460,7 @@ class Micro::AttributesTest < Minitest::Test
     @@__invalid_attributes_options = err
   end
 
-  def test_invalid_attributes_definition
+  def test_invalid_attributes_options
     assert_instance_of(ArgumentError, @@__invalid_attributes_options)
 
     assert_equal(

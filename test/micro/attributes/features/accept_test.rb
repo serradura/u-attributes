@@ -333,7 +333,7 @@ class Micro::Attributes::Features::AcceptTest < Minitest::Test
     attribute :lambda_handler, accept: Proc, default: LAMBDA_HANDLER
   end
 
-  def test_that_the_validation_skip_nil_if_it_was_allowed
+  def test_the_skip_default_value_when_accept_a_Proc
     obj1 = SkipDefaultValueResolutionWhenAcceptAProcWithIndifferentAccess.new(str: 0)
     obj2 = SkipDefaultValueResolutionWhenAcceptAProcWithKeysAsSymbol.new(str: 0)
 
