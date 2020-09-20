@@ -443,11 +443,17 @@ class Micro::Attributes::Features::AcceptTest < Minitest::Test
     end
   end
 
+  class FilledStr3
+    def self.call(value); value.is_a?(String) && !value.empty?; end
+    def self.rejection_message; 'must be a filled string'; end
+  end
+
   class RejectionMessageWithIndifferentAccess
     include Micro::Attributes.with(:accept, :initialize)
 
     attribute :name, accept: String, rejection_message: 'must be a string'
     attribute :age, accept: Integer, rejection_message: -> key { "#{key}: must be an integer #{rand}"}
+    attribute :foo, accept: FilledStr3, rejection_message: 'foo is invalid'
   end
 
   class RejectionMessageWithKeysAsSymbol
@@ -455,19 +461,22 @@ class Micro::Attributes::Features::AcceptTest < Minitest::Test
 
     attribute :name, accept: String, rejection_message: 'must be a string'
     attribute :age, accept: Integer, rejection_message: -> key { "#{key}: must be an integer #{rand}"}
+    attribute :foo, accept: FilledStr3, rejection_message: 'foo is invalid'
   end
 
   def test_the_definition_of_rejection_messages_with_indifferent_access
-    obj1 = RejectionMessageWithIndifferentAccess.new(name: nil, age: '2')
-    obj2 = RejectionMessageWithKeysAsSymbol.new(name: :name, age: 0.0)
+    obj1 = RejectionMessageWithIndifferentAccess.new(name: nil, age: '2', foo: '')
+    obj2 = RejectionMessageWithKeysAsSymbol.new(name: :name, age: 0.0, foo: '')
 
-    assert_equal(['name', 'age'], obj1.rejected_attributes)
+    assert_equal(['name', 'age', 'foo'], obj1.rejected_attributes)
 
+    assert_equal('foo is invalid', obj1.attributes_errors['foo'])
     assert_equal('must be a string', obj1.attributes_errors['name'])
     assert_match(/age: must be an integer \d\.\d+/, obj1.attributes_errors['age'])
 
-    assert_equal([:name, :age], obj2.rejected_attributes)
+    assert_equal([:name, :age, :foo], obj2.rejected_attributes)
 
+    assert_equal('foo is invalid', obj2.attributes_errors[:foo])
     assert_equal('must be a string', obj2.attributes_errors[:name])
     assert_match(/age: must be an integer \d\.\d+/, obj2.attributes_errors[:age])
 
