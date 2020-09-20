@@ -53,8 +53,6 @@ module Micro
         ].join.freeze
 
         def self.check(opt)
-          keys = opt.keys
-
           invalid_keys = opt.keys - PERMITTED
 
           return if invalid_keys.empty?
