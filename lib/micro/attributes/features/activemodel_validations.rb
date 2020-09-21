@@ -3,13 +3,45 @@
 module Micro::Attributes
   module Features
     module ActiveModelValidations
-      def self.included(base)
-        begin
-          require 'active_model'
+      module Standard
+        private def __call_after_attributes_assign
+          run_validations!
+        end
+      end
 
-          base.send(:include, ::ActiveModel::Validations)
-          base.extend(ClassMethods)
-        rescue LoadError
+      module CheckActivemodelValidationErrors
+        private def __check_activemodel_validation_errors
+          return if errors.blank?
+
+          errors_hash = errors.to_hash
+
+          defined_attributes.each do |key|
+            value = Utils::Hashes.assoc(errors_hash, key)
+
+            @__attributes_errors[key] = value.join(', ') if value.present?
+          end
+        end
+      end
+
+      module WithAccept
+        include CheckActivemodelValidationErrors
+
+        private def __call_after_attributes_assign
+          run_validations! unless attributes_errors?
+
+          __check_activemodel_validation_errors
+        end
+      end
+
+      module WithAcceptStrict
+        include CheckActivemodelValidationErrors
+
+        private def __call_after_attributes_assign
+          __raise_error_if_found_attributes_errors if attributes_errors?
+
+          run_validations!
+
+          __check_activemodel_validation_errors
         end
       end
 
@@ -22,11 +54,23 @@ module Micro::Attributes
         end
       end
 
-      private
+      def self.included(base)
+        begin
+          require 'active_model'
 
-        def __call_after_attributes_assign
-          run_validations! if respond_to?(:run_validations!, true)
+          base.send(:include, ::ActiveModel::Validations)
+          base.extend(ClassMethods)
+
+          case
+          when base <= Features::Accept::Strict then base.send(:include, WithAcceptStrict)
+          when base <= Features::Accept then base.send(:include, WithAccept)
+          else base.send(:include, Standard)
+          end
+        rescue LoadError
         end
+      end
+
+      private_constant :Standard, :CheckActivemodelValidationErrors, :WithAccept, :WithAcceptStrict
     end
   end
 end

@@ -7,16 +7,16 @@ module Micro::Attributes
         @__attributes_errors
       end
 
+      def attributes_errors?
+        !@__attributes_errors.empty?
+      end
+
       def rejected_attributes
-        @rejected_attributes ||= attributes_errors.keys
+        @__rejected_attributes ||= attributes_errors.keys
       end
 
       def accepted_attributes
-        @accepted_attributes ||= defined_attributes - rejected_attributes
-      end
-
-      def attributes_errors?
-        !@__attributes_errors.empty?
+        @__accepted_attributes ||= defined_attributes - rejected_attributes
       end
 
       def rejected_attributes?

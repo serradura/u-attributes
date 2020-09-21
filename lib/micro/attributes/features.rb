@@ -84,13 +84,17 @@ module Micro
           end.freeze
         end
 
+        ACTIVEMODEL_VALIDATION = 'activemodel_validation'.freeze
+
         def self.fetch_key(arg)
           if arg.is_a?(Hash)
             return ACCEPT_STRICT if arg[:accept] == :strict
 
             INIT_STRICT if arg[:initialize] == :strict
           else
-            name = String(arg)
+            str = String(arg)
+
+            name = str == ACTIVEMODEL_VALIDATION ? Name::ACTIVEMODEL_VALIDATIONS : str
 
             KEYS_TO_MODULES.key?(name) ? name : NAMES_TO_KEYS[name]
           end
