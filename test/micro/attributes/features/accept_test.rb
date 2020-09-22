@@ -633,7 +633,7 @@ class Micro::Attributes::Features::AcceptTest < Minitest::Test
 
     TrimString = -> value { String(value).strip }
 
-    attribute :email, default: TrimString, accept: -> str { str =~ /\A.+@.+\..+\z/ }
+    attribute :email, default: TrimString, accept: -> str { str =~ /\A.+@.+\..+\z/ }, freeze: :after_dup
 
     attributes :password, :password_confirmation, default: TrimString, reject: :empty?, private: true
 
@@ -659,6 +659,8 @@ class Micro::Attributes::Features::AcceptTest < Minitest::Test
       sign_up1.password_digest
     )
 
+    assert_predicate(sign_up1.email, :frozen?)
+
     # --
 
     sign_up2 = SignUpParamsWithKeysAsSymbol.new(
@@ -668,5 +670,7 @@ class Micro::Attributes::Features::AcceptTest < Minitest::Test
     )
 
     assert_nil(sign_up2.password_digest)
+
+    assert_predicate(sign_up2.email, :frozen?)
   end
 end
