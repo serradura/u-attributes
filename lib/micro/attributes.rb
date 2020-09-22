@@ -154,7 +154,7 @@ module Micro
 
         ivar_value = instance_variable_set("@#{name}", value_to_assign)
 
-        __attributes[name] = ivar_value if attribute_data[3] # is_public
+        __attributes[name] = ivar_value if attribute_data[3] == :public
       end
 
       MISSING_KEYWORD = 'missing keyword'.freeze

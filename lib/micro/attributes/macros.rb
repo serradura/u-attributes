@@ -41,13 +41,18 @@ module Micro
         PROTECTED = 3
         REQUIRED = 4
 
-        def self.visibility(opt)
+        def self.visibility_index(opt)
           return PRIVATE if opt[:private]
           return PROTECTED if opt[:protected]
           PUBLIC
         end
 
-        def self.public?(visibility); visibility == PUBLIC; end
+        VISIBILITY_NAMES = { PUBLIC => :public, PRIVATE => :private, PROTECTED => :protected }.freeze
+
+        def self.visibility_name_from_index(visibility_index)
+          VISIBILITY_NAMES[visibility_index]
+        end
+
         def self.private?(visibility); visibility == PRIVATE; end
         def self.protected?(visibility); visibility == PROTECTED; end
       end
@@ -93,14 +98,14 @@ module Micro
         @__attributes_data__ ||= {}
       end
 
-      def __attribute_reader(name, visibility)
+      def __attribute_reader(name, visibility_index)
         attr_reader(name)
 
         __attributes.add(name)
-        __attributes_groups[visibility] << name
+        __attributes_groups[visibility_index] << name
 
-        private(name) if Options.private?(visibility)
-        protected(name) if Options.protected?(visibility)
+        private(name) if Options.private?(visibility_index)
+        protected(name) if Options.protected?(visibility_index)
       end
 
       def __attributes_required_add(name, opt, hasnt_default)
@@ -111,12 +116,17 @@ module Micro
         nil
       end
 
-      def __attributes_data_to_assign(name, opt, visibility)
+      def __attributes_data_to_assign(name, opt, visibility_index)
         hasnt_default = !opt.key?(:default)
 
         default = hasnt_default ? __attributes_required_add(name, opt, hasnt_default) : opt[:default]
 
-        [default, Options.for_accept(opt), opt[:freeze], Options.public?(visibility)]
+        [
+          default,
+          Options.for_accept(opt),
+          opt[:freeze],
+          Options.visibility_name_from_index(visibility_index)
+        ]
       end
 
       def __call_after_attribute_assign__(attr_name, options); end
@@ -128,12 +138,12 @@ module Micro
 
         has_attribute = attribute?(name, true)
 
-        visibility = Options.visibility(opt)
+        visibility_index = Options.visibility_index(opt)
 
-        __attribute_reader(name, visibility) unless has_attribute
+        __attribute_reader(name, visibility_index) unless has_attribute
 
         if can_overwrite || !has_attribute
-          __attributes_data__[name] = __attributes_data_to_assign(name, opt, visibility)
+          __attributes_data__[name] = __attributes_data_to_assign(name, opt, visibility_index)
         end
 
         __call_after_attribute_assign__(name, opt)
@@ -142,13 +152,16 @@ module Micro
       # NOTE: can't be renamed! It is used by u-case v4.
       def __attributes_set_after_inherit__(arg)
         arg.each do |key, val|
-          opt = if default = val[0]
-            accept_key, accept_val = val[1]
+          opt = {}
 
-            hash = accept_key ? { accept_key => accept_val } : {}
-            hash[:default] = default
-            hash
-          end
+          default = val[0]
+          accept_key, accept_val = val[1]
+          freeze, visibility = val[2], val[3]
+
+          opt[:default] = default if default
+          opt[accept_key] = accept_val if accept_key
+          opt[:freeze] = freeze if freeze
+          opt[visibility] = true if visibility != :public
 
           __attribute_assign(key, true, opt || Kind::Empty::HASH)
         end
