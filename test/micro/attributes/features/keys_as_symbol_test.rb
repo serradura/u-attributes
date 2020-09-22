@@ -1,6 +1,6 @@
 require 'test_helper'
 
-class Micro::Attributes::Features::AttributesKeysIndifferentTest < Minitest::Test
+class Micro::Attributes::Features::KeysAsSymbolTest < Minitest::Test
   class Bar
     include Micro::Attributes.with(:keys_as_symbol)
 
@@ -130,7 +130,7 @@ class Micro::Attributes::Features::AttributesKeysIndifferentTest < Minitest::Tes
     assert_equal({a: 1, b: 6}, foz.attributes)
   end
 
-  def test_the_attributes_access
+  def test_valid_attribute_definition
     [Bar, Foo, Foz].each do |klass|
       assert_equal(:symbol, klass.attributes_access)
     end
@@ -146,8 +146,9 @@ class Micro::Attributes::Features::AttributesKeysIndifferentTest < Minitest::Tes
     @@__invalid_attribute_key = e
   end
 
-  def test_the_attributes_access
+  def test_invalid_attribute_definition
     assert_instance_of(Kind::Error, @@__invalid_attribute_key)
+
     assert_equal('"only_symbol" expected to be a kind of Symbol', @@__invalid_attribute_key.message)
   end
 

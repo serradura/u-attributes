@@ -35,17 +35,17 @@ module Micro::Attributes
 
           raise ArgumentError, FROM_TO_ERROR
         elsif from.nil? && to.nil?
-          differences.has_key?(key_access(name))
+          differences.has_key?(key_transform(name))
         else
-          result = @differences[key_access(name)]
+          result = @differences[key_transform(name)]
           result ? result[@from_key] == from && result[@to_key] == to : false
         end
       end
 
       private
 
-        def key_access(key)
-          @from_class.__attribute_key__(key)
+        def key_transform(key)
+          @from_class.__attribute_key_transform__(key)
         end
 
         def diff(from_attributes, to_attributes)
