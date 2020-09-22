@@ -38,7 +38,7 @@ module Micro::Attributes
         def __attribute_assign(key, initialize_value, attribute_data)
           validation_data = attribute_data[1]
 
-          value_to_assign = FetchValueToAssign.(initialize_value, attribute_data[0], KeepProc.(validation_data))
+          value_to_assign = FetchValueToAssign.(initialize_value, attribute_data, KeepProc.(validation_data))
 
           value = __attributes[key] = instance_variable_set("@#{key}", value_to_assign)
 

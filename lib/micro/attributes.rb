@@ -115,12 +115,22 @@ module Micro
         @__attributes ||= {}
       end
 
-      FetchValueToAssign = -> (value, default, keep_proc = false) do
-        if default.is_a?(Proc) && !keep_proc
-          default.arity > 0 ? default.call(value) : default.call
-        else
-          value.nil? ? default : value
-        end
+      FetchValueToAssign = -> (value, attribute_data, keep_proc = false) do
+        default = attribute_data[0]
+
+        value_to_assign =
+          if default.is_a?(Proc) && !keep_proc
+            default.arity > 0 ? default.call(value) : default.call
+          else
+            value.nil? ? default : value
+          end
+
+        return value_to_assign unless to_freeze = attribute_data[2]
+        return value_to_assign.freeze if to_freeze == true
+        return value_to_assign.dup.freeze if to_freeze == :after_dup
+        return value_to_assign.clone.freeze if to_freeze == :after_clone
+
+        raise NotImplementedError
       end
 
       def __attributes_assign(hash)
@@ -132,7 +142,7 @@ module Micro
       end
 
       def __attribute_assign(name, initialize_value, attribute_data)
-        value_to_assign = FetchValueToAssign.(initialize_value, attribute_data[0])
+        value_to_assign = FetchValueToAssign.(initialize_value, attribute_data)
 
         __attributes[name] = instance_variable_set("@#{name}", value_to_assign)
       end
