@@ -1,3 +1,4 @@
+require 'digest'
 require 'test_helper'
 
 class Micro::Attributes::Features::AcceptTest < Minitest::Test
@@ -583,5 +584,89 @@ class Micro::Attributes::Features::AcceptTest < Minitest::Test
     assert_respond_to(obj.d, :foo)
     assert_respond_to(obj.d1, :foo)
     assert_respond_to(obj.d2, :foo)
+  end
+
+  class SignUpParamsWithIndifferentAccess
+    include Micro::Attributes.with(:accept, :initialize)
+
+    TrimString = -> value { String(value).strip }
+
+    attribute :email                , default: TrimString, accept: -> str { str =~ /\A.+@.+\..+\z/ }
+    attribute :password             , default: TrimString, reject: :empty?, private: true
+    attribute :password_confirmation, default: TrimString, reject: :empty?, private: true
+
+    def valid_password?
+      accepted_attributes? && password == password_confirmation
+    end
+
+    def password_digest
+      Digest::SHA256.hexdigest(password) if valid_password?
+    end
+  end
+
+  def test_visibility_and_accept_with_indifferent_access
+    sign_up1 = SignUpParamsWithIndifferentAccess.new(
+      email: '         test@email.com          ',
+      password: "\t         123456  \r",
+      'password_confirmation' => "\n\r123456\t\n"
+    )
+
+    assert_equal('test@email.com', sign_up1.email)
+    assert_equal(
+      '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92',
+      sign_up1.password_digest
+    )
+
+    # --
+
+    sign_up2 = SignUpParamsWithIndifferentAccess.new(
+      email: 'test@email.com',
+      password: '123456',
+      'password_confirmation' => '123457'
+    )
+
+    assert_nil(sign_up2.password_digest)
+  end
+
+  class SignUpParamsWithKeysAsSymbol
+    include Micro::Attributes.with(:initialize, :keys_as_symbol, accept: :strict)
+
+    TrimString = -> value { String(value).strip }
+
+    attribute :email, default: TrimString, accept: -> str { str =~ /\A.+@.+\..+\z/ }
+
+    attributes :password, :password_confirmation, default: TrimString, reject: :empty?, private: true
+
+    def valid_password?
+      accepted_attributes? && password == password_confirmation
+    end
+
+    def password_digest
+      Digest::SHA256.hexdigest(password) if valid_password?
+    end
+  end
+
+  def test_visibility_and_accept_with_indifferent_access
+    sign_up1 = SignUpParamsWithKeysAsSymbol.new(
+      email: '         test@email.com          ',
+      password: "\t         123456  \r",
+      password_confirmation: "\n\r123456\t\n"
+    )
+
+    assert_equal('test@email.com', sign_up1.email)
+    assert_equal(
+      '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92',
+      sign_up1.password_digest
+    )
+
+    # --
+
+    sign_up2 = SignUpParamsWithKeysAsSymbol.new(
+      email: 'test@email.com',
+      password: '123456',
+      password_confirmation: '123457'
+    )
+
+    assert_nil(sign_up2.password_digest)
   end
 end
