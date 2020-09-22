@@ -85,7 +85,7 @@ gem 'u-attributes'
 
 | u-attributes   | branch  | ruby     |  activemodel  |
 | -------------- | ------- | -------- | ------------- |
-| 2.4.0          | main    | >= 2.2.0 | >= 3.2, < 6.1 |
+| 2.5.0          | main    | >= 2.2.0 | >= 3.2, < 6.1 |
 | 1.2.0          | v1.x    | >= 2.2.0 | >= 3.2, < 6.1 |
 
 > **Note**: The activemodel is an optional dependency, this module [can be enabled](#activemodelvalidation-extension) to validate the attributes.
@@ -618,7 +618,7 @@ The method `Micro::Attributes.with()` will raise an exception if no arguments/fe
 
 ```ruby
 class Job
-  include Micro::Attributes.with() # ArgumentError (Invalid feature name! Available options: :activemodel_validations, :diff, :initialize, :keys_as_symbol)
+  include Micro::Attributes.with() # ArgumentError (Invalid feature name! Available options: :accept, :activemodel_validations, :diff, :initialize, :keys_as_symbol)
 end
 ```
 

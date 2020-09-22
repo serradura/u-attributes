@@ -16,6 +16,7 @@ module Micro
       base.class_eval do
         private_class_method :__attributes, :__attribute_reader
         private_class_method :__attribute_assign, :__attributes_data_to_assign
+        private_class_method :__attributes_required_add, :__attributes_data_to_assign
       end
 
       def base.inherited(subclass)
@@ -86,29 +87,36 @@ module Micro
     protected
 
       def attributes=(arg)
-        hash = self.class.__attributes_keys__(arg)
+        hash = self.class.__attributes_keys_transform__(arg)
 
         __attributes_missing!(hash)
 
+        __call_before_attributes_assign
         __attributes_assign(hash)
+        __call_after_attributes_assign
+
+        __attributes
       end
 
     private
+
+      def __call_before_attributes_assign; end
+      def __call_after_attributes_assign; end
 
       def extract_attributes_from(other)
         Utils::ExtractAttribute.from(other, keys: defined_attributes)
       end
 
       def __attribute_key(value)
-        self.class.__attribute_key__(value)
+        self.class.__attribute_key_transform__(value)
       end
 
       def __attributes
         @__attributes ||= {}
       end
 
-      FetchValueToAssign = -> (value, default) do
-        if default.is_a?(Proc)
+      FetchValueToAssign = -> (value, default, keep_proc = false) do
+        if default.is_a?(Proc) && !keep_proc
           default.arity > 0 ? default.call(value) : default.call
         else
           value.nil? ? default : value
@@ -116,15 +124,17 @@ module Micro
       end
 
       def __attributes_assign(hash)
-        self.class.__attributes_data__.each do |name, default|
-          __attribute_assign(name, FetchValueToAssign.(hash[name], default)) if attribute?(name)
+        self.class.__attributes_data__.each do |name, attribute_data|
+          __attribute_assign(name, hash[name], attribute_data) if attribute?(name)
         end
 
         __attributes.freeze
       end
 
-      def __attribute_assign(name, value)
-        __attributes[name] = instance_variable_set("@#{name}", value)
+      def __attribute_assign(name, initialize_value, attribute_data)
+        value_to_assign = FetchValueToAssign.(initialize_value, attribute_data[0])
+
+        __attributes[name] = instance_variable_set("@#{name}", value_to_assign)
       end
 
       MISSING_KEYWORD = 'missing keyword'.freeze

@@ -69,7 +69,7 @@ class Micro::AttributesTest < Minitest::Test
     attribute 'b', required: true
   end
 
-  def test_bar2_attributes_assignment
+  def test_bar3_attributes_assignment
     bar1 = Bar3.new(a: 'a', b: 'b')
 
     assert_equal 'a', bar1.a
@@ -424,6 +424,14 @@ class Micro::AttributesTest < Minitest::Test
 
   # ---
 
+  def test_the_attributes_access
+    [Biz, Bar, Bar2, Bar3, Foo, Foz, ExtractingAttributes].each do |klass|
+      assert_equal(:indifferent, klass.attributes_access)
+    end
+  end
+
+  # ---
+
   begin
     class InvalidAttributesDefinition
       include Micro::Attributes
@@ -440,9 +448,24 @@ class Micro::AttributesTest < Minitest::Test
     assert_equal('{:foo=>:bar} expected to be a kind of String/Symbol', @@__invalid_attributes_definition.message)
   end
 
-  def test_the_attributes_access
-    [Biz, Bar, Bar2, Bar3, Foo, Foz, ExtractingAttributes].each do |klass|
-      assert_equal(:indifferent, klass.attributes_access)
+  # ---
+
+  begin
+    class InvalidAttributesOptions
+      include Micro::Attributes
+
+      attributes :bar, foo: true
     end
+  rescue => err
+    @@__invalid_attributes_options = err
+  end
+
+  def test_invalid_attributes_options
+    assert_instance_of(ArgumentError, @@__invalid_attributes_options)
+
+    assert_equal(
+      "Found one or more invalid options: :foo\n\nThe valid ones are: :default, :required, :validate, :validates, :accept, :reject, :allow_nil, :rejection_message",
+      @@__invalid_attributes_options.message
+    )
   end
 end
