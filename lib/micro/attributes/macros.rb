@@ -42,7 +42,7 @@ module Micro
 
       module Options
         PERMITTED = [
-          :default, :required,
+          :default, :required, :freeze,
           :validate, :validates, # activemodel_validations
           :accept, :reject, :allow_nil, :rejection_message # accept
         ].freeze
@@ -78,7 +78,8 @@ module Micro
 
         [
           hasnt_default ? __attributes_required_add(name, opt, hasnt_default) : opt[:default],
-          Options.for_accept(opt)
+          Options.for_accept(opt),
+          opt[:freeze]
         ]
       end
 
