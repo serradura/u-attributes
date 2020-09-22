@@ -1,3 +1,4 @@
+require 'digest'
 require 'test_helper'
 
 class Micro::AttributesTest < Minitest::Test
@@ -464,7 +465,7 @@ class Micro::AttributesTest < Minitest::Test
     assert_instance_of(ArgumentError, @@__invalid_attributes_options)
 
     assert_equal(
-      "Found one or more invalid options: :foo\n\nThe valid ones are: :default, :required, :freeze, :validate, :validates, :accept, :reject, :allow_nil, :rejection_message",
+      "Found one or more invalid options: :foo\n\nThe valid ones are: :default, :required, :freeze, :protected, :private, :validate, :validates, :accept, :reject, :allow_nil, :rejection_message",
       @@__invalid_attributes_options.message
     )
   end
@@ -497,8 +498,6 @@ class Micro::AttributesTest < Minitest::Test
     [c, d, c1, c2, d1, d2].each do |str|
       def str.foo; :foo; end
     end
-
-    # --
 
     obj = FrozenAttributes.new(
       a: a, b: b, c: c, d: d,
@@ -563,5 +562,200 @@ class Micro::AttributesTest < Minitest::Test
     assert_respond_to(obj.d, :foo)
     assert_respond_to(obj.d1, :foo)
     assert_respond_to(obj.d2, :foo)
+  end
+
+  class Password
+    include Micro::Attributes
+
+    attribute :value, default: -> value { String(value).strip }, protected: true
+
+    def initialize(data)
+      self.attributes = data
+    end
+
+    def ==(password)
+      self.value == Kind.of(self.class, password).value
+    end
+
+    def digest
+      @digest ||= Digest::SHA256.hexdigest(value)
+    end
+  end
+
+  def test_protected_attributes
+    pass = Password.new(value: '123456')
+    pass_confirmation = Password.new(value: '123456')
+
+    refute_respond_to(pass, :value)
+
+    assert_equal(
+      '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92',
+      pass.digest
+    )
+
+    assert pass == pass_confirmation
+
+    refute pass == Password.new(value: '123455')
+  end
+
+  class FullName
+    include Micro::Attributes
+
+    attributes :first, :last, default: -> value { String(value).strip }, private: true
+
+    def initialize(data)
+      self.attributes = data
+    end
+
+    def call
+      "#{first} #{last}"
+    end
+  end
+
+  def test_private_attributes
+    full_name = FullName.new(first: ' Rodrigo   ', last: "\t\rSerradura\n")
+
+    refute_respond_to(full_name, :first)
+    refute_respond_to(full_name, :last)
+
+    assert_equal('Rodrigo Serradura', full_name.call)
+  end
+
+  class AttributesVisibility
+    include Micro::Attributes
+
+    attribute :a
+    attribute :b, private: true
+    attribute :c, protected: true
+
+    attributes :a1, :a2
+    attributes :b1, :b2, private: true
+    attributes :c1, :c2, protected: true
+
+    def initialize(data)
+      self.attributes = data
+    end
+  end
+
+  def test_the_attributes_visibility
+    a, a1, a2 = 'a', 'a1', 'a2'
+    b, b1, b2 = 'b', 'b1', 'b2'
+    c, c1, c2 = 'c', 'c1', 'c2'
+
+    obj = AttributesVisibility.new(
+      a: a, a1: a1, a2: a2,
+      b: b, b1: b1, b2: b2,
+      c: c, c1: c1, c2: c2
+    )
+
+    # --
+
+    assert_equal(
+      ['a', 'b', 'c', 'a1', 'a2', 'b1', 'b2', 'c1', 'c2'],
+      AttributesVisibility.attributes
+    )
+
+    assert_equal(
+      ['a', 'b', 'c', 'a1', 'a2', 'b1', 'b2', 'c1', 'c2'],
+      obj.defined_attributes
+    )
+
+    # --
+
+    assert_equal({
+      public: ['a', 'a1', 'a2'],
+      private: ['b', 'b1', 'b2'],
+      protected: ['c', 'c1', 'c2']
+    },
+      AttributesVisibility.attributes_by_visibility
+    )
+
+    assert_equal({'a' => 'a', 'a1' => 'a1', 'a2' => 'a2'}, obj.attributes)
+
+    assert_equal({
+      public: ['a', 'a1', 'a2'],
+      private: ['b', 'b1', 'b2'],
+      protected: ['c', 'c1', 'c2']
+    },
+      obj.defined_attributes(:by_visibility)
+    )
+
+    # --
+
+    [
+      'foo', 'bar', :bar, :foo
+    ].each { |key| refute obj.attribute?(key) }
+
+    [
+      'a', 'a1', 'a2', :a, :a1, :a2
+    ].each { |key| assert obj.attribute?(key) }
+
+    [
+      'b', 'b1', 'b2', 'c', 'c1', 'c2',
+      :b, :b1, :b2, :c, :c1, :c2,
+    ].each { |key| refute obj.attribute?(key) }
+
+    [
+      'a', 'a1', 'a2', 'b', 'b1', 'b2', 'c', 'c1', 'c2',
+      :a, :a1, :a2, :b, :b1, :b2, :c, :c1, :c2,
+    ].each { |key| assert obj.attribute?(key, true) }
+
+    [
+      'foo', 'bar', :bar, :foo
+    ].each { |key| refute obj.attribute?(key, true) }
+
+    # --
+
+    [
+      'a', 'a1', 'a2', :a, :a1, :a2
+    ].each { |key| assert_equal(key.to_s, obj.attribute(key)) }
+
+    [
+      'b', 'b1', 'b2', 'c', 'c1', 'c2',
+      :b, :b1, :b2, :c, :c1, :c2,
+    ].each { |key| assert_nil(obj.attribute(key)) }
+
+    # --
+
+    [
+      'b', 'b1', 'b2', 'c', 'c1', 'c2',
+      :b, :b1, :b2, :c, :c1, :c2,
+    ].each do |key|
+      err = assert_raises(NameError) { obj.attribute!(key) }
+
+      assert_equal("tried to access a private attribute `#{key}", err.message)
+    end
+
+    [
+      'foo', 'bar', :bar, :foo
+    ].each do |key|
+      err = assert_raises(NameError) { obj.attribute!(key) }
+
+      assert_equal("undefined attribute `#{key}", err.message)
+    end
+
+    # --
+
+    [
+      -> { obj.a }, -> { obj.a1 }, -> { obj.a2 }
+    ].each { |fn| assert_match(/\Aa[12]?\z/, fn.call) }
+
+    [
+      -> { obj.b }, -> { obj.b1 }, -> { obj.b2 }
+    ].each do |fn|
+      assert_match(
+        /private method `b[12]?' called for #<.+Test::AttributesVisibility/,
+        assert_raises(NoMethodError, &fn).message
+      )
+    end
+
+    [
+      -> { obj.c }, -> { obj.c1 }, -> { obj.c2 }
+    ].each do |fn|
+      assert_match(
+        /protected method `c[12]?' called for #<.+Test::AttributesVisibility/,
+        assert_raises(NoMethodError, &fn).message
+      )
+    end
   end
 end
