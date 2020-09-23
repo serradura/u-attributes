@@ -1,3 +1,4 @@
+require 'digest'
 require 'test_helper'
 
 class Micro::Attributes::Features::AcceptTest < Minitest::Test
@@ -487,5 +488,189 @@ class Micro::Attributes::Features::AcceptTest < Minitest::Test
       assert_predicate(obj, :rejected_attributes?)
       refute_predicate(obj, :accepted_attributes?)
     end
+  end
+
+  class FrozenAttributes
+    include Micro::Attributes.with(:accept)
+
+    attributes :a
+    attributes :b, freeze: true
+    attributes :c, freeze: :after_dup
+    attributes :d, freeze: :after_clone
+
+    attributes :a1, :a2
+    attributes :b1, :b2, freeze: true
+    attributes :c1, :c2, freeze: :after_dup
+    attributes :d1, :d2, freeze: :after_clone
+
+    def initialize(data)
+      self.attributes = data
+    end
+  end
+
+  def test_the_attributes_freezing
+    a, b, c, d = 'a', 'b', 'c', 'd'
+    a1, a2 = 'a1', 'a2'
+    b1, b2 = 'b1', 'b2'
+    c1, c2 = 'c1', 'c2'
+    d1, d2 = 'd1', 'd2'
+
+    [c, d, c1, c2, d1, d2].each do |str|
+      def str.foo; :foo; end
+    end
+
+    # --
+
+    obj = FrozenAttributes.new(
+      a: a, b: b, c: c, d: d,
+      a1: a1, a2: a2,
+      b1: b1, b2: b2,
+      c1: c1, c2: c2,
+      d1: d1, d2: d2
+    )
+
+    # --
+
+    refute_predicate(a, :frozen?)
+    refute_predicate(a1, :frozen?)
+    refute_predicate(a2, :frozen?)
+
+    assert_same(a, obj.a)
+    assert_same(a1, obj.a1)
+    assert_same(a2, obj.a2)
+
+    # --
+
+    assert_predicate(b, :frozen?)
+    assert_predicate(b1, :frozen?)
+    assert_predicate(b2, :frozen?)
+
+    assert_same(b, obj.b)
+    assert_same(b1, obj.b1)
+    assert_same(b2, obj.b2)
+
+    # --
+
+    refute_predicate(c, :frozen?)
+    refute_predicate(c1, :frozen?)
+    refute_predicate(c2, :frozen?)
+
+    refute_same(c, obj.c)
+    refute_same(c1, obj.c1)
+    refute_same(c2, obj.c2)
+
+    assert_equal(c, obj.c)
+    assert_equal(c1, obj.c1)
+    assert_equal(c2, obj.c2)
+
+    refute_respond_to(obj.c, :foo)
+    refute_respond_to(obj.c1, :foo)
+    refute_respond_to(obj.c2, :foo)
+
+    # --
+
+    refute_predicate(d, :frozen?)
+    refute_predicate(d1, :frozen?)
+    refute_predicate(d2, :frozen?)
+
+    refute_same(d, obj.d)
+    refute_same(d1, obj.d1)
+    refute_same(d2, obj.d2)
+
+    assert_equal(d, obj.d)
+    assert_equal(d1, obj.d1)
+    assert_equal(d2, obj.d2)
+
+    assert_respond_to(obj.d, :foo)
+    assert_respond_to(obj.d1, :foo)
+    assert_respond_to(obj.d2, :foo)
+  end
+
+  class SignUpParamsWithIndifferentAccess
+    include Micro::Attributes.with(:accept, :initialize)
+
+    TrimString = -> value { String(value).strip }
+
+    attribute :email                , default: TrimString, accept: -> str { str =~ /\A.+@.+\..+\z/ }
+    attribute :password             , default: TrimString, reject: :empty?, private: true
+    attribute :password_confirmation, default: TrimString, reject: :empty?, private: true
+
+    def valid_password?
+      accepted_attributes? && password == password_confirmation
+    end
+
+    def password_digest
+      Digest::SHA256.hexdigest(password) if valid_password?
+    end
+  end
+
+  def test_visibility_and_accept_with_indifferent_access
+    sign_up1 = SignUpParamsWithIndifferentAccess.new(
+      email: '         test@email.com          ',
+      password: "\t         123456  \r",
+      'password_confirmation' => "\n\r123456\t\n"
+    )
+
+    assert_equal('test@email.com', sign_up1.email)
+    assert_equal(
+      '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92',
+      sign_up1.password_digest
+    )
+
+    # --
+
+    sign_up2 = SignUpParamsWithIndifferentAccess.new(
+      email: 'test@email.com',
+      password: '123456',
+      'password_confirmation' => '123457'
+    )
+
+    assert_nil(sign_up2.password_digest)
+  end
+
+  class SignUpParamsWithKeysAsSymbol
+    include Micro::Attributes.with(:initialize, :keys_as_symbol, accept: :strict)
+
+    TrimString = -> value { String(value).strip }
+
+    attribute :email, default: TrimString, accept: -> str { str =~ /\A.+@.+\..+\z/ }, freeze: :after_dup
+
+    attributes :password, :password_confirmation, default: TrimString, reject: :empty?, private: true
+
+    def valid_password?
+      accepted_attributes? && password == password_confirmation
+    end
+
+    def password_digest
+      Digest::SHA256.hexdigest(password) if valid_password?
+    end
+  end
+
+  def test_visibility_and_accept_with_indifferent_access
+    sign_up1 = SignUpParamsWithKeysAsSymbol.new(
+      email: '         test@email.com          ',
+      password: "\t         123456  \r",
+      password_confirmation: "\n\r123456\t\n"
+    )
+
+    assert_equal('test@email.com', sign_up1.email)
+    assert_equal(
+      '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92',
+      sign_up1.password_digest
+    )
+
+    assert_predicate(sign_up1.email, :frozen?)
+
+    # --
+
+    sign_up2 = SignUpParamsWithKeysAsSymbol.new(
+      email: 'test@email.com',
+      password: '123456',
+      password_confirmation: '123457'
+    )
+
+    assert_nil(sign_up2.password_digest)
+
+    assert_predicate(sign_up2.email, :frozen?)
   end
 end

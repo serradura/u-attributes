@@ -15,7 +15,7 @@ module Micro
 
       base.class_eval do
         private_class_method :__attributes, :__attribute_reader
-        private_class_method :__attribute_assign, :__attributes_data_to_assign
+        private_class_method :__attribute_assign, :__attributes_groups
         private_class_method :__attributes_required_add, :__attributes_data_to_assign
       end
 
@@ -38,8 +38,8 @@ module Micro
       Features.all
     end
 
-    def attribute?(name)
-      self.class.attribute?(name)
+    def attribute?(name, include_all = false)
+      self.class.attribute?(name, include_all)
     end
 
     def attribute(name)
@@ -53,10 +53,12 @@ module Micro
     def attribute!(name, &block)
       attribute(name) { |name| return block ? block[name] : name }
 
-      raise NameError, "undefined attribute `#{name}"
+      raise NameError, __attribute_access_error_message(name)
     end
 
-    def defined_attributes
+    def defined_attributes(option = nil)
+      return self.class.attributes_by_visibility if option == :by_visibility
+
       @defined_attributes ||= self.class.attributes
     end
 
@@ -107,6 +109,12 @@ module Micro
         Utils::ExtractAttribute.from(other, keys: defined_attributes)
       end
 
+      def __attribute_access_error_message(name)
+        return "tried to access a private attribute `#{name}" if attribute?(name, true)
+
+        "undefined attribute `#{name}"
+      end
+
       def __attribute_key(value)
         self.class.__attribute_key_transform__(value)
       end
@@ -115,26 +123,38 @@ module Micro
         @__attributes ||= {}
       end
 
-      FetchValueToAssign = -> (value, default, keep_proc = false) do
-        if default.is_a?(Proc) && !keep_proc
-          default.arity > 0 ? default.call(value) : default.call
-        else
-          value.nil? ? default : value
-        end
+      FetchValueToAssign = -> (value, attribute_data, keep_proc = false) do
+        default = attribute_data[0]
+
+        value_to_assign =
+          if default.is_a?(Proc) && !keep_proc
+            default.arity > 0 ? default.call(value) : default.call
+          else
+            value.nil? ? default : value
+          end
+
+        return value_to_assign unless to_freeze = attribute_data[2]
+        return value_to_assign.freeze if to_freeze == true
+        return value_to_assign.dup.freeze if to_freeze == :after_dup
+        return value_to_assign.clone.freeze if to_freeze == :after_clone
+
+        raise NotImplementedError
       end
 
       def __attributes_assign(hash)
         self.class.__attributes_data__.each do |name, attribute_data|
-          __attribute_assign(name, hash[name], attribute_data) if attribute?(name)
+          __attribute_assign(name, hash[name], attribute_data) if attribute?(name, true)
         end
 
         __attributes.freeze
       end
 
       def __attribute_assign(name, initialize_value, attribute_data)
-        value_to_assign = FetchValueToAssign.(initialize_value, attribute_data[0])
+        value_to_assign = FetchValueToAssign.(initialize_value, attribute_data)
 
-        __attributes[name] = instance_variable_set("@#{name}", value_to_assign)
+        ivar_value = instance_variable_set("@#{name}", value_to_assign)
+
+        __attributes[name] = ivar_value if attribute_data[3] == :public
       end
 
       MISSING_KEYWORD = 'missing keyword'.freeze

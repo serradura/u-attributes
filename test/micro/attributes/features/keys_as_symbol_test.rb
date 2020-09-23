@@ -196,4 +196,138 @@ class Micro::Attributes::Features::KeysAsSymbolTest < Minitest::Test
     err = assert_raises(ArgumentError) { Biz.new(a: false) }
     assert_equal('missing keyword: :b', err.message)
   end
+
+  class AttributesVisibility
+    include Micro::Attributes.with(:keys_as_symbol)
+
+    attribute :a
+    attribute :b, private: true
+    attribute :c, protected: true
+
+    attributes :a1, :a2
+    attributes :b1, :b2, private: true
+    attributes :c1, :c2, protected: true
+
+    def initialize(data)
+      self.attributes = data
+    end
+  end
+
+  def test_the_attributes_visibility
+    a, a1, a2 = 'a', 'a1', 'a2'
+    b, b1, b2 = 'b', 'b1', 'b2'
+    c, c1, c2 = 'c', 'c1', 'c2'
+
+    obj = AttributesVisibility.new(
+      a: a, a1: a1, a2: a2,
+      b: b, b1: b1, b2: b2,
+      c: c, c1: c1, c2: c2
+    )
+
+    # --
+
+    assert_equal(
+      [:a, :b, :c, :a1, :a2, :b1, :b2, :c1, :c2],
+      AttributesVisibility.attributes
+    )
+
+    assert_equal(
+      [:a, :b, :c, :a1, :a2, :b1, :b2, :c1, :c2],
+      obj.defined_attributes
+    )
+
+    # --
+
+    assert_equal({
+      public: [:a, :a1, :a2],
+      private: [:b, :b1, :b2],
+      protected: [:c, :c1, :c2]
+    },
+      AttributesVisibility.attributes_by_visibility
+    )
+
+    assert_equal({a: 'a', a1: 'a1', a2: 'a2'}, obj.attributes)
+
+    assert_equal({
+      public: [:a, :a1, :a2],
+      private: [:b, :b1, :b2],
+      protected: [:c, :c1, :c2]
+    },
+      obj.defined_attributes(:by_visibility)
+    )
+
+    # --
+
+    [
+      :bar, :foo
+    ].each { |key| refute obj.attribute?(key) }
+
+    [
+      :a, :a1, :a2
+    ].each { |key| assert obj.attribute?(key) }
+
+    [
+      :b, :b1, :b2, :c, :c1, :c2,
+    ].each { |key| refute obj.attribute?(key) }
+
+    [
+      :a, :a1, :a2, :b, :b1, :b2, :c, :c1, :c2,
+    ].each { |key| assert obj.attribute?(key, true) }
+
+    [
+      :bar, :foo
+    ].each { |key| refute obj.attribute?(key, true) }
+
+    # --
+
+    [
+      :a, :a1, :a2
+    ].each { |key| assert_equal(key.to_s, obj.attribute(key)) }
+
+    [
+      :b, :b1, :b2, :c, :c1, :c2,
+    ].each { |key| assert_nil(obj.attribute(key)) }
+
+    # --
+
+    [
+      :b, :b1, :b2, :c, :c1, :c2,
+    ].each do |key|
+      err = assert_raises(NameError) { obj.attribute!(key) }
+
+      assert_equal("tried to access a private attribute `#{key}", err.message)
+    end
+
+    [
+      :bar, :foo
+    ].each do |key|
+      err = assert_raises(NameError) { obj.attribute!(key) }
+
+      assert_equal("undefined attribute `#{key}", err.message)
+    end
+
+    # --
+
+    [
+      -> { obj.a }, -> { obj.a1 }, -> { obj.a2 }
+    ].each { |fn| assert_match(/\Aa[12]?\z/, fn.call) }
+
+    [
+      -> { obj.b }, -> { obj.b1 }, -> { obj.b2 }
+    ].each do |fn|
+      assert_match(
+        /private method `b[12]?' called for #<.+Test::AttributesVisibility/,
+        assert_raises(NoMethodError, &fn).message
+      )
+    end
+
+    [
+      -> { obj.c }, -> { obj.c1 }, -> { obj.c2 }
+    ].each do |fn|
+      assert_match(
+        /protected method `c[12]?' called for #<.+Test::AttributesVisibility/,
+        assert_raises(NoMethodError, &fn).message
+      )
+    end
+  end
 end
