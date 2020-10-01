@@ -9,11 +9,10 @@ Gem::Specification.new do |spec|
   spec.authors       = ['Rodrigo Serradura']
   spec.email         = ['rodrigo.serradura@gmail.com']
 
-  spec.summary       = %q{Create "immutable" objects. No setters, just getters!}
+  spec.summary       = %q{Create "immutable" objects with no setters, just getters.}
   spec.description   =
-    "This gem allows you to define \"immutable\" objects, and your objects will have only getters and no setters. "\
-    "So, if you change some object attribute, you will have a new object instance. " \
-    "That is, you transform the object instead of modifying it."
+    'This gem allows you to define "immutable" objects, when using it your objects will only have getters and no setters.' \
+    'So, if you change an attribute of the object, you’ll have a new object instance.'
   spec.homepage      = 'https://github.com/serradura/u-attributes'
   spec.license       = 'MIT'
 

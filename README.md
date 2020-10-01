@@ -1,12 +1,12 @@
 <p align="center">
   <img src="./assets/u-attributes_logo_v1.png" alt='Create "immutable" objects. No setters, just getters!'>
 
-  <p align="center"><i>Create "immutable" objects. No setters, just getters!</i></p>
+  <p align="center"><i>Create "immutable" objects with no setters, just getters.</i></p>
   <br>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/ruby-2.2+-ruby.svg?colorA=99004d&colorB=cc0066" alt="Ruby">
+  <img src="https://img.shields.io/badge/ruby->%3D%202.2.0-ruby.svg?colorA=99004d&colorB=cc0066" alt="Ruby">
 
   <a href="https://rubygems.org/gems/u-attributes">
     <img alt="Gem" src="https://img.shields.io/gem/v/u-attributes.svg?style=flat-square">
@@ -25,8 +25,8 @@
   </a>
 </p>
 
-This gem allows you to define "immutable" objects, and your objects will have only getters and no setters.
-So, if you change [[1](#with_attribute)] [[2](#with_attributes)] some object attribute, you will have a new object instance. That is, you transform the object instead of modifying it.
+This gem allows you to define "immutable" objects, when using it your objects will only have getters and no setters.
+So, if you change [[1](#with_attribute)] [[2](#with_attributes)] an attribute of the object, you’ll have a new object instance. That is, you transform the object instead of modifying it.
 
 # Table of contents <!-- omit in toc -->
 - [Installation](#installation)
