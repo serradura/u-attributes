@@ -646,7 +646,7 @@ class Micro::Attributes::Features::AcceptTest < Minitest::Test
     end
   end
 
-  def test_visibility_and_accept_with_indifferent_access
+  def test_visibility_and_accept_with_keys_as_symbol
     sign_up1 = SignUpParamsWithKeysAsSymbol.new(
       email: '         test@email.com          ',
       password: "\t         123456  \r",
