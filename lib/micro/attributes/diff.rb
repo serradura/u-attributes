@@ -12,7 +12,7 @@ module Micro::Attributes
       def initialize(from:, to:)
         @from_class = from.class
 
-        @from, @to = from, Kind::Of.(@from_class, to)
+        @from, @to = from, Kind.of(@from_class, to)
 
         @from_key, @to_key =
           @from_class.attributes_access == :symbol ? FROM_TO_SYM : FROM_TO_STR
