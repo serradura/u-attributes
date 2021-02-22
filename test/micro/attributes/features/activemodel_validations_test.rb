@@ -8,7 +8,7 @@ class Micro::Attributes::Features::ActiveModelValidationsTest < MiniTest::Test
     assert(true)
   end
 
-  if ENV.fetch('ACTIVEMODEL_VERSION', '6.1') < '6.1'
+  if ENV.fetch('ACTIVEMODEL_VERSION', '7') < '7'
 
     require 'active_model'
     require 'active_model/naming'

@@ -10,7 +10,7 @@ module Micro::Attributes
         end
 
         def __attribute_key_check__(value)
-          Kind::Of.(::Symbol, value)
+          Kind::Symbol[value]
         end
 
         def __attribute_key_transform__(value)
@@ -18,7 +18,7 @@ module Micro::Attributes
         end
 
         def __attributes_keys_transform__(hash)
-          Utils::Hashes.kind(hash)
+          Kind::Hash[hash]
         end
       end
 

@@ -28,6 +28,14 @@
 This gem allows you to define "immutable" objects, when using it your objects will only have getters and no setters.
 So, if you change [[1](#with_attribute)] [[2](#with_attributes)] an attribute of the object, you’ll have a new object instance. That is, you transform the object instead of modifying it.
 
+## Documentation <!-- omit in toc -->
+
+Version    | Documentation
+---------- | -------------
+unreleased | https://github.com/serradura/u-case/blob/main/README.md
+2.7.0      | https://github.com/serradura/u-case/blob/v2.x/README.md
+1.2.0      | https://github.com/serradura/u-case/blob/v1.x/README.md
+
 # Table of contents <!-- omit in toc -->
 - [Installation](#installation)
 - [Compatibility](#compatibility)
@@ -85,7 +93,8 @@ gem 'u-attributes'
 
 | u-attributes   | branch  | ruby     |  activemodel  |
 | -------------- | ------- | -------- | ------------- |
-| 2.6.0          | main    | >= 2.2.0 | >= 3.2, < 6.1 |
+| unreleased     | main    | >= 2.2.0 | >= 3.2, < 7   |
+| 2.7.0          | v2.x    | >= 2.2.0 | >= 3.2, < 7   |
 | 1.2.0          | v1.x    | >= 2.2.0 | >= 3.2, < 6.1 |
 
 > **Note**: The activemodel is an optional dependency, this module [can be enabled](#activemodelvalidation-extension) to validate the attributes.

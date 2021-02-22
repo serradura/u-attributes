@@ -191,7 +191,7 @@ module Micro
           if arg.is_a?(String) || arg.is_a?(Symbol)
             __attribute_assign(arg, false, options)
           else
-            raise Kind::Error.new('String/Symbol'.freeze, arg)
+            Kind::KIND.error!('String/Symbol'.freeze, arg)
           end
         end
       end
