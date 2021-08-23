@@ -15,12 +15,18 @@ function test_with_activemodel {
   reset_gemfile_and_test "ACTIVEMODEL_VERSION=$1"
 }
 
-if [[ $RUBY_V =~ "ruby 2.[2345]." ]]; then
-  if [[ $RUBY_V =~ "ruby 2.[234]." ]]; then
+RUBY_2_2345="ruby 2.[2345]."
+RUBY_2_234="ruby 2.[234]."
+RUBY_2_567="ruby 2.[567]."
+RUBY_2_2="ruby 2.2."
+RUBY_3_X="ruby 3.0."
+
+if [[ $RUBY_V =~ $RUBY_2_2345 ]]; then
+  if [[ $RUBY_V =~ $RUBY_2_234 ]]; then
     reset_gemfile_and_test
   fi
 
-  if [[ $RUBY_V =~ "ruby 2.2." ]]; then
+  if [[ $RUBY_V =~ $RUBY_2_2 ]]; then
     test_with_activemodel "3.2"
   fi
 
@@ -32,7 +38,7 @@ if [[ $RUBY_V =~ "ruby 2.[2345]." ]]; then
   test_with_activemodel "5.2"
 fi
 
-if [[ $RUBY_V =~ "ruby 2.[567]." ]] || [[ $RUBY_V =~ "ruby 3.0." ]]; then
+if [[ $RUBY_V =~ $RUBY_2_567 ]] || [[ $RUBY_V =~ $RUBY_3_X ]]; then
   gem install bundler -v ">= 2" --no-doc
 
   reset_gemfile_and_test
