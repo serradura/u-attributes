@@ -1,6 +1,6 @@
 source 'https://rubygems.org'
 
-gem 'u-case', '~> 4.0'
+gem 'u-case', '~> 4.5', '>= 4.5.1'
 
 activemodel_version = ENV['ACTIVEMODEL_VERSION']
 
