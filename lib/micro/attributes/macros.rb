@@ -180,8 +180,8 @@ module Micro
       end
 
       RaiseKindError = ->(expected, given) do
-        if Kind.const_get(:KIND, false)&.respond_to?(:error!)
-          Kind::KIND.error!(expected, given)
+        if (util = Kind.const_get(:KIND, false)) && util.respond_to?(:error!)
+          util.error!(expected, given)
         else
           raise Kind::Error.new(expected, given, label: nil)
         end
