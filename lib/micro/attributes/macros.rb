@@ -179,6 +179,16 @@ module Micro
         __attribute_assign(name, false, options)
       end
 
+      RaiseKindError = ->(expected, given) do
+        if Kind.const_get(:KIND, false)&.respond_to?(:error!)
+          Kind::KIND.error!(expected, given)
+        else
+          raise Kind::Error.new(expected, given, label: nil)
+        end
+      end
+
+      private_constant :RaiseKindError
+
       def attributes(*args)
         return __attributes.to_a if args.empty?
 
@@ -191,7 +201,7 @@ module Micro
           if arg.is_a?(String) || arg.is_a?(Symbol)
             __attribute_assign(arg, false, options)
           else
-            Kind::KIND.error!('String/Symbol'.freeze, arg)
+            RaiseKindError.call('String/Symbol'.freeze, arg)
           end
         end
       end
