@@ -20,7 +20,7 @@ simplecov_version =
   case RUBY_VERSION
   when /\A2.[23]/ then '0.17.1'
   when /\A2.4/ then '~> 0.18.5'
-  else '~> 0.19'
+  else '~> 0.21.2'
   end
 
 group :test do
