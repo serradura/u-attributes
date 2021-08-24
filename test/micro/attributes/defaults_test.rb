@@ -73,6 +73,25 @@ class Micro::Attributes::DefaultsTest < Minitest::Test
     assert_equal(10, attributes2.number2)
   end
 
+  class ArityTwo
+    include Micro::Attributes.with(:initialize)
+
+    attribute :float, default: ->(value, raw_input) { (value || raw_input['integer']).to_f }
+    attribute :integer, default: ->(value) { value.to_i }
+  end
+
+  def test_default_receiving_a_lambda_with_2_as_its_arity
+    attributes1 = ArityTwo.new(integer: '2')
+
+    assert_equal(2.0, attributes1.float)
+    assert_equal(2, attributes1.integer)
+
+    attributes2 = ArityTwo.new(float: 1.5, integer: '3')
+
+    assert_equal(1.5, attributes2.float)
+    assert_equal(3, attributes2.integer)
+  end
+
   class ProcWithToProc
     include Micro::Attributes.with(:initialize)
 

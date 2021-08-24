@@ -123,12 +123,16 @@ module Micro
         @__attributes ||= {}
       end
 
-      FetchValueToAssign = -> (value, attribute_data, keep_proc = false) do
+      FetchValueToAssign = -> (init_hash, value, attribute_data, keep_proc = false) do
         default = attribute_data[0]
 
         value_to_assign =
           if default.is_a?(Proc) && !keep_proc
-            default.arity == 0 ? default.call : default.call(value)
+            case default.arity
+            when 0 then default.call
+            when 2 then default.call(value, init_hash)
+            else default.call(value)
+            end
           else
             value.nil? ? default : value
           end
@@ -143,14 +147,14 @@ module Micro
 
       def __attributes_assign(hash)
         self.class.__attributes_data__.each do |name, attribute_data|
-          __attribute_assign(name, hash[name], attribute_data) if attribute?(name, true)
+          __attribute_assign(name, hash, attribute_data) if attribute?(name, true)
         end
 
         __attributes.freeze
       end
 
-      def __attribute_assign(name, initialize_value, attribute_data)
-        value_to_assign = FetchValueToAssign.(initialize_value, attribute_data)
+      def __attribute_assign(name, init_hash, attribute_data)
+        value_to_assign = FetchValueToAssign.(init_hash, init_hash[name], attribute_data)
 
         ivar_value = instance_variable_set("@#{name}", value_to_assign)
 
