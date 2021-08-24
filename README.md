@@ -33,7 +33,7 @@ So, if you change [[1](#with_attribute)] [[2](#with_attributes)] an attribute of
 Version    | Documentation
 ---------- | -------------
 unreleased | https://github.com/serradura/u-case/blob/main/README.md
-2.7.0      | https://github.com/serradura/u-case/blob/v2.x/README.md
+2.8.0      | https://github.com/serradura/u-case/blob/v2.x/README.md
 1.2.0      | https://github.com/serradura/u-case/blob/v1.x/README.md
 
 # Table of contents <!-- omit in toc -->
@@ -94,7 +94,7 @@ gem 'u-attributes'
 | u-attributes   | branch  | ruby     |  activemodel  |
 | -------------- | ------- | -------- | ------------- |
 | unreleased     | main    | >= 2.2.0 | >= 3.2, < 7   |
-| 2.7.0          | v2.x    | >= 2.2.0 | >= 3.2, < 7   |
+| 2.8.0          | v2.x    | >= 2.2.0 | >= 3.2, < 7   |
 | 1.2.0          | v1.x    | >= 2.2.0 | >= 3.2, < 6.1 |
 
 > **Note**: The activemodel is an optional dependency, this module [can be enabled](#activemodelvalidation-extension) to validate the attributes.

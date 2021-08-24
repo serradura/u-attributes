@@ -35,10 +35,10 @@ module Micro::Attributes
 
         KeepProc = -> validation_data { validation_data[0] == :accept && validation_data[1] == Proc }
 
-        def __attribute_assign(key, initialize_value, attribute_data)
+        def __attribute_assign(key, init_hash, attribute_data)
           validation_data = attribute_data[1]
 
-          value_to_assign = FetchValueToAssign.(initialize_value, attribute_data, KeepProc.(validation_data))
+          value_to_assign = FetchValueToAssign.(init_hash, init_hash[key], attribute_data, KeepProc.(validation_data))
 
           value = __attributes[key] = instance_variable_set("@#{key}", value_to_assign)
 
