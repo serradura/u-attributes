@@ -52,6 +52,27 @@ class Micro::Attributes::DefaultsTest < Minitest::Test
     assert attributes.b.strftime('%H:%M:%S') == attributes.c.strftime('%H:%M:%S')
   end
 
+  class ArityOne
+    include Micro::Attributes.with(:initialize)
+
+    attribute :str, default: ->(value) { value.to_s }
+    attributes :number1, :number2, default: ->(value) { (value || 0).to_i }
+  end
+
+  def test_default_receiving_a_lambda_with_1_as_its_arity
+    attributes1 = ArityOne.new(str: 1)
+
+    assert_equal('1', attributes1.str)
+    assert_equal(0, attributes1.number1)
+    assert_equal(0, attributes1.number2)
+
+    attributes2 = ArityOne.new(str: 2, number2: '10')
+
+    assert_equal('2', attributes2.str)
+    assert_equal(0, attributes2.number1)
+    assert_equal(10, attributes2.number2)
+  end
+
   class ProcWithToProc
     include Micro::Attributes.with(:initialize)
 
