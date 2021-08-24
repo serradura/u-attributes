@@ -35,4 +35,20 @@ class Micro::Attributes::DefaultsTest < Minitest::Test
     assert_equal(5, Sum.new(b: 3).call)
     assert_equal(5, Sum.new(a: 2, b: 3).call)
   end
+
+  class ArityZero
+    include Micro::Attributes.with(:initialize)
+
+    attribute :a, default: -> { Time.now }
+    attributes :b, :c, default: -> { Time.now + 1 }
+  end
+
+  def test_default_receiving_a_lambda_with_0_as_its_arity
+    attributes = ArityZero.new({})
+
+    assert attributes.b > attributes.a
+    assert attributes.c > attributes.a
+    assert attributes.b != attributes.c
+    assert attributes.b.strftime('%H:%M:%S') == attributes.c.strftime('%H:%M:%S')
+  end
 end
