@@ -51,4 +51,16 @@ class Micro::Attributes::DefaultsTest < Minitest::Test
     assert attributes.b != attributes.c
     assert attributes.b.strftime('%H:%M:%S') == attributes.c.strftime('%H:%M:%S')
   end
+
+  class ProcWithToProc
+    include Micro::Attributes.with(:initialize)
+
+    attribute :str, default: proc(&:to_s)
+  end
+
+  def test_default_receiving_to_proc
+    assert_equal('', ProcWithToProc.new(str: nil).str)
+    assert_equal('1', ProcWithToProc.new(str: 1).str)
+    assert_equal('a', ProcWithToProc.new(str: :a).str)
+  end
 end

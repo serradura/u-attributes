@@ -128,7 +128,7 @@ module Micro
 
         value_to_assign =
           if default.is_a?(Proc) && !keep_proc
-            default.arity > 0 ? default.call(value) : default.call
+            default.arity == 0 ? default.call : default.call(value)
           else
             value.nil? ? default : value
           end
