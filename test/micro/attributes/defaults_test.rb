@@ -39,17 +39,24 @@ class Micro::Attributes::DefaultsTest < Minitest::Test
   class ArityZero
     include Micro::Attributes.with(:initialize)
 
-    attribute :a, default: -> { Time.now }
-    attributes :b, :c, default: -> { Time.now + 1 }
+    attribute :a, default: -> { 0 }
+    attributes :b, :c, default: -> { 1 }
   end
 
   def test_default_receiving_a_lambda_with_0_as_its_arity
     attributes = ArityZero.new({})
 
-    assert attributes.b > attributes.a
-    assert attributes.c > attributes.a
-    assert attributes.b != attributes.c
-    assert attributes.b.strftime('%H:%M:%S') == attributes.c.strftime('%H:%M:%S')
+    assert_equal(0, attributes.a)
+    assert_equal(1, attributes.b)
+    assert_equal(1, attributes.c)
+  end
+
+  def test_overriding_default_receiving_a_lambda_with_0_as_its_arity
+    attributes = ArityZero.new(a: 1, b: 2, c: 3)
+
+    assert_equal(1, attributes.a)
+    assert_equal(2, attributes.b)
+    assert_equal(3, attributes.c)
   end
 
   class ArityOne
