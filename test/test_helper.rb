@@ -1,3 +1,9 @@
+# Pre-require stdlib that older Rails (6.x/7.0) expects but no longer
+# auto-loads on Ruby 3+. Avoids "uninitialized constant Logger" /
+# "uninitialized constant StringIO" failures when ActiveModel is loaded.
+require 'logger'
+require 'stringio'
+
 require 'simplecov'
 
 SimpleCov.start do
@@ -9,12 +15,6 @@ end
 $LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
 
 require 'u-case'
-
-if defined?(ActiveModel)
-  Micro::Case.config do |config|
-    config.enable_activemodel_validation = true
-  end
-end
 
 require 'micro/attributes'
 
