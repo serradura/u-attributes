@@ -1,28 +1,16 @@
 <p align="center">
-  <img src="./assets/u-attributes_logo_v1.png" alt='Create "immutable" objects. No setters, just getters!'>
-
+  <h1 align="center" id="-attributes"><img src="./assets/u-attributes_logo_v1.png" alt="μ-attributes" height="60"></h1>
   <p align="center"><i>Create "immutable" objects with no setters, just getters.</i></p>
-  <br>
-</p>
-
-<p align="center">
-  <img src="https://img.shields.io/badge/ruby->%3D%202.7-ruby.svg?colorA=99004d&colorB=cc0066" alt="Ruby">
-
-  <a href="https://rubygems.org/gems/u-attributes">
-    <img alt="Gem" src="https://img.shields.io/gem/v/u-attributes.svg?style=flat-square">
-  </a>
-
-  <a href="https://github.com/serradura/u-attributes/actions/workflows/ci.yml">
-    <img alt="Build Status" src="https://github.com/serradura/u-attributes/actions/workflows/ci.yml/badge.svg">
-  </a>
-
-  <a href="https://qlty.sh/gh/serradura/projects/u-attributes">
-    <img alt="Maintainability" src="https://qlty.sh/gh/serradura/projects/u-attributes/maintainability.svg">
-  </a>
-
-  <a href="https://qlty.sh/gh/serradura/projects/u-attributes">
-    <img alt="Code Coverage" src="https://qlty.sh/gh/serradura/projects/u-attributes/coverage.svg">
-  </a>
+  <p align="center">
+    <a href="https://badge.fury.io/rb/u-attributes"><img src="https://badge.fury.io/rb/u-attributes.svg" alt="Gem Version" height="18"></a>
+    <a href="https://github.com/serradura/u-attributes/actions/workflows/ci.yml"><img alt="Build Status" src="https://github.com/serradura/u-attributes/actions/workflows/ci.yml/badge.svg"></a>
+    <br/>
+    <a href="https://qlty.sh/gh/serradura/projects/u-attributes"><img src="https://qlty.sh/gh/serradura/projects/u-attributes/maintainability.svg" alt="Maintainability" /></a>
+    <a href="https://qlty.sh/gh/serradura/projects/u-attributes"><img src="https://qlty.sh/gh/serradura/projects/u-attributes/coverage.svg" alt="Code Coverage" /></a>
+    <br/>
+    <img src="https://img.shields.io/badge/Ruby%20%3E%3D%202.7%2C%20%3C%3D%20Head-ruby.svg?colorA=444&colorB=333" alt="Ruby">
+    <img src="https://img.shields.io/badge/Rails%20%3E%3D%206.0%2C%20%3C%3D%20Edge-rails.svg?colorA=444&colorB=333" alt="Rails">
+  </p>
 </p>
 
 This gem allows you to define "immutable" objects, when using it your objects will only have getters and no setters.
