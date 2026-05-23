@@ -46,6 +46,8 @@ unreleased | https://github.com/serradura/u-case/blob/main/README.md
       - [Is it possible to define an attribute as required?](#is-it-possible-to-define-an-attribute-as-required)
     - [`Micro::Attributes#attribute`](#microattributesattribute)
     - [`Micro::Attributes#attribute!`](#microattributesattribute-1)
+    - [Attribute visibility (`private:`, `protected:`)](#attribute-visibility-private-protected)
+    - [Freezing attribute values (`freeze:`)](#freezing-attribute-values-freeze)
   - [How to define multiple attributes?](#how-to-define-multiple-attributes)
   - [`Micro::Attributes.with(:initialize)`](#microattributeswithinitialize)
     - [`#with_attribute()`](#with_attribute)
@@ -70,6 +72,7 @@ unreleased | https://github.com/serradura/u-case/blob/main/README.md
     - [`Micro::Attributes.without`](#microattributeswithout)
   - [Picking all the features](#picking-all-the-features)
   - [Extensions](#extensions)
+    - [Accept extension](#accept-extension)
     - [`ActiveModel::Validation` extension](#activemodelvalidation-extension)
       - [`.attribute()` options](#attribute-options)
     - [Diff extension](#diff-extension)
@@ -157,8 +160,10 @@ person.name # John Doe
 
 #### How to extract attributes from an object or hash?
 
-You can extract attributes using the `extract_attributes_from` method, it will try to fetch attributes from the
-object using either the `object[attribute_key]` accessor or the reader method `object.attribute_key`.
+You can extract attributes using the `extract_attributes_from` method. For each attribute name it
+will first call the reader method (`object.attribute_key`) when available, and fall back to the
+hash accessor (`object[attribute_key]`) otherwise. The reader method has priority because it lets
+the source object encapsulate any computed/derived value.
 
 ```ruby
 class Person
@@ -251,6 +256,106 @@ person.attribute!('foo') { |value| value } # NameError (undefined attribute `foo
 
 [⬆️ Back to Top](#table-of-contents-)
 
+### Attribute visibility (`private:`, `protected:`)
+
+By default every attribute reader is `public`. Use the `private: true` or `protected: true`
+options to restrict the reader's visibility — useful for things like passwords, tokens, and any
+internal value you don't want to expose on the public API.
+
+Private/protected attributes are also excluded from the public attribute set (`#attributes`,
+`.attributes`, `#attribute?`), so they don't leak through serialization or enumeration. To check
+or fetch them explicitly, pass `true` as the second argument to `#attribute?` (or use
+`#attribute!`).
+
+```ruby
+require 'digest'
+
+class User::SignUpParams
+  include Micro::Attributes.with(:initialize)
+
+  TrimString = ->(value) { String(value).strip }
+
+  attribute  :email,                                              default: TrimString
+  attributes :password, :password_confirmation, default: TrimString, private: true
+
+  def password_digest
+    return unless password == password_confirmation
+
+    Digest::SHA256.hexdigest(password)
+  end
+end
+
+User::SignUpParams.attributes               # ["email", "password", "password_confirmation"]
+User::SignUpParams.attributes_by_visibility # { public: ["email"], private: ["password", "password_confirmation"], protected: [] }
+
+user = User::SignUpParams.new(
+  email: 'email@example.com',
+  password: 'secret',
+  password_confirmation: 'secret'
+)
+
+user.attributes                  # { "email" => "email@example.com" }
+
+user.attribute?('email')         # true
+user.attribute?('password')      # false  (not in the public set)
+user.attribute?('password', true) # true   (use the second arg to look at all attributes)
+
+user.attribute('password')       # nil     (returns nil instead of leaking the value)
+user.attribute!('password')      # NameError ("tried to access a private attribute `password")
+
+user.password                    # NoMethodError (private method `password' called for ...)
+```
+
+- `private:` and `protected:` map directly to Ruby's method-visibility semantics on the reader.
+- The visibility configuration is preserved on inheritance.
+- Works with the `:keys_as_symbol` extension (`attributes_by_visibility` will return the keys in
+  the configured type).
+
+The class-level `attributes_by_visibility` method returns a hash with `:public`, `:private`, and
+`:protected` keys so you can introspect how each attribute was declared.
+
+[⬆️ Back to Top](#table-of-contents-)
+
+### Freezing attribute values (`freeze:`)
+
+Use the `freeze:` option to make sure the value stored in the attribute can't be mutated after
+the object is built. Three modes are supported:
+
+| Value          | Behavior                                                              |
+| -------------- | --------------------------------------------------------------------- |
+| `true`         | Calls `value.freeze` on the incoming value. The original is frozen.   |
+| `:after_dup`   | `value.dup.freeze` — freezes a shallow copy; the original stays free. |
+| `:after_clone` | `value.clone.freeze` — same as above but uses `#clone` (preserves singleton methods, frozen state, tainted state, etc.). |
+
+```ruby
+class Person
+  include Micro::Attributes.with(:initialize)
+
+  attribute :name,    freeze: true
+  attribute :address, freeze: :after_dup
+  attribute :payload, freeze: :after_clone
+end
+
+raw_name = +"Rodrigo"
+
+person = Person.new(
+  name:    raw_name,
+  address: 'Av. Paulista',
+  payload: { id: 1 }
+)
+
+person.name.frozen?    # true
+raw_name.frozen?       # true  -> freeze: true mutates the original
+
+person.address.frozen? # true
+'Av. Paulista'.frozen? # depends on the source string; the duplicate is what's frozen
+```
+
+`freeze:` is applied after the default value resolution, so the frozen value reflects whatever
+the attribute ends up holding (raw value, default, or callable-default result).
+
+[⬆️ Back to Top](#table-of-contents-)
+
 ## How to define multiple attributes?
 
 Use `.attributes` with a list of attribute names.
@@ -272,7 +377,24 @@ person.name # nil
 person.age  # 32
 ```
 
-> **Note:** This method can't define default values. To do this, use the `#attribute()` method.
+You can also pass a trailing options hash and every attribute in the list will be declared with
+those options. This is the canonical way to declare several attributes that share the same
+configuration (default value, visibility, freezing, validations, etc.).
+
+```ruby
+class User::SignUpParams
+  include Micro::Attributes.with(:initialize, :accept)
+
+  TrimString = ->(value) { String(value).strip }
+
+  attribute  :email,                                              default: TrimString
+  attributes :password, :password_confirmation, reject: :empty?,  default: TrimString, private: true
+end
+```
+
+> **Note:** Unlike `.attribute`, this method accepts a shared options hash but defines all listed
+> attributes with the same configuration. If you need different defaults/options per attribute,
+> use `#attribute()` once per attribute.
 
 [⬆️ Back to Top](#table-of-contents-)
 
@@ -641,6 +763,19 @@ Micro::Attributes.without(:diff) # will load :activemodel_validations, :keys_as_
 Micro::Attributes.without(initialize: :strict) # will load :activemodel_validations, :diff and :keys_as_symbol
 ```
 
+You can also pair `:accept` with any other feature, and switch into strict mode by passing the
+hash form `accept: :strict`:
+
+```ruby
+Micro::Attributes.with(:accept)
+
+Micro::Attributes.with(:accept, :diff, :initialize)
+
+Micro::Attributes.with(:accept, :activemodel_validations, :diff, :keys_as_symbol)
+
+Micro::Attributes.with(:diff, :keys_as_symbol, initialize: :strict, accept: :strict)
+```
+
 ## Picking all the features
 
 ```ruby
@@ -648,12 +783,166 @@ Micro::Attributes.with_all_features
 
 # This method returns the same of:
 
-Micro::Attributes.with(:activemodel_validations, :diff, :keys_as_symbol, initialize: :strict)
+Micro::Attributes.with(:accept, :activemodel_validations, :diff, :keys_as_symbol, initialize: :strict)
 ```
 
 [⬆️ Back to Top](#table-of-contents-)
 
 ## Extensions
+
+### Accept extension
+
+The `:accept` extension adds a lightweight, dependency-free validation mechanism. Use the
+`accept:` / `reject:` options on an attribute to validate the assigned value, and inspect the
+result through `#attributes_errors`, `#accepted_attributes`, and `#rejected_attributes`.
+
+```ruby
+class User
+  include Micro::Attributes.with(:initialize, :accept)
+
+  attribute :age,   accept: Integer, allow_nil: true
+  attribute :name,  accept: -> v { v.is_a?(String) && !v.empty? }, default: 'John Doe'
+  attribute :email, accept: :present?
+end
+
+user = User.new({})
+
+user.attributes_errors?   # false
+user.accepted_attributes? # true
+user.rejected_attributes? # false
+
+User.new(age: 'twenty', email: nil).tap do |bad|
+  bad.attributes_errors?   # true
+  bad.attributes_errors    # { "age" => "expected to be a kind of Integer", "email" => "expected to be present?" }
+  bad.accepted_attributes  # ["name"]
+  bad.rejected_attributes  # ["age", "email"]
+end
+```
+
+#### What can `accept:` / `reject:` receive?
+
+| Type            | `accept:` means                              | `reject:` means                                  |
+| --------------- | -------------------------------------------- | ------------------------------------------------ |
+| `Class`/`Module`| `value.kind_of?(expected)` must be true      | `value.kind_of?(expected)` must be false         |
+| Predicate `:sym?` (ends with `?`) | `value.public_send(:sym?)` must be true | `value.public_send(:sym?)` must be false |
+| Anything callable (proc, lambda, object responding to `#call`) | result of `expected.call(value)` must be truthy | result of `expected.call(value)` must be falsy |
+
+Default rejection messages follow the pattern below; you can override them with
+`rejection_message:` (see further down).
+
+```ruby
+attribute :name, accept: :present?   # "expected to be present?"
+attribute :name, reject: :empty?     # "expected to not be empty?"
+attribute :name, accept: String      # "expected to be a kind of String"
+attribute :name, reject: String      # "expected to not be a kind of String"
+attribute :name, accept: ->(v) { v }  # "is invalid"
+```
+
+#### `allow_nil:` option
+
+Skip validation when the incoming value is `nil`.
+
+```ruby
+class User
+  include Micro::Attributes.with(:initialize, :accept)
+
+  attribute :age, accept: Integer, allow_nil: true
+end
+
+User.new(age: nil).attributes_errors? # false
+User.new(age: 21).attributes_errors?  # false
+User.new(age: 'x').attributes_errors? # true
+```
+
+#### `rejection_message:` option
+
+Customize the error message either with a String or with a callable. A callable receives the
+attribute name as its first argument, so the same builder can be reused across attributes (handy
+for i18n).
+
+```ruby
+class User
+  include Micro::Attributes.with(:initialize, :accept)
+
+  attribute :name, accept: String,  rejection_message: 'must be a string'
+  attribute :age,  accept: Integer, rejection_message: ->(key) { "#{key} must be an integer" }
+end
+
+User.new(name: 1, age: 'x').attributes_errors
+# => { "name" => "must be a string", "age" => "age must be an integer" }
+```
+
+Callable validators can also expose a `#rejection_message` method themselves, and it will be used
+as the default message for that validator:
+
+```ruby
+class FilledString
+  def call(value)
+    value.is_a?(String) && !value.empty?
+  end
+
+  def rejection_message
+    ->(key) { "#{key} can't be an empty string" }
+  end
+end
+
+class User
+  include Micro::Attributes.with(:initialize, :accept)
+
+  attribute :name, accept: FilledString.new
+end
+```
+
+#### Strict mode (`accept: :strict`)
+
+Use `Micro::Attributes.with(accept: :strict)` to raise as soon as any attribute is rejected,
+instead of collecting errors silently.
+
+```ruby
+class User
+  include Micro::Attributes.with(initialize: :strict, accept: :strict)
+
+  attribute :age,  accept: Integer
+  attribute :name, accept: ->(v) { v.is_a?(String) && !v.empty? }, default: 'John doe'
+end
+
+User.new(age: 'x', name: nil)
+# ArgumentError:
+# One or more attributes were rejected. Errors:
+# * :age expected to be a kind of Integer
+# * :name is invalid
+```
+
+#### Interaction with other features
+
+- Validation runs **after** the default value resolution, so defaults are validated like any
+  regular value.
+- When combined with the [ActiveModel::Validation extension](#activemodelvalidation-extension),
+  the `:accept` checks run first; AM validations only run if every attribute is accepted.
+- `accept:` plays nicely with [`freeze:`](#freezing-attribute-values-freeze) and
+  [`private:`/`protected:`](#attribute-visibility-private-protected). See the combined example
+  below.
+
+```ruby
+require 'digest'
+
+class User::SignUpParams
+  include Micro::Attributes.with(:initialize, accept: :strict)
+
+  TrimString = ->(value) { String(value).strip }
+
+  attribute  :email,                                              default: TrimString,
+             accept: ->(s) { s =~ /\A.+@.+\..+\z/ }, freeze: :after_dup
+  attributes :password, :password_confirmation, default: TrimString,
+             reject: :empty?, private: true
+
+  def password_digest
+    Digest::SHA256.hexdigest(password) if password == password_confirmation
+  end
+end
+```
+
+[⬆️ Back to Top](#table-of-contents-)
 
 ### `ActiveModel::Validation` extension
 
