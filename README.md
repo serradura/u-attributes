@@ -23,7 +23,6 @@ Version    | Documentation
 unreleased | https://github.com/serradura/u-attributes/blob/main/README.md
 3.0.0      | https://github.com/serradura/u-attributes/blob/v3.x/README.md
 2.8.0      | https://github.com/serradura/u-attributes/blob/v2.x/README.md
-1.2.0      | https://github.com/serradura/u-attributes/blob/v1.x/README.md
 
 # Table of contents <!-- omit in toc -->
 - [Installation](#installation)
