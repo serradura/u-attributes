@@ -4,6 +4,15 @@
 require 'logger'
 require 'stringio'
 
+# Ruby 3.1+ enriches NameError#message with a source-code snippet via
+# error_highlight. Tests assert on the raw message text, so disable the
+# annotation when available.
+begin
+  require 'error_highlight'
+  ErrorHighlight.formatter = Class.new { def message_for(_); ''; end }.new
+rescue LoadError
+end
+
 require 'simplecov'
 
 SimpleCov.start do
