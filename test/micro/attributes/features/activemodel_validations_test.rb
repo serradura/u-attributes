@@ -1,6 +1,6 @@
 require 'test_helper'
 
-class Micro::Attributes::Features::ActiveModelValidationsTest < MiniTest::Test
+class Micro::Attributes::Features::ActiveModelValidationsTest < Minitest::Test
   def test_load_error
     Class.new do
       include Micro::Attributes::With::ActiveModelValidations

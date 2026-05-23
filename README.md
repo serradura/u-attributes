@@ -6,7 +6,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/ruby->%3D%202.2.0-ruby.svg?colorA=99004d&colorB=cc0066" alt="Ruby">
+  <img src="https://img.shields.io/badge/ruby->%3D%202.7-ruby.svg?colorA=99004d&colorB=cc0066" alt="Ruby">
 
   <a href="https://rubygems.org/gems/u-attributes">
     <img alt="Gem" src="https://img.shields.io/gem/v/u-attributes.svg?style=flat-square">
@@ -16,12 +16,12 @@
     <img alt="Build Status" src="https://github.com/serradura/u-attributes/actions/workflows/ci.yml/badge.svg">
   </a>
 
-  <a href="https://codeclimate.com/github/serradura/u-attributes/maintainability">
-    <img alt="Maintainability" src="https://api.codeclimate.com/v1/badges/b562e6b877a9edf4dbf6/maintainability">
+  <a href="https://qlty.sh/gh/serradura/projects/u-attributes">
+    <img alt="Maintainability" src="https://qlty.sh/gh/serradura/projects/u-attributes/maintainability.svg">
   </a>
 
-  <a href="https://codeclimate.com/github/serradura/u-attributes/test_coverage">
-    <img alt="Test Coverage" src="https://api.codeclimate.com/v1/badges/b562e6b877a9edf4dbf6/test_coverage">
+  <a href="https://qlty.sh/gh/serradura/projects/u-attributes">
+    <img alt="Code Coverage" src="https://qlty.sh/gh/serradura/projects/u-attributes/coverage.svg">
   </a>
 </p>
 

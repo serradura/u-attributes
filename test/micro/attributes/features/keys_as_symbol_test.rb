@@ -316,7 +316,7 @@ class Micro::Attributes::Features::KeysAsSymbolTest < Minitest::Test
       -> { obj.b }, -> { obj.b1 }, -> { obj.b2 }
     ].each do |fn|
       assert_match(
-        /private method `b[12]?' called for #<.+Test::AttributesVisibility/,
+        /private method [`']b[12]?['].+AttributesVisibility/,
         assert_raises(NoMethodError, &fn).message
       )
     end
@@ -325,7 +325,7 @@ class Micro::Attributes::Features::KeysAsSymbolTest < Minitest::Test
       -> { obj.c }, -> { obj.c1 }, -> { obj.c2 }
     ].each do |fn|
       assert_match(
-        /protected method `c[12]?' called for #<.+Test::AttributesVisibility/,
+        /protected method [`']c[12]?['].+AttributesVisibility/,
         assert_raises(NoMethodError, &fn).message
       )
     end

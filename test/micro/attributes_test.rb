@@ -446,7 +446,7 @@ class Micro::AttributesTest < Minitest::Test
   def test_invalid_attributes_definition
     assert_instance_of(Kind::Error, @@__invalid_attributes_definition)
 
-    assert_equal('{:foo=>:bar} expected to be a kind of String/Symbol', @@__invalid_attributes_definition.message)
+    assert_equal("#{ {foo: :bar}.inspect } expected to be a kind of String/Symbol", @@__invalid_attributes_definition.message)
   end
 
   # ---
@@ -744,7 +744,7 @@ class Micro::AttributesTest < Minitest::Test
       -> { obj.b }, -> { obj.b1 }, -> { obj.b2 }
     ].each do |fn|
       assert_match(
-        /private method `b[12]?' called for #<.+Test::AttributesVisibility/,
+        /private method [`']b[12]?['].+AttributesVisibility/,
         assert_raises(NoMethodError, &fn).message
       )
     end
@@ -753,7 +753,7 @@ class Micro::AttributesTest < Minitest::Test
       -> { obj.c }, -> { obj.c1 }, -> { obj.c2 }
     ].each do |fn|
       assert_match(
-        /protected method `c[12]?' called for #<.+Test::AttributesVisibility/,
+        /protected method [`']c[12]?['].+AttributesVisibility/,
         assert_raises(NoMethodError, &fn).message
       )
     end
