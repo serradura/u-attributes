@@ -32,9 +32,10 @@ So, if you change [[1](#with_attribute)] [[2](#with_attributes)] an attribute of
 
 Version    | Documentation
 ---------- | -------------
-unreleased | https://github.com/serradura/u-case/blob/main/README.md
-2.8.0      | https://github.com/serradura/u-case/blob/v2.x/README.md
-1.2.0      | https://github.com/serradura/u-case/blob/v1.x/README.md
+unreleased | https://github.com/serradura/u-attributes/blob/main/README.md
+3.0.0      | https://github.com/serradura/u-attributes/blob/v3.x/README.md
+2.8.0      | https://github.com/serradura/u-attributes/blob/v2.x/README.md
+1.2.0      | https://github.com/serradura/u-attributes/blob/v1.x/README.md
 
 # Table of contents <!-- omit in toc -->
 - [Installation](#installation)
@@ -89,16 +90,30 @@ unreleased | https://github.com/serradura/u-case/blob/main/README.md
 Add this line to your application's Gemfile and `bundle install`:
 
 ```ruby
-gem 'u-attributes'
+gem 'u-attributes', '~> 3.0'
 ```
 
 # Compatibility
 
-| u-attributes   | branch  | ruby     |  activemodel  |
-| -------------- | ------- | -------- | ------------- |
-| unreleased     | main    | >= 2.2.0 | >= 3.2, < 7   |
-| 2.8.0          | v2.x    | >= 2.2.0 | >= 3.2, < 7   |
-| 1.2.0          | v1.x    | >= 2.2.0 | >= 3.2, < 6.1 |
+| u-attributes     | branch | ruby     | activemodel    |
+| ---------------- | ------ | -------- | -------------- |
+| unreleased       | main   | >= 2.7   | >= 6.0         |
+| 3.0.0            | v3.x   | >= 2.7   | >= 6.0         |
+| 2.8.0            | v2.x   | >= 2.2.0 | >= 3.2, <= 8.1 |
+| 1.2.0            | v1.x   | >= 2.2.0 | >= 3.2, < 6.1  |
+
+This library is tested (CI matrix) against:
+
+| Ruby / Rails | 6.0 | 6.1 | 7.0 | 7.1 | 7.2 | 8.0 | 8.1 | Edge |
+|--------------|-----|-----|-----|-----|-----|-----|-----|------|
+| 2.7          | ✅  | ✅  | ✅  | ✅  |     |     |     |      |
+| 3.0          | ✅  | ✅  | ✅  | ✅  |     |     |     |      |
+| 3.1          |     |     | ✅  | ✅  | ✅  |     |     |      |
+| 3.2          |     |     | ✅  | ✅  | ✅  | ✅  |     |      |
+| 3.3          |     |     | ✅  | ✅  | ✅  | ✅  | ✅  | ✅   |
+| 3.4          |     |     |     |     | ✅  | ✅  | ✅  | ✅   |
+| 4.x          |     |     |     |     |     |     | ✅  | ✅   |
+| Head         |     |     |     |     |     |     | ✅  | ✅   |
 
 > **Note**: The activemodel is an optional dependency, this module [can be enabled](#activemodelvalidation-extension) to validate the attributes.
 
