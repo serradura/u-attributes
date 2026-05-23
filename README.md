@@ -88,7 +88,6 @@ gem 'u-attributes', '~> 3.0'
 | unreleased       | main   | >= 2.7   | >= 6.0         |
 | 3.0.0            | v3.x   | >= 2.7   | >= 6.0         |
 | 2.8.0            | v2.x   | >= 2.2.0 | >= 3.2, <= 8.1 |
-| 1.2.0            | v1.x   | >= 2.2.0 | >= 3.2, < 6.1  |
 
 This library is tested (CI matrix) against:
 
