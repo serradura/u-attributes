@@ -2,6 +2,57 @@
 
 Notes for AI assistants working in `u-attributes`.
 
+## How to work in this repo
+
+### 1. Think before coding
+
+**Don't assume. Don't hide confusion. Surface tradeoffs.**
+
+- State assumptions explicitly. If uncertain, ask.
+- If multiple interpretations exist, present them — don't pick silently.
+- If a simpler approach exists, say so. Push back when warranted.
+- If something is unclear, stop. Name what's confusing. Ask.
+
+### 2. Simplicity first
+
+**Minimum code that solves the problem. Nothing speculative.**
+
+- No features beyond what was asked.
+- No abstractions for single-use code.
+- No "flexibility" or "configurability" that wasn't requested.
+- No error handling for impossible scenarios.
+- If you write 200 lines and it could be 50, rewrite it.
+
+Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes,
+simplify.
+
+### 3. Surgical changes
+
+**Touch only what you must. Clean up only your own mess.**
+
+- Don't "improve" adjacent code, comments, or formatting.
+- Don't refactor things that aren't broken.
+- Match existing style, even if you'd do it differently.
+- If you notice unrelated dead code, mention it — don't delete it.
+- Remove imports/variables/functions that _your_ changes orphaned. Don't
+  remove pre-existing dead code unless asked.
+
+The test: every changed line should trace directly to the user's request.
+
+### 4. Goal-driven execution
+
+**Define success criteria. Loop until verified.**
+
+Turn vague tasks into verifiable goals:
+
+- "Add validation" → "Write tests for invalid inputs, then make them pass"
+- "Fix the bug" → "Write a test that reproduces it, then make it pass"
+- "Refactor X" → "Ensure tests pass before and after"
+
+For multi-step work, state a brief plan with a verification check per step.
+
+---
+
 ## What this is
 
 `u-attributes` is a Ruby gem (originally published as `micro-attributes`) for
@@ -26,7 +77,7 @@ bundle exec rake matrix                # full local matrix for the active Ruby
 `bin/setup` re-installs and refreshes appraisals. `bin/matrix` reinstalls then
 runs `rake matrix`. CI runs the matrix across the full Ruby × Rails grid plus
 a no-`activemodel` baseline job. Tests are the success criterion for any
-behavior change — write or update a test first, then make it pass.
+behavior change — write or update a test first, then make it pass (rule 4).
 
 ## CHANGELOG and README are part of every change
 
