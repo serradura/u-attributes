@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Note:** This gem was originally published as `micro-attributes` (`0.1.0`) and renamed to `u-attributes` starting with `0.2.0` on 2019-07-02.
 
+## [3.0.2] - 2026-05-24
+### Added
+- This `CHANGELOG.md`, covering the full history of the gem (from `micro-attributes 0.1.0` through `u-attributes 3.0.2`) following the [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/) spec.
+- `changelog_uri`, `source_code_uri` and `bug_tracker_uri` entries in `spec.metadata` so RubyGems.org surfaces direct links from the gem page and tools like `bundle outdated` can deep-link to the changelog.
+
 ## [3.0.1] - 2026-05-23
 ### Fixed
 - Widened the `kind` runtime dependency upper bound from `< 6.0` to `< 7.0` so `u-attributes 3.x` resolves against the just-released `kind 6.x` (no API change in `u-attributes`; pure dependency unlock).
@@ -255,6 +260,7 @@ First stable release.
 - `Micro::Attributes` mixin with the `.attribute` / `.attributes` macros for declaring attributes on a plain Ruby object.
 - Generated reader methods plus the `with_attribute` / `with_attributes` constructors that return a new instance with the updated values (no setters).
 
+[3.0.2]: https://github.com/serradura/u-attributes/compare/v3.0.1...v3.0.2
 [3.0.1]: https://github.com/serradura/u-attributes/compare/v3.0.0...v3.0.1
 [3.0.0]: https://github.com/serradura/u-attributes/compare/v2.8.0...v3.0.0
 [2.8.0]: https://github.com/serradura/u-attributes/compare/v2.7.0...v2.8.0
