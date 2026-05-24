@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Note:** This gem was originally published as `micro-attributes` (`0.1.0`) and renamed to `u-attributes` starting with `0.2.0` on 2019-07-02.
 
+## [Unreleased]
+### Added
+- `Micro::Entity` — a base class that bundles the `:initialize`, `:accept`, and `:diff` features so subclasses get a hash initializer with attribute-level type checks and `#with_attribute(s)` out of the box. Pass an `Entity` subclass via `accept:` to auto-coerce a nested hash into that entity (instances pass through). Pass a block to `attribute` to define an anonymous nested `Micro::Entity` inline. `Micro::Entity::Strict` mixes in `Accept::Strict` + `Initialize::Strict` so every attribute is required and any accept rejection raises (closes [#9](https://github.com/serradura/u-attributes/issues/9)). Requires `require 'micro/entity'`.
+
 ## [3.0.2] - 2026-05-24
 ### Added
 - This `CHANGELOG.md`, covering the full history of the gem (from `micro-attributes 0.1.0` through `u-attributes 3.0.2`) following the [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/) spec.
