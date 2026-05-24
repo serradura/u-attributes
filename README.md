@@ -67,6 +67,11 @@ unreleased | https://github.com/serradura/u-attributes/blob/main/README.md
     - [Initialize extension](#initialize-extension)
       - [Strict mode](#strict-mode)
     - [Keys as symbol extension](#keys-as-symbol-extension)
+- [`Micro::Entity`](#microentity)
+  - [Nested entities](#nested-entities)
+  - [Defining nested entities inline (block form)](#defining-nested-entities-inline-block-form)
+  - [`Micro::Entity::Strict`](#microentitystrict)
+  - [Combining with other extensions](#combining-with-other-extensions)
 - [Development](#development)
 - [Contributing](#contributing)
 - [License](#license)
@@ -1161,6 +1166,138 @@ job.attribute!('id') # NameError (undefined attribute `id)
 As you could see in the previous example only symbols will work to do something with the attributes.
 
 This extension also changes the `diff extension` making everything (arguments, outputs) working only with symbols.
+
+[⬆️ Back to Top](#table-of-contents-)
+
+# `Micro::Entity`
+
+`Micro::Entity` is a base class that bundles the [`:initialize`](#initialize-extension), [`:accept`](#accept-extension), and [`:diff`](#diff-extension) extensions, so you can define readonly value objects that auto-validate their attributes — like an immutable `ActiveModel` analogue.
+
+It is not loaded by `require 'micro/attributes'`. Require it explicitly:
+
+```ruby
+require 'micro/entity'
+
+class User < Micro::Entity
+  attribute :name, accept: String
+  attribute :age,  accept: Numeric
+end
+
+user = User.new(name: 'Rodrigo', age: 34)
+
+user.name # 'Rodrigo'
+user.age  # 34
+
+user.accepted_attributes? # true
+user.attributes_errors    # {}
+
+bad = User.new(name: :rodrigo, age: '34')
+
+bad.attributes_errors
+# {
+#   "name" => "expected to be a kind of String",
+#   "age"  => "expected to be a kind of Numeric"
+# }
+
+# As with every Micro::Attributes object, instances are immutable.
+# `#with_attribute` / `#with_attributes` return new instances.
+user.with_attribute(:age, 35) # => #<User name="Rodrigo" age=35>
+```
+
+[⬆️ Back to Top](#table-of-contents-)
+
+## Nested entities
+
+Pass another `Micro::Entity` subclass via `accept:` and a hash is automatically coerced into an instance of that class. Already-built entity instances pass through unchanged.
+
+```ruby
+class Address < Micro::Entity
+  attribute :city,   accept: String
+  attribute :postal, accept: String
+end
+
+class Profile < Micro::Entity
+  attribute :name,    accept: String
+  attribute :address, accept: Address
+end
+
+profile = Profile.new(name: 'Rodrigo', address: { city: 'Rio', postal: '20000-000' })
+
+profile.address.class # Address
+profile.address.city  # 'Rio'
+
+# Already-built entity instances pass through:
+addr    = Address.new(city: 'Rio', postal: '20000-000')
+profile = Profile.new(name: 'Rodrigo', address: addr)
+
+profile.address.equal?(addr) # true
+```
+
+[⬆️ Back to Top](#table-of-contents-)
+
+## Defining nested entities inline (block form)
+
+`attribute` accepts a block. The block defines an anonymous nested `Micro::Entity` whose attributes are declared inside it.
+
+```ruby
+class Order < Micro::Entity
+  attribute :id, accept: Integer
+
+  attribute :customer do
+    attribute :name,  accept: String
+    attribute :email, accept: String
+  end
+end
+
+order = Order.new(id: 1, customer: { name: 'Rodrigo', email: 'rodrigo@example.com' })
+
+order.customer.name # 'Rodrigo'
+```
+
+[⬆️ Back to Top](#table-of-contents-)
+
+## `Micro::Entity::Strict`
+
+`Micro::Entity::Strict` layers the strict variants of [`Initialize`](#strict-mode) and [`Accept`](#strict-mode-accept-strict) on top of `Micro::Entity`: every declared attribute becomes required, and any accept rejection raises immediately.
+
+```ruby
+class StrictUser < Micro::Entity::Strict
+  attribute :name, accept: String
+  attribute :age,  accept: Numeric
+end
+
+StrictUser.new(name: 'Rodrigo')
+# ArgumentError: missing keyword: :age
+
+StrictUser.new(name: :rodrigo, age: 34)
+# ArgumentError:
+# One or more attributes were rejected. Errors:
+# * "name" expected to be a kind of String
+```
+
+Inline (block-form) nested entities inherit from the immediate `Micro::Entity` superclass, so a `Strict` parent produces a `Strict` inline child.
+
+[⬆️ Back to Top](#table-of-contents-)
+
+## Combining with other extensions
+
+Mix any of the other feature modules into a `Micro::Entity` subclass to opt in to extra behavior:
+
+```ruby
+class SymbolKeyedUser < Micro::Entity
+  include Micro::Attributes::Features::KeysAsSymbol
+
+  attribute :name, accept: String
+end
+
+class ValidatedUser < Micro::Entity
+  include Micro::Attributes::Features::ActiveModelValidations
+
+  attribute :name, accept: String, validates: { presence: true }
+end
+```
+
+Every combination of `Micro::Entity` / `Micro::Entity::Strict` × default-keys / `KeysAsSymbol` × no-`ActiveModel` / `ActiveModelValidations` is covered by `test/micro/entity_matrix_test.rb`.
 
 [⬆️ Back to Top](#table-of-contents-)
 
