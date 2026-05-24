@@ -16,7 +16,7 @@ Gem::Specification.new do |spec|
   spec.homepage      = 'https://github.com/serradura/u-attributes'
   spec.license       = 'MIT'
 
-  spec.metadata['changelog_uri'] = "#{spec.homepage}/blob/v#{Micro::Attributes::VERSION}/CHANGELOG.md"
+  spec.metadata['changelog_uri'] = "#{spec.homepage}/blob/main/CHANGELOG.md"
   spec.metadata['source_code_uri'] = spec.homepage
   spec.metadata['bug_tracker_uri'] = "#{spec.homepage}/issues"
 
