@@ -139,8 +139,13 @@ module Micro
       # the method is now add-or-remove rather than add-only so that
       # `attribute!` on a child can relax a parent's required attribute
       # by giving it a default (or vice-versa).
+      #
+      # When a `default:` is present, the attribute is NEVER required —
+      # `default:` always wins. `attribute :foo, default: X, required: true`
+      # treats `required: true` as a docs hint; the default supplies a value
+      # when none is passed, matching the 3.0.x behavior.
       def __attributes_required_add(name, opt, hasnt_default)
-        if opt[:required] || (attributes_are_all_required? && hasnt_default)
+        if hasnt_default && (opt[:required] || attributes_are_all_required?)
           __attributes_required__.add(name)
         else
           __attributes_required__.delete(name)
@@ -228,6 +233,13 @@ module Micro
       private
 
         def __micro_attributes_block_options__(name, options, block)
+          if options.key?(:accept)
+            raise ArgumentError,
+                  "attribute #{name.inspect}: cannot pass both `accept:` and a block — " \
+                  "the block already builds an inline class for `accept:`. " \
+                  "Use one or the other."
+          end
+
           options = options.dup
           options[:accept] = __micro_attributes_build_inline_class__(name, block)
           options

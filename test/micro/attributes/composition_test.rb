@@ -320,9 +320,17 @@ class Micro::Attributes::CompositionTest < Minitest::Test
   end
 
   def test_block_form_propagates_strict_to_inline_child
+    # The inline child IS strict — passing `{}` triggers a `missing
+    # keyword: :inner` raise inside `klass.new({})`. Coercion catches
+    # that ArgumentError and leaves the raw hash in place, so the
+    # outer strict surfaces it as a controlled accept-rejection
+    # (`* "inline" expected to be a kind of ...`) instead of letting
+    # the nested raise escape the envelope. The outer raise is still
+    # there — only the path changed.
     err = assert_raises(ArgumentError) { HostStrict.new(outer: 'X', inline: {}) }
-    assert_match(/missing keyword: :inner/, err.message,
-                 'inline child also strict — missing :inner raises')
+    assert_match(/One or more attributes were rejected/, err.message)
+    assert_match(/"inline" expected to be a kind of/, err.message,
+                 'failed nested construction falls through to the outer accept check')
   end
 
   # ---------- deep nesting (3 levels) ----------
@@ -978,5 +986,195 @@ class Micro::Attributes::CompositionTest < Minitest::Test
 
     assert_equal('CUSTOM', obj.child.inspect,
                  'user-defined `def inspect` inside the block must win')
+  end
+
+  # ---- Round-5 reverts (review of breaking changes from PR #48) ----
+
+  # B1: `attribute :foo, default: X, required: true` — pre-3.1, `default:`
+  # always won and `required: true` was effectively a docs hint when a
+  # default was present. The first cut of this PR honored both, raising
+  # `missing keyword: :foo` on `Klass.new({})`. Reverted: `default:` wins.
+  class DefaultPlusRequired
+    include Micro::Attributes.with(:initialize)
+    attribute :name, default: 'anon', required: true
+  end
+
+  def test_default_plus_required_uses_default_not_raise
+    obj = DefaultPlusRequired.new({})
+
+    assert_equal('anon', obj.name,
+                 'default wins over required: true; no `missing keyword` raise')
+  end
+
+  # B1 corollary: `attribute! :foo, default: X` on a strict subclass STILL
+  # relaxes the parent's required (that fix is preserved).
+  class StrictParentForRelax
+    include Micro::Attributes.with(initialize: :strict)
+    attribute :token
+  end
+
+  class StrictChildRelaxes < StrictParentForRelax
+    attribute! :token, default: 'guest'
+  end
+
+  def test_strict_subclass_attribute_bang_with_default_relaxes_required
+    obj = StrictChildRelaxes.new({})
+
+    assert_equal('guest', obj.token,
+                 'child default still relaxes parent strict required')
+  end
+
+  # B2: `with_attribute` / `with_attributes` must round-trip private and
+  # protected values. The Accept-vs-base alignment cut them out of the
+  # public `#attributes` hash; the round-trip now reads ivars directly
+  # via `__all_attributes` so private/protected values survive.
+  class PrivateRoundTripHost
+    include Micro::Attributes.with(:initialize, :accept)
+    attribute :name
+    attribute :secret, private: true
+  end
+
+  def test_with_attribute_round_trips_private_value
+    a = PrivateRoundTripHost.new(name: 'a', secret: 's')
+    b = a.with_attribute(:name, 'b')
+
+    assert_equal('b', b.name)
+    assert_equal('s', b.send(:secret),
+                 'private attr survives the with_attribute round-trip')
+  end
+
+  class StrictPrivateRoundTripHost
+    include Micro::Attributes.with(initialize: :strict, accept: true)
+    attribute :name
+    attribute :secret, private: true
+  end
+
+  def test_with_attribute_round_trips_private_value_under_strict_init
+    a = StrictPrivateRoundTripHost.new(name: 'a', secret: 's')
+    b = a.with_attribute(:name, 'b')  # must NOT raise `missing keyword: :secret`
+
+    assert_equal('s', b.send(:secret))
+  end
+
+  # B2 corollary: the public `#attributes` hash STILL filters private/
+  # protected — only `with_attribute(s)` sees the full set.
+  def test_public_attributes_still_filters_private
+    obj = PrivateRoundTripHost.new(name: 'a', secret: 's')
+
+    assert_equal({ 'name' => 'a' }, obj.attributes,
+                 'public attributes hash remains public-only')
+  end
+
+  # B4: Coercion catches `ArgumentError` from `klass.new(value)` and lets
+  # the raw hash fall through to Accept's KindOf rejection. This restores
+  # the controlled `Failure(:invalid_attributes)` envelope for u-case
+  # use cases that hold `accept:` nested entities.
+  #
+  # Uses a strict child so `klass.new` ACTUALLY raises (missing
+  # required keyword) — non-strict children silently default the
+  # missing keys to nil, which goes through the bubble path instead.
+  class B4StrictChild
+    include Micro::Attributes.with(initialize: :strict, accept: true)
+    attribute :name, accept: String
+  end
+
+  class B4Parent
+    include Micro::Attributes.with(:initialize, :accept)
+    attribute :child, accept: B4StrictChild
+  end
+
+  def test_coercion_falls_through_to_accept_on_missing_required_child_key
+    obj = B4Parent.new(child: { wrong_key: 'x' })
+
+    # Coercion attempted `B4StrictChild.new({wrong_key: 'x'})`, which
+    # raised `missing keyword: :name`. Rescued — raw hash left in
+    # place. Accept then rejects the hash because it's not a
+    # kind_of(B4StrictChild).
+    assert_predicate(obj, :attributes_errors?)
+    assert_match(/kind of/, obj.attributes_errors['child'],
+                 'fallback path goes through Accept KindOf, not a raise')
+    assert_kind_of(::Hash, obj.instance_variable_get(:@child),
+                   'failed coercion leaves the raw hash, does not crash out')
+  end
+
+  def test_coercion_strict_outer_still_raises_through_controlled_path
+    parent = Class.new do
+      include Micro::Attributes.with(initialize: :strict, accept: :strict)
+      attribute :child, accept: B4StrictChild
+    end
+
+    err = assert_raises(ArgumentError) { parent.new(child: { wrong_key: 'x' }) }
+    assert_match(/One or more attributes were rejected/, err.message,
+                 'strict outer surfaces the controlled accept rejection, not the nested raise')
+    refute_match(/missing keyword: :name/, err.message,
+                 'the nested `missing keyword` raise does not escape')
+  end
+
+  # B6: passing both `accept:` and a block to `attribute` / `attribute!`
+  # is ambiguous (which wins?). Now raises loudly.
+  def test_accept_plus_block_raises
+    err = assert_raises(ArgumentError) do
+      Class.new do
+        include Micro::Attributes.with(:initialize, :accept)
+        attribute :item, accept: String do
+          attribute :sku
+        end
+      end
+    end
+
+    assert_match(/cannot pass both `accept:` and a block/, err.message)
+  end
+
+  def test_attribute_bang_accept_plus_block_raises
+    parent = Class.new do
+      include Micro::Attributes.with(:initialize, :accept)
+      attribute :item, accept: String
+    end
+
+    err = assert_raises(ArgumentError) do
+      Class.new(parent) do
+        attribute! :item, accept: Integer do
+          attribute :sku
+        end
+      end
+    end
+
+    assert_match(/cannot pass both `accept:` and a block/, err.message)
+  end
+
+  # B10: `__attribute_reapply_visibility` is now a private class method.
+  def test_attribute_reapply_visibility_is_private_class_method
+    klass = Class.new do
+      include Micro::Attributes.with(:initialize)
+      attribute :x
+    end
+
+    refute_includes(klass.public_methods, :__attribute_reapply_visibility,
+                    '__attribute_reapply_visibility must be private (consistency with siblings)')
+    assert(klass.respond_to?(:__attribute_reapply_visibility, true),
+           'still defined — just private')
+  end
+
+  # B12: the instance-level per-attribute assignment hook was renamed
+  # from `__attribute_assign` to `___attribute_assign` (3 underscores)
+  # to put it deeper into the "internal" naming convention and avoid
+  # MRO collisions with user code that overrides the method on the
+  # host class. The class-method macro of the same prior name in
+  # `Macros` keeps its name (different concern, no MRO collision).
+  def test_instance_attribute_assign_hook_renamed_to_triple_underscore
+    klass = Class.new do
+      include Micro::Attributes.with(:initialize, :accept)
+      attribute :x
+    end
+
+    instance = klass.new(x: 1)
+    assert(instance.respond_to?(:___attribute_assign, true),
+           'new triple-underscore name is defined as a private instance method')
+    refute(instance.respond_to?(:__attribute_assign, true),
+           'old double-underscore instance-level name is gone')
+
+    # The class-method macro in Macros keeps the old name — different concern.
+    assert(klass.respond_to?(:__attribute_assign, true),
+           'class-method `__attribute_assign` macro retained for u-case v4 compat')
   end
 end

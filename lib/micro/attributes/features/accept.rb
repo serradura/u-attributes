@@ -36,14 +36,14 @@ module Micro::Attributes
 
         KeepProc = -> validation_data { validation_data[0] == :accept && validation_data[1] == Proc }
 
-        def __attribute_assign(key, init_hash, attribute_data)
+        def ___attribute_assign(key, init_hash, attribute_data)
           validation_data = attribute_data[1]
 
           value_to_assign = FetchValueToAssign.(init_hash, init_hash[key], attribute_data, KeepProc.(validation_data))
 
           value = instance_variable_set("@#{key}", value_to_assign)
 
-          # Match the base `__attribute_assign`: private/protected attributes
+          # Match the base `___attribute_assign`: private/protected attributes
           # set their ivar but don't appear in the public `#attributes`
           # hash. Accept-validation still runs for them — but failures
           # are flagged via `@__hidden_validation_failed` instead of

@@ -20,6 +20,7 @@ module Micro
         private_class_method :__attributes, :__attribute_reader
         private_class_method :__attribute_assign, :__attributes_groups
         private_class_method :__attributes_required_add, :__attributes_data_to_assign
+        private_class_method :__attribute_reapply_visibility
       end
 
       def base.inherited(subclass)
@@ -184,6 +185,20 @@ module Micro
         @__attributes ||= {}
       end
 
+      # Build a fresh hash containing every declared attribute (public,
+      # private, AND protected) by reading their ivars directly. Used by
+      # `Initialize#with_attributes` for round-tripping — the public
+      # `#attributes` hash intentionally excludes private/protected
+      # values, but `with_attribute(s)` must rebuild the new instance
+      # with the full attribute set so private/protected values aren't
+      # silently reset to defaults.
+      def __all_attributes
+        self.class.__attributes_data__.each_with_object({}) do |(name, _), memo|
+          ivar = "@#{name}"
+          memo[name] = instance_variable_get(ivar) if instance_variable_defined?(ivar)
+        end
+      end
+
       FetchValueToAssign = -> (init_hash, value, attribute_data, keep_proc = false) do
         default = attribute_data[0]
 
@@ -208,13 +223,21 @@ module Micro
 
       def __attributes_assign(hash)
         self.class.__attributes_data__.each do |name, attribute_data|
-          __attribute_assign(name, hash, attribute_data) if attribute?(name, true)
+          ___attribute_assign(name, hash, attribute_data) if attribute?(name, true)
         end
 
         __attributes.freeze
       end
 
-      def __attribute_assign(name, init_hash, attribute_data)
+      # Renamed from `__attribute_assign` (3 underscores) to put the per-attribute
+      # instance-level assignment hook deeper into the "internal" naming convention
+      # than the class-method macro of the same prior name in `Macros`. Coercion is
+      # prepended to every host class, so this method's MRO position is now ahead of
+      # the host class itself — a user who defined `def __attribute_assign(...)`
+      # directly on their class would have been silently intercepted. The 3-underscore
+      # name is intentionally less inviting and avoids any conceivable collision with
+      # the class-method version still named `__attribute_assign` in `Macros`.
+      def ___attribute_assign(name, init_hash, attribute_data)
         value_to_assign = FetchValueToAssign.(init_hash, init_hash[name], attribute_data)
 
         ivar_value = instance_variable_set("@#{name}", value_to_assign)

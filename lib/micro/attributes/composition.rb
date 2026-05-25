@@ -22,7 +22,7 @@ module Micro
             arity == 1 || arity == -1 || arity == -2
           end
 
-          def __attribute_assign(key, init_hash, attribute_data)
+          def ___attribute_assign(key, init_hash, attribute_data)
             accept = attribute_data[1]
 
             # Only coerce when the target class has a constructor that
@@ -41,7 +41,19 @@ module Micro
 
               if value.is_a?(::Hash)
                 init_hash = init_hash.dup
-                init_hash[key] = klass.new(value)
+                begin
+                  init_hash[key] = klass.new(value)
+                rescue ::ArgumentError
+                  # Child construction blew up — typically a missing required
+                  # keyword on the nested class, or a strict-mode rejection.
+                  # Leave the raw hash in place so Accept's KindOf check
+                  # ("expected to be a kind of <Klass>") rejects it into
+                  # `attributes_errors` instead of escaping as an exception.
+                  # This preserves the controlled `Failure(:invalid_attributes)`
+                  # envelope for u-case use cases that hold `accept:` nested
+                  # entities.
+                  init_hash[key] = value
+                end
               end
             end
 
