@@ -20,13 +20,16 @@ module Micro
           def __attribute_assign(key, init_hash, attribute_data)
             accept = attribute_data[1]
 
-            # Only coerce when the target class has the `:initialize` feature
-            # — without it there's no hash constructor and `klass.new(hash)`
-            # would fall through to `Object#initialize` and raise ArgumentError.
+            # Only coerce when the target class actually has a constructor
+            # that takes at least one argument. The arity check covers BOTH
+            # `Features::Initialize` includers AND user-defined constructors
+            # like `def initialize(arg); self.attributes = arg; end`.
+            # `Object#initialize` is arity-0 — those classes are skipped so
+            # we don't fall through to it and raise ArgumentError.
             if accept[0] == :accept &&
                (klass = accept[1]).is_a?(::Class) &&
                klass.include?(::Micro::Attributes) &&
-               klass.include?(::Micro::Attributes::Features::Initialize)
+               klass.instance_method(:initialize).arity != 0
               value = init_hash[key]
 
               if value.is_a?(::Hash)

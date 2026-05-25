@@ -66,13 +66,18 @@ module Micro
     def self.new(options = {}, &block)
       raise ArgumentError, 'options must be a Hash' unless options.is_a?(Hash)
 
-      if options[:initialize] == false
+      effective = NEW_DEFAULTS.merge(options)
+
+      # `:initialize` must resolve to one of the allowed "on" values.
+      # Catches `false`, `nil`, garbage values like `'wrong'`, etc. —
+      # without it the returned class has no hash constructor and the
+      # next `klass.new(hash)` raises an opaque `ArgumentError` from
+      # `Object#initialize`.
+      unless [true, :strict].include?(effective[:initialize])
         raise ArgumentError,
               '`Micro::Attributes.new` requires the :initialize feature ' \
               '(omit the key or pass `true` / `:strict`)'
       end
-
-      effective = NEW_DEFAULTS.merge(options)
 
       klass = Class.new
       klass.send(:include, with(effective))

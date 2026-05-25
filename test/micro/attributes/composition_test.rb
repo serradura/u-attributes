@@ -459,9 +459,12 @@ class Micro::Attributes::CompositionTest < Minitest::Test
     end
   end
 
-  # ---- Regression Co3: Coercion only runs when target has :initialize ----
+  # ---- Regression Co3: Coercion gate is arity-based, not feature-based ----
 
-  class InnerNoInitialize
+  # User-defined hash constructor (the long-standing u-case v4 idiom).
+  # The class includes `Micro::Attributes` directly (no Initialize feature)
+  # but writes its own `initialize` that delegates to `attributes=`.
+  class InnerUserCtor
     include Micro::Attributes
     attribute :a
 
@@ -470,24 +473,40 @@ class Micro::Attributes::CompositionTest < Minitest::Test
     end
   end
 
-  OuterCoercingNoInitTarget = Micro::Attributes.new do
-    attribute :inner, accept: InnerNoInitialize
+  OuterUserCtorTarget = Micro::Attributes.new do
+    attribute :inner, accept: InnerUserCtor
   end
 
-  def test_coercion_noops_when_target_lacks_initialize_feature
-    # Pre-fix: Coercion called `InnerNoInitialize.new(hash)` which fell
-    # through to `Object#initialize` (zero-arg) and raised
-    # `ArgumentError: wrong number of arguments`. The fix narrows
-    # Coercion to targets that include `Features::Initialize`, so the
-    # raw value passes through.
-    pre_built = InnerNoInitialize.new(a: 1)
-    obj = OuterCoercingNoInitTarget.new(inner: pre_built)
-    assert_same(pre_built, obj.inner)
+  def test_coercion_fires_for_user_defined_hash_constructors
+    # Arity-based gate: `InnerUserCtor`'s `initialize(arg)` has arity 1,
+    # so Coercion fires and turns the hash into an instance — the
+    # u-case v4 idiom still works.
+    obj = OuterUserCtorTarget.new(inner: { a: 1 })
+    assert_kind_of(InnerUserCtor, obj.inner)
+    assert_equal(1, obj.inner.instance_variable_get(:@a))
+    refute_predicate(obj, :attributes_errors?)
 
-    # Hash falls through (no auto-coercion) — accept's KindOf rejects it
-    # rather than crashing.
-    bad = OuterCoercingNoInitTarget.new(inner: { a: 1 })
-    assert_predicate(bad, :attributes_errors?)
+    # Already-built instances pass through unchanged.
+    pre_built = InnerUserCtor.new(a: 2)
+    obj2 = OuterUserCtorTarget.new(inner: pre_built)
+    assert_same(pre_built, obj2.inner)
+  end
+
+  # Target with NO custom constructor (Object#initialize, arity 0) — the
+  # gate skips Coercion, hash passes through, accept's KindOf rejects.
+  class InnerNoConstructor
+    include Micro::Attributes
+    attribute :a
+  end
+
+  OuterNoCtorTarget = Micro::Attributes.new do
+    attribute :inner, accept: InnerNoConstructor
+  end
+
+  def test_coercion_skips_when_target_initialize_is_arity_zero
+    bad = OuterNoCtorTarget.new(inner: { a: 1 })
+    assert_predicate(bad, :attributes_errors?,
+                     'no coerce → accept KindOf rejects the raw Hash')
     assert_match(/kind of/, bad.attributes_errors['inner'])
   end
 
@@ -504,6 +523,118 @@ class Micro::Attributes::CompositionTest < Minitest::Test
     # Sanity — these should NOT raise.
     Micro::Attributes.new(initialize: true)  { attribute :name }
     Micro::Attributes.new(initialize: :strict) { attribute :name }
+  end
+
+  # Round-2 regression: the factory guard must catch `nil` and garbage
+  # values too, not just `false`. Pre-fix only `== false` was checked,
+  # so `initialize: nil` slipped through and produced a class with no
+  # hash constructor.
+  def test_factory_rejects_initialize_nil
+    err = assert_raises(ArgumentError) do
+      Micro::Attributes.new(initialize: nil) { attribute :name }
+    end
+    assert_match(/requires the :initialize feature/, err.message)
+  end
+
+  def test_factory_rejects_initialize_garbage_value
+    err = assert_raises(ArgumentError) do
+      Micro::Attributes.new(initialize: 'on') { attribute :name }
+    end
+    assert_match(/requires the :initialize feature/, err.message)
+  end
+
+  # Round-2 regression: instance `inspect` must NOT leak the anonymous
+  # inline class's heap address. The fix overrides `inspect` on the
+  # inline class to use `self.class.to_s` (already stable) instead of
+  # `Object#inspect`'s address form.
+  ProductHost = Micro::Attributes.new do
+    attribute :address do
+      attribute :city, accept: String
+    end
+  end
+
+  def test_inline_instance_inspect_does_not_leak_heap_address
+    obj = ProductHost.new(address: { city: 'Rio' })
+
+    inspected = obj.address.inspect
+
+    refute_match(/0x[0-9a-f]+/, inspected,
+                 'instance inspect must not leak heap address')
+    assert_match(/ProductHost\(address\)/, inspected,
+                 'instance inspect uses the stable class label')
+  end
+
+  # Round-2 regression for the "u-case impact": when the host class
+  # includes `Micro::Attributes` (or `Features::*`) DIRECTLY without
+  # going through `Micro::Attributes.with(...)`, block-form inline
+  # children must still get the `:initialize` and `:accept` defaults
+  # so hash coercion works.
+  class UCaseLikeHost
+    include Micro::Attributes  # no .with(...)
+
+    attribute :customer do
+      attribute :name, accept: String
+    end
+
+    def initialize(arg)
+      self.attributes = arg
+    end
+  end
+
+  def test_block_form_inline_works_when_host_lacks_with_module
+    obj = UCaseLikeHost.new(customer: { name: 'Alice' })
+
+    # Pre-fix: customer would be a raw Hash; `obj.customer.name` would
+    # NoMethodError. Post-fix: customer is coerced to the inline class
+    # (which has :initialize+:accept defaults).
+    refute_kind_of(Hash, obj.customer)
+    assert_equal('Alice', obj.customer.name)
+  end
+
+  if begin; require 'active_model'; true; rescue LoadError; false; end
+    # Round-2 regression for M3 (AM load order): the `model_name`
+    # singleton must work even when AM is required AFTER the inline
+    # class is built — the check is at CALL time, not build time.
+    LateAMHost = Micro::Attributes.new(active_model: :validations) do
+      attribute :address do
+        attribute :street, accept: String, validates: { presence: true }
+      end
+    end
+
+    def test_inline_model_name_resolves_lazily_for_late_loaded_am
+      # AM was loaded before this test runs (since the guard
+      # `require 'active_model'` succeeded), so we don't actually have
+      # a way to simulate "AM loaded after class creation" in-process —
+      # but we can verify the singleton method is defined unconditionally
+      # and produces a valid `ActiveModel::Name` when AM is present.
+      inline_class = LateAMHost.__attributes_data__['address'][1][1]
+
+      assert_respond_to(inline_class, :model_name,
+                        'model_name singleton always defined (not gated at build time)')
+
+      name = inline_class.model_name
+      assert_kind_of(ActiveModel::Name, name)
+      assert_match(/LateAMHost\(address\)/, name.name)
+    end
+  end
+
+  # Round-2 regression for Accept's reject path: private/protected
+  # attribute names must NOT leak through `attributes_errors` even when
+  # Accept's own reject (not the Coercion bubble) is what would write.
+  class PrivateAcceptHost
+    include Micro::Attributes.with(:initialize, :accept)
+    attribute :secret, accept: String, private: true
+  end
+
+  def test_accept_reject_does_not_leak_private_attr_key
+    obj = PrivateAcceptHost.new(secret: 42)
+
+    refute(obj.attributes_errors.key?('secret'),
+           'Accept reject must not leak private attr key (string)')
+    refute(obj.attributes_errors.key?(:secret),
+           'Accept reject must not leak private attr key (symbol)')
+    refute_predicate(obj, :attributes_errors?,
+                     'private attr never contributes to attributes_errors')
   end
 
   # ---- Regression F1: layered with(...) reaches inline child ----

@@ -235,31 +235,26 @@ module Micro
 
         # Build an anonymous nested class for `attribute :foo do ... end`.
         #
-        # Replays the host's exact feature mix in the inline child by
-        # scanning `self.ancestors` for every `Micro::Attributes::With::*`
-        # module and including them. This is more robust than caching a
-        # single "first include wins" reference — it handles layered
-        # `include Micro::Attributes.with(...)` calls and `with` class-
-        # macro layering correctly.
+        # The inline class is wired with `Micro::Attributes.with(...)` so it
+        # always has a hash-keyword constructor and accept-validation
+        # machinery (the bare minimum for block-form to be useful). On top
+        # of that default, every `Features::*` module already in the host's
+        # ancestors is replayed — so a `KeysAsSymbol` / `ActiveModelValidations`
+        # / `Strict` host yields an inline child with the same mix.
+        #
+        # This handles three host patterns:
+        # - `include Micro::Attributes.with(...)` — features come from With::*
+        #   in ancestors, replayed below.
+        # - bare `include Micro::Attributes` — defaults to init+accept.
+        # - direct `include Micro::Attributes::Features::*` (the `u-case`
+        #   pattern) — same detection path picks them up.
         def __micro_attributes_build_inline_class__(name, block)
           klass = Class.new
-
-          with_modules = self.ancestors.select do |mod|
-            mod.is_a?(::Module) && mod.name &&
-              mod.name.start_with?("#{::Micro::Attributes::With.name}::")
-          end
-
-          if with_modules.empty?
-            klass.send(:include, ::Micro::Attributes)
-          else
-            # Apply in include-order (oldest include first) so the inline
-            # child's ancestors mirror the host's.
-            with_modules.reverse_each { |mod| klass.send(:include, mod) }
-          end
+          klass.send(:include, ::Micro::Attributes.with(*__micro_attributes_inline_features__))
 
           klass.class_eval(&block)
 
-          # Lazy outer label — capture the host class object (not its
+          # Lazy outer label — capture the host class OBJECT (not its
           # `.name` string) so naming resolves AFTER any later constant
           # assignment (matters for `Micro::Attributes.new { ... }`,
           # where the constant is assigned only after the factory returns).
@@ -269,17 +264,71 @@ module Micro
           klass.define_singleton_method(:to_s,    &label_proc)
           klass.define_singleton_method(:inspect, &label_proc)
 
+          # Stop instances from leaking the anonymous class's heap address
+          # via the default `Object#inspect`. We use the class's `to_s`
+          # (already stable via the singleton above) and surface user-
+          # defined ivars while hiding the internal `@__` machinery.
+          klass.send(:define_method, :inspect) do
+            ivars = instance_variables.reject { |v| v.to_s.start_with?('@__') }
+            if ivars.empty?
+              "#<#{self.class}>"
+            else
+              body = ivars.map { |v| "#{v}=#{instance_variable_get(v).inspect}" }.join(', ')
+              "#<#{self.class} #{body}>"
+            end
+          end
+
           # ActiveModel-aware naming. AM's error renderer reaches for
-          # `klass.model_name` which calls `ActiveModel::Name.new(klass)`
-          # and raises "Class name cannot be blank" on anonymous classes.
-          # Providing the 3rd arg (explicit name) sidesteps the check.
-          if defined?(::ActiveModel::Name)
-            klass.define_singleton_method(:model_name) do
+          # `klass.model_name`; on anonymous classes that defaults to
+          # `ActiveModel::Name.new(klass)` which raises "Class name cannot
+          # be blank". We always define the singleton, but check AM at
+          # CALL TIME (not build time) so the override still works when
+          # AM is loaded AFTER the inline class is created.
+          klass.define_singleton_method(:model_name) do
+            if defined?(::ActiveModel::Name)
               ::ActiveModel::Name.new(self, nil, label_proc.call)
+            else
+              label_proc.call
             end
           end
 
           klass
+        end
+
+        # Detect every Micro::Attributes feature module already in the host's
+        # ancestors and map it back to the args `Micro::Attributes.with` accepts.
+        # Always includes `:initialize` and `:accept` defaults so block-form
+        # attributes can be hash-constructed and type-checked.
+        FEATURE_NAME_TO_ARG = {
+          'Micro::Attributes::Features::Initialize'              => :initialize,
+          'Micro::Attributes::Features::Accept'                  => :accept,
+          'Micro::Attributes::Features::Diff'                    => :diff,
+          'Micro::Attributes::Features::KeysAsSymbol'            => :keys_as_symbol,
+          'Micro::Attributes::Features::ActiveModelValidations'  => :activemodel_validations
+        }.freeze
+
+        STRICT_NAME_TO_VARIANT = {
+          'Micro::Attributes::Features::Initialize::Strict' => :initialize,
+          'Micro::Attributes::Features::Accept::Strict'     => :accept
+        }.freeze
+
+        def __micro_attributes_inline_features__
+          features = [:initialize, :accept]
+          strict   = {}
+
+          ancestors.each do |mod|
+            next unless mod.is_a?(::Module) && mod.name
+
+            if (arg = FEATURE_NAME_TO_ARG[mod.name])
+              features << arg
+            elsif (key = STRICT_NAME_TO_VARIANT[mod.name])
+              strict[key] = :strict
+            end
+          end
+
+          features.uniq!
+          features << strict unless strict.empty?
+          features
         end
 
       public

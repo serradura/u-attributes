@@ -44,10 +44,14 @@ module Micro::Attributes
 
           # Match the base `__attribute_assign`: private/protected attributes
           # set their ivar (so the in-class reader still works) but don't
-          # appear in the public `#attributes` hash.
-          __attributes[key] = value if attribute_data[3] == :public
+          # appear in the public `#attributes` hash, and accept-validation
+          # errors don't surface through the public `attributes_errors`
+          # either (same visibility-respecting contract).
+          if attribute_data[3] == :public
+            __attributes[key] = value
 
-          __attribute_accept_or_reject(key, value, validation_data) if !validation_data.empty?
+            __attribute_accept_or_reject(key, value, validation_data) if !validation_data.empty?
+          end
         end
 
         def __attribute_accept_or_reject(key, value, validation_data)
