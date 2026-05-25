@@ -83,6 +83,19 @@ module Micro
       klass.send(:include, with(effective))
       klass.class_eval(&block) if block
 
+      # ActiveModel-aware naming for the anonymous factory class. Without
+      # this, the first call to `errors.full_messages` raises "Class name
+      # cannot be blank" because AM's `model_name` is invoked on a still-
+      # anonymous class (the user may never assign the result to a
+      # constant). `self.name` resolves lazily — Ruby fills it in if/when
+      # the constant is assigned later. Mirrors the inline-child fix in
+      # `Macros#__micro_attributes_build_inline_class__`.
+      if defined?(::ActiveModel::Validations) && klass.include?(::ActiveModel::Validations)
+        klass.define_singleton_method(:model_name) do
+          ::ActiveModel::Name.new(self, nil, self.name || self.inspect)
+        end
+      end
+
       klass
     end
 

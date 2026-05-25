@@ -803,6 +803,63 @@ class Micro::Attributes::CompositionTest < Minitest::Test
       assert_kind_of(ActiveModel::Name, name)
       assert_match(/HostWithAMForModelName\(child\)/, name.name)
     end
+
+    # Round-4 #1: top-level `Micro::Attributes.new(active_model: :validations)`
+    # factory class must expose `model_name` too. Previously only inline
+    # children got the override, so AM's error renderer raised
+    # "Class name cannot be blank" the first time `errors.full_messages`
+    # ran on a factory instance whose class was still anonymous.
+    FactoryWithAM = Micro::Attributes.new(active_model: :validations) do
+      attribute :name, validates: { presence: true }
+    end
+
+    def test_factory_class_renders_am_errors_when_assigned_to_constant
+      inst = FactoryWithAM.new(name: nil)
+      inst.valid?
+
+      assert_equal(["Name can't be blank"], inst.errors.full_messages)
+    end
+
+    def test_factory_class_renders_am_errors_when_anonymous
+      anon = Micro::Attributes.new(active_model: :validations) do
+        attribute :name, validates: { presence: true }
+      end
+
+      inst = anon.new(name: nil)
+      inst.valid?
+
+      # Should not raise; full_messages should still render even though
+      # the class has no `.name` (falls back to `self.inspect`).
+      messages = inst.errors.full_messages
+      assert(messages.any? { |m| m.include?("can't be blank") },
+             'AM error rendering works on anonymous factory class')
+    end
+
+    # Round-4 #2: `parent.valid?` must not wipe a shared child's
+    # pre-existing errors. AM's `valid?` calls `errors.clear` before
+    # re-running validators, so the auto-registered nested validator
+    # used to silently delete any errors the caller had added to the
+    # child instance.
+    class NestedAMChild
+      include Micro::Attributes.with(:initialize, :accept, :activemodel_validations)
+      attribute :name, validates: { presence: true }
+    end
+
+    class NestedAMParent
+      include Micro::Attributes.with(:initialize, :accept, :activemodel_validations)
+      attribute :child, accept: NestedAMChild
+    end
+
+    def test_parent_valid_preserves_externally_added_child_errors
+      child = NestedAMChild.new(name: 'ok')
+      child.errors.add(:base, 'externally tagged')
+
+      parent = NestedAMParent.new(child: child)
+      parent.valid?
+
+      assert_includes(child.errors.full_messages, 'externally tagged',
+                      'externally added child error must survive parent.valid?')
+    end
   end
 
   # ---- Round-3 #1: arity gate tightened ----
@@ -903,5 +960,23 @@ class Micro::Attributes::CompositionTest < Minitest::Test
                  'private attr name must not appear in inspect')
     refute_match(/sssh/, inspected,
                  'private attr value must not leak in inspect')
+  end
+
+  # Round-4 #3: a user-defined `inspect` inside the block-form body
+  # must win over the macro's default. The macro previously called
+  # `define_method(:inspect)` AFTER `class_eval(&block)`, silently
+  # overwriting the user's method.
+  HostWithCustomInspect = Micro::Attributes.new do
+    attribute(:child) do
+      attribute :n, accept: Integer
+      def inspect; 'CUSTOM'; end
+    end
+  end
+
+  def test_block_form_preserves_user_defined_inspect
+    obj = HostWithCustomInspect.new(child: { n: 1 })
+
+    assert_equal('CUSTOM', obj.child.inspect,
+                 'user-defined `def inspect` inside the block must win')
   end
 end

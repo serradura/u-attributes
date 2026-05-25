@@ -273,15 +273,21 @@ module Micro
           # - which also hides framework ivars like ActiveModel's
           #   `@errors`, `@validation_context`, etc., since they aren't
           #   declared attributes
-          klass.send(:define_method, :inspect) do
-            public_attrs = self.class.attributes_by_visibility[:public]
-            present = public_attrs.select { |n| instance_variable_defined?("@#{n}") }
+          #
+          # Skip if the block already defined `inspect` directly on the
+          # inline class — user-defined `def inspect` inside the block
+          # wins over the macro's default.
+          unless klass.instance_methods(false).include?(:inspect)
+            klass.send(:define_method, :inspect) do
+              public_attrs = self.class.attributes_by_visibility[:public]
+              present = public_attrs.select { |n| instance_variable_defined?("@#{n}") }
 
-            if present.empty?
-              "#<#{self.class}>"
-            else
-              body = present.map { |n| "@#{n}=#{instance_variable_get("@#{n}").inspect}" }.join(', ')
-              "#<#{self.class} #{body}>"
+              if present.empty?
+                "#<#{self.class}>"
+              else
+                body = present.map { |n| "@#{n}=#{instance_variable_get("@#{n}").inspect}" }.join(', ')
+                "#<#{self.class} #{body}>"
+              end
             end
           end
 

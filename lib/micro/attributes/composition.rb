@@ -75,7 +75,12 @@ module Micro
 
             child_invalid =
               if child.respond_to?(:valid?)
-                !child.valid?
+                # If the child already has errors, treat it as invalid
+                # without re-running `valid?` — AM's `valid?` calls
+                # `errors.clear` first, which would wipe any errors the
+                # caller (or another validator pass) had added to a
+                # shared child instance.
+                child.errors.any? || !child.valid?
               elsif child.respond_to?(:attributes_errors?)
                 child.attributes_errors?
               else
