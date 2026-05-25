@@ -26,21 +26,22 @@ module Micro
         end
 
         # Pick the parent class for an inline (block-form) nested entity.
-        # We want the nested class to inherit the feature mix of `self`
-        # (so a Strict subclass yields a Strict inline child) — but NOT
-        # `self`'s user-defined attributes, which would leak via the
-        # `inherited` hook into the nested entity.
+        # We use one of the gem-provided "feature bases" (`Micro::Entity`
+        # or `Micro::Entity::Strict`) so the inline class is isolated from
+        # `self`'s ancestry:
         #
-        # Walk up the ancestry until we find a class with no user
-        # attributes: that's the closest "feature base" carrying the
-        # right modules without any data. Falls back to `Micro::Entity`.
+        # - No leak from parent / grandparent user attributes (via the
+        #   `inherited` hook copying `__attributes_data__`).
+        # - No leak from sibling attributes added to `self` AFTER the
+        #   block runs (Ruby's dynamic dispatch would otherwise expose
+        #   them via inherited `attr_reader`s).
+        #
+        # The tradeoff: features the user mixed in on intermediate
+        # classes (e.g. `include Micro::Attributes.with(:keys_as_symbol)`)
+        # don't propagate to inline children — define the nested entity
+        # explicitly and pass it via `accept:` for those cases.
         def __entity_block_parent__
-          klass = self
-          while klass && klass <= ::Micro::Entity
-            return klass if klass.__attributes_data__.empty?
-            klass = klass.superclass
-          end
-          ::Micro::Entity
+          self <= ::Micro::Entity::Strict ? ::Micro::Entity::Strict : ::Micro::Entity
         end
     end
 

@@ -208,4 +208,77 @@ class Micro::EntityTest < Minitest::Test
     end
     assert_match(/missing keyword: :only_here/, error.message)
   end
+
+  # ---- block-form ordering tests ----
+  # The `__entity_block_parent__` walker picks the nearest ancestor with
+  # no user attributes. Regardless of where the block appears in the
+  # class body, the inline class must contain ONLY the attributes declared
+  # in the block.
+
+  class BlockFirstThenSibling < Micro::Entity
+    attribute :nested do
+      attribute :only_here, accept: String
+    end
+
+    attribute :added_after, accept: String
+  end
+
+  class SiblingFirstThenBlock < Micro::Entity
+    attribute :added_before, accept: String
+
+    attribute :nested do
+      attribute :only_here, accept: String
+    end
+  end
+
+  def test_block_form_isolation_when_block_comes_before_siblings
+    nested_class = BlockFirstThenSibling.__attributes_data__['nested'][1][1]
+    assert_equal(['only_here'], nested_class.attributes,
+                 'block-first: nested must not capture later sibling attrs')
+
+    obj = BlockFirstThenSibling.new(added_after: 'A', nested: { only_here: 'L' })
+    assert_equal('A', obj.added_after)
+    assert_equal('L', obj.nested.only_here)
+    refute_respond_to(obj.nested, :added_after, 'no leak from later sibling')
+  end
+
+  def test_block_form_isolation_when_block_comes_after_siblings
+    nested_class = SiblingFirstThenBlock.__attributes_data__['nested'][1][1]
+    assert_equal(['only_here'], nested_class.attributes,
+                 'sibling-first: nested must not inherit earlier sibling attrs')
+
+    obj = SiblingFirstThenBlock.new(added_before: 'B', nested: { only_here: 'L' })
+    assert_equal('B', obj.added_before)
+    assert_equal('L', obj.nested.only_here)
+    refute_respond_to(obj.nested, :added_before, 'no leak from earlier sibling')
+  end
+
+  # Block form on a class that itself inherits from a class WITH attributes:
+  # walker must skip past the with-attrs ancestor and land on `Micro::Entity`.
+  class GrandparentEntity < Micro::Entity
+    attribute :gp_attr, accept: String
+  end
+
+  class ParentInChain < GrandparentEntity
+    attribute :p_attr, accept: String
+  end
+
+  class ChildInChain < ParentInChain
+    attribute :nested do
+      attribute :only_here, accept: String
+    end
+  end
+
+  def test_block_form_walks_through_full_inheritance_chain
+    nested_class = ChildInChain.__attributes_data__['nested'][1][1]
+    assert_equal(['only_here'], nested_class.attributes,
+                 'must skip past parent AND grandparent attrs')
+
+    child = ChildInChain.new(gp_attr: 'g', p_attr: 'p', nested: { only_here: 'L' })
+    assert_equal('g', child.gp_attr)
+    assert_equal('p', child.p_attr)
+    assert_equal('L', child.nested.only_here)
+    refute_respond_to(child.nested, :gp_attr, 'no grandparent leak')
+    refute_respond_to(child.nested, :p_attr,  'no parent leak')
+  end
 end

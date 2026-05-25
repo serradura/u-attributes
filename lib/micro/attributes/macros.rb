@@ -108,6 +108,26 @@ module Micro
         protected(name) if Options.protected?(visibility_index)
       end
 
+      # Re-apply visibility for an already-defined attribute. Used by
+      # `attribute!` so a subclass can promote a private/protected
+      # parent attribute back to public (or change visibility in either
+      # direction). Without this, `__attributes_data__` would say one
+      # thing while the actual reader's Ruby visibility said another.
+      def __attribute_reapply_visibility(name, visibility_index)
+        [Options::PUBLIC, Options::PRIVATE, Options::PROTECTED].each do |idx|
+          __attributes_groups[idx].delete(name)
+        end
+        __attributes_groups[visibility_index] << name
+
+        if Options.private?(visibility_index)
+          private(name)
+        elsif Options.protected?(visibility_index)
+          protected(name)
+        else
+          public(name)
+        end
+      end
+
       def __attributes_required_add(name, opt, hasnt_default)
         if opt[:required] || (attributes_are_all_required? && hasnt_default)
           __attributes_required__.add(name)
@@ -144,6 +164,7 @@ module Micro
 
         if can_overwrite || !has_attribute
           __attributes_data__[name] = __attributes_data_to_assign(name, opt, visibility_index)
+          __attribute_reapply_visibility(name, visibility_index) if has_attribute
         end
 
         __call_after_attribute_assign__(name, opt)

@@ -13,7 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - `Micro::Attributes.with(initialize: :strict, accept: :strict)` (a hash arg with more than one strict key) used to silently drop all but one entry — only the first matched variant was applied. Multi-key strict hashes now expand into every requested strict variant.
-- `Micro::Entity`'s block-form nested attribute (`attribute :foo do ... end`) used to leak the immediate superclass's user-defined attributes into the inline nested class when defined on a multi-level subclass (e.g. `Bar < Foo < Micro::Entity` where `Foo` had its own attributes). The inline parent is now resolved by walking up to the nearest ancestor with no user attributes, so the feature mix (including `Strict`) still propagates but no foreign attributes leak in.
+- `Features::Accept` was leaking `private:` / `protected:` attributes into the public `#attributes` hash. The base `__attribute_assign` correctly gates the `__attributes` write on `attribute_data[3] == :public`, but the Accept override wrote unconditionally. Now matches the base behavior.
+- `attribute!` (subclass overwrite) couldn't change an attribute's Ruby visibility back from `private`/`protected` to `public` — it updated `__attributes_data__` (and so the `#attributes` hash reflected the new visibility), but the inherited reader method retained its original Ruby visibility. `__attribute_assign` now re-applies visibility for already-defined attributes when overwriting.
+- `Micro::Entity`'s block-form nested attribute (`attribute :foo do ... end`) used to leak the immediate superclass's user-defined attributes into the inline nested class. The inline class now always inherits from a gem-provided base (`Micro::Entity` or `Micro::Entity::Strict`), preventing both ancestor-attribute leaks and sibling-attribute leaks via dynamic dispatch. Tradeoff: user-added feature includes (`KeysAsSymbol`, `ActiveModelValidations`) on intermediate classes don't propagate to inline children — define those nested entities explicitly and pass via `accept:`.
 
 ## [3.0.2] - 2026-05-24
 ### Added

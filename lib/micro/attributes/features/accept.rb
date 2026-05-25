@@ -40,7 +40,12 @@ module Micro::Attributes
 
           value_to_assign = FetchValueToAssign.(init_hash, init_hash[key], attribute_data, KeepProc.(validation_data))
 
-          value = __attributes[key] = instance_variable_set("@#{key}", value_to_assign)
+          value = instance_variable_set("@#{key}", value_to_assign)
+
+          # Match the base `__attribute_assign`: private/protected attributes
+          # set their ivar (so the in-class reader still works) but don't
+          # appear in the public `#attributes` hash.
+          __attributes[key] = value if attribute_data[3] == :public
 
           __attribute_accept_or_reject(key, value, validation_data) if !validation_data.empty?
         end
