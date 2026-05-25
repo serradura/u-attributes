@@ -432,5 +432,200 @@ class Micro::Attributes::CompositionTest < Minitest::Test
       refute_predicate(bad, :valid?)
       assert_includes(bad.errors[:leaf].map(&:to_s).join, 'is invalid')
     end
+
+    # Regression M3: block-form inline class in an AM host must NOT raise
+    # `"Class name cannot be blank"` when `errors.full_messages` (or any
+    # other path that consults `klass.model_name`) is invoked. The fix
+    # is to override `model_name` on the inline class with an explicit
+    # name string.
+    AMBlockFormHost = Micro::Attributes.new(active_model: :validations) do
+      attribute :address do
+        attribute :street, accept: String, validates: { presence: true }
+      end
+    end
+
+    def test_am_renders_error_messages_for_block_form_nested
+      obj = AMBlockFormHost.new(address: { street: '' })
+
+      # The validate-then-render chain must not raise.
+      messages = obj.errors.full_messages
+      assert_kind_of(Array, messages, 'errors.full_messages must not raise')
+
+      # The inline child also must be inspectable without raising.
+      child_messages = obj.address.errors.full_messages
+      assert_kind_of(Array, child_messages)
+      assert(child_messages.any? { |m| m.include?("can't be blank") },
+             'leaf retains the original AM message')
+    end
+  end
+
+  # ---- Regression Co3: Coercion only runs when target has :initialize ----
+
+  class InnerNoInitialize
+    include Micro::Attributes
+    attribute :a
+
+    def initialize(arg)
+      self.attributes = arg
+    end
+  end
+
+  OuterCoercingNoInitTarget = Micro::Attributes.new do
+    attribute :inner, accept: InnerNoInitialize
+  end
+
+  def test_coercion_noops_when_target_lacks_initialize_feature
+    # Pre-fix: Coercion called `InnerNoInitialize.new(hash)` which fell
+    # through to `Object#initialize` (zero-arg) and raised
+    # `ArgumentError: wrong number of arguments`. The fix narrows
+    # Coercion to targets that include `Features::Initialize`, so the
+    # raw value passes through.
+    pre_built = InnerNoInitialize.new(a: 1)
+    obj = OuterCoercingNoInitTarget.new(inner: pre_built)
+    assert_same(pre_built, obj.inner)
+
+    # Hash falls through (no auto-coercion) — accept's KindOf rejects it
+    # rather than crashing.
+    bad = OuterCoercingNoInitTarget.new(inner: { a: 1 })
+    assert_predicate(bad, :attributes_errors?)
+    assert_match(/kind of/, bad.attributes_errors['inner'])
+  end
+
+  # ---- Regression X1: Micro::Attributes.new(initialize: false) is rejected ----
+
+  def test_factory_rejects_initialize_false
+    err = assert_raises(ArgumentError) do
+      Micro::Attributes.new(initialize: false) { attribute :name }
+    end
+    assert_match(/requires the :initialize feature/, err.message)
+  end
+
+  def test_factory_still_accepts_initialize_strict_and_true
+    # Sanity — these should NOT raise.
+    Micro::Attributes.new(initialize: true)  { attribute :name }
+    Micro::Attributes.new(initialize: :strict) { attribute :name }
+  end
+
+  # ---- Regression F1: layered with(...) reaches inline child ----
+
+  class LayeredWith
+    include Micro::Attributes.with(:initialize)
+    include Micro::Attributes.with(:accept)
+    attribute :name, accept: String
+
+    attribute :child do
+      attribute :inner, accept: String
+    end
+  end
+
+  def test_layered_with_includes_apply_to_block_form_inline_class
+    # Pre-fix: only the first include's With::* module was stored, so
+    # the inline child missed `:accept`. Now we scan ancestors at
+    # build time and replay every With::* module, so the inline child
+    # gets BOTH Initialize and Accept.
+    inline_klass = LayeredWith.__attributes_data__['child'][1][1]
+
+    assert(inline_klass.ancestors.include?(Micro::Attributes::Features::Accept),
+           'inline class includes Accept (from the layered include)')
+    assert(inline_klass.ancestors.include?(Micro::Attributes::Features::Initialize),
+           'inline class includes Initialize (from the first include)')
+
+    # Practical check: an inline-child instance has Accept-feature methods.
+    bad = LayeredWith.new(name: 'X', child: { inner: 42 })
+    assert_predicate(bad.child, :attributes_errors?,
+                     'inline child exposes Accept-feature `attributes_errors?`')
+  end
+
+  class WithMacroLayered
+    include Micro::Attributes.with(:initialize)
+    with :accept
+    attribute :child do
+      attribute :inner, accept: String
+    end
+  end
+
+  def test_with_class_macro_layered_applies_to_inline_child
+    bad = WithMacroLayered.new(child: { inner: 42 })
+    assert_predicate(bad.child, :attributes_errors?,
+                     'with-macro layered Accept reaches the inline child too')
+  end
+
+  # ---- Regression M1: anonymous host class — inline label resolves lazily ----
+
+  def test_inline_label_resolves_after_constant_assignment
+    # Build the class anonymously, then assign to a constant. The
+    # inline child's `to_s` is captured lazily, so it picks up the
+    # assigned name on first call (not the heap address).
+    klass = Micro::Attributes.new do
+      attribute :address do
+        attribute :zip, accept: String
+      end
+    end
+
+    # Before constant assignment, the host is anonymous — `to_s` falls
+    # back to `outer.inspect` which is `"#<Class:0x...>"`.
+    anon_inline_class = klass.__attributes_data__['address'][1][1]
+    anon_repr = anon_inline_class.to_s
+    assert_match(/0x[0-9a-f]+/, anon_repr,
+                 'before constant assignment, falls back to address (expected)')
+
+    # Assign to a constant — Ruby sets `klass.name`. The inline child's
+    # `to_s` now resolves to "TestLazyHost(address)".
+    self.class.const_set(:TestLazyHost, klass)
+    refute_match(/0x[0-9a-f]+/, anon_inline_class.to_s,
+                 'after constant assignment, label uses the new name')
+    assert_match(/TestLazyHost\(address\)/, anon_inline_class.to_s)
+  end
+
+  # ---- Regression Co1: bubble does not leak private attr keys ----
+  #
+  # When a private nested-entity attribute receives a HASH that successfully
+  # coerces into a child instance, Accept's KindOf check PASSES (the coerced
+  # value IS a child instance), so Accept doesn't write to attributes_errors.
+  # The only code path that could leak the private key into the parent's
+  # attributes_errors is the Coercion BUBBLE — and the visibility gate
+  # added in this PR prevents that.
+
+  class PrivateNestedHost
+    include Micro::Attributes.with(:initialize, :accept)
+    attribute :secret_child, accept: AcceptLeaf, private: true
+  end
+
+  def test_bubble_does_not_leak_private_attr_into_attributes_errors
+    # AcceptLeaf coerces from {} successfully but its `:city` (accept: String)
+    # gets nil → child has its own attributes_errors. Pre-fix the bubble
+    # would write 'secret_child' into the parent's attributes_errors,
+    # leaking the private name. Post-fix the bubble is gated on visibility.
+    obj = PrivateNestedHost.new(secret_child: {})
+
+    # The coerced child does have errors (city is nil, not String).
+    assert_predicate(obj.send(:secret_child), :attributes_errors?,
+                     'child has its own errors (sanity)')
+
+    # ...but the bubble must NOT surface the private key on the parent.
+    refute(obj.attributes_errors.key?('secret_child'),
+           'bubble must not write private attr key into attributes_errors')
+    refute(obj.attributes_errors.key?(:secret_child),
+           'bubble must not write private attr (symbol form either)')
+  end
+
+  # ---- Regression Co2: private attr name not leaked into AM errors ----
+
+  if begin; require 'active_model'; true; rescue LoadError; false; end
+    class PrivateNestedAMHost
+      include Micro::Attributes.with(initialize: true, accept: true, active_model: :validations)
+      attribute :secret, accept: AMDeepLeaf, private: true, default: { name: '' }
+    end
+
+    def test_validator_does_not_leak_private_attr_into_am_errors
+      obj = PrivateNestedAMHost.new({})
+
+      obj.valid?
+
+      refute(obj.errors.key?(:secret),
+             'private attr name must not appear in AM errors')
+      assert_empty(obj.errors.full_messages.grep(/Secret/),
+                   'private attr name must not appear in AM full_messages')
+    end
   end
 end

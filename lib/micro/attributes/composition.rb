@@ -20,9 +20,13 @@ module Micro
           def __attribute_assign(key, init_hash, attribute_data)
             accept = attribute_data[1]
 
+            # Only coerce when the target class has the `:initialize` feature
+            # — without it there's no hash constructor and `klass.new(hash)`
+            # would fall through to `Object#initialize` and raise ArgumentError.
             if accept[0] == :accept &&
                (klass = accept[1]).is_a?(::Class) &&
-               klass.include?(::Micro::Attributes)
+               klass.include?(::Micro::Attributes) &&
+               klass.include?(::Micro::Attributes::Features::Initialize)
               value = init_hash[key]
 
               if value.is_a?(::Hash)
@@ -33,11 +37,15 @@ module Micro
 
             super(key, init_hash, attribute_data)
 
+            # Bubble a marker for nested-entity errors — but only for PUBLIC
+            # attributes. Mirror Accept's visibility gate so private/protected
+            # attribute names don't leak through `attributes_errors`.
             child = instance_variable_get("@#{key}")
             if child.is_a?(::Object) &&
                child.class.include?(::Micro::Attributes) &&
                child.respond_to?(:attributes_errors?) && child.attributes_errors? &&
-               @__attributes_errors && !@__attributes_errors.key?(key)
+               @__attributes_errors && !@__attributes_errors.key?(key) &&
+               attribute_data[3] == :public
               @__attributes_errors[key] = 'is invalid'
             end
           end
@@ -47,7 +55,10 @@ module Micro
         def __validate_nested_entities__
           return unless respond_to?(:errors)
 
-          self.class.attributes.each do |attr_name|
+          # Iterate only PUBLIC attributes so private/protected nested
+          # entity names never leak through ActiveModel `errors` /
+          # `full_messages`. Mirrors the bubble's visibility gate above.
+          self.class.attributes_by_visibility[:public].each do |attr_name|
             child = instance_variable_get("@#{attr_name}")
 
             next unless child.is_a?(::Object) && child.class.include?(::Micro::Attributes)

@@ -26,11 +26,6 @@ module Micro
         subclass.__attributes_set_after_inherit__(self.__attributes_data__)
 
         subclass.extend ::Micro::Attributes.const_get('Macros::ForSubclasses'.freeze)
-
-        # Inherit the with-module reference so block-form `attribute :foo do ... end`
-        # in a subclass builds the inline child with the same feature mix.
-        with_module = self.instance_variable_get(:@__micro_attributes_with_module__)
-        subclass.instance_variable_set(:@__micro_attributes_with_module__, with_module) if with_module
       end
     end
 
@@ -70,6 +65,12 @@ module Micro
 
     def self.new(options = {}, &block)
       raise ArgumentError, 'options must be a Hash' unless options.is_a?(Hash)
+
+      if options[:initialize] == false
+        raise ArgumentError,
+              '`Micro::Attributes.new` requires the :initialize feature ' \
+              '(omit the key or pass `true` / `:strict`)'
+      end
 
       effective = NEW_DEFAULTS.merge(options)
 

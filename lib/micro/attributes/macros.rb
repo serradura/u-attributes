@@ -234,23 +234,50 @@ module Micro
         end
 
         # Build an anonymous nested class for `attribute :foo do ... end`.
-        # Uses the original `with(...)` module the host was created with so
-        # the inline child inherits the same feature mix (KeysAsSymbol,
-        # AM, Strict, etc.). Falls back to bare `Micro::Attributes` when
-        # the host included Attributes directly without `.with(...)`.
+        #
+        # Replays the host's exact feature mix in the inline child by
+        # scanning `self.ancestors` for every `Micro::Attributes::With::*`
+        # module and including them. This is more robust than caching a
+        # single "first include wins" reference — it handles layered
+        # `include Micro::Attributes.with(...)` calls and `with` class-
+        # macro layering correctly.
         def __micro_attributes_build_inline_class__(name, block)
-          with_module = instance_variable_get(:@__micro_attributes_with_module__) || ::Micro::Attributes
-
           klass = Class.new
-          klass.send(:include, with_module)
+
+          with_modules = self.ancestors.select do |mod|
+            mod.is_a?(::Module) && mod.name &&
+              mod.name.start_with?("#{::Micro::Attributes::With.name}::")
+          end
+
+          if with_modules.empty?
+            klass.send(:include, ::Micro::Attributes)
+          else
+            # Apply in include-order (oldest include first) so the inline
+            # child's ancestors mirror the host's.
+            with_modules.reverse_each { |mod| klass.send(:include, mod) }
+          end
+
           klass.class_eval(&block)
 
-          # Stable name so `Accept::Validate::KindOf.accept_failed` doesn't
-          # leak `#<Class:0x...>` into user-facing rejection messages.
-          outer_label  = self.name || self.to_s
-          inline_label = "#{outer_label}(#{name})"
-          klass.define_singleton_method(:to_s)    { inline_label }
-          klass.define_singleton_method(:inspect) { inline_label }
+          # Lazy outer label — capture the host class object (not its
+          # `.name` string) so naming resolves AFTER any later constant
+          # assignment (matters for `Micro::Attributes.new { ... }`,
+          # where the constant is assigned only after the factory returns).
+          outer = self
+          label_proc = -> { "#{outer.name || outer.inspect}(#{name})" }
+
+          klass.define_singleton_method(:to_s,    &label_proc)
+          klass.define_singleton_method(:inspect, &label_proc)
+
+          # ActiveModel-aware naming. AM's error renderer reaches for
+          # `klass.model_name` which calls `ActiveModel::Name.new(klass)`
+          # and raises "Class name cannot be blank" on anonymous classes.
+          # Providing the 3rd arg (explicit name) sidesteps the check.
+          if defined?(::ActiveModel::Name)
+            klass.define_singleton_method(:model_name) do
+              ::ActiveModel::Name.new(self, nil, label_proc.call)
+            end
+          end
 
           klass
         end

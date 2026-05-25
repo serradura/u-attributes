@@ -1324,7 +1324,7 @@ end
 
 ## Nested attributes via `accept:`
 
-When `accept:` is another class that includes `Micro::Attributes`, hashes assigned to that attribute are auto-coerced into an instance of the target class. Already-built instances pass through unchanged.
+When `accept:` is another class that includes `Micro::Attributes` **and has `:initialize`**, hashes assigned to that attribute are auto-coerced into an instance of the target class. Already-built instances pass through unchanged. If the target lacks `:initialize` (you provide your own constructor), the hash passes through and the standard accept check applies — no auto-coercion.
 
 ```ruby
 Address = Micro::Attributes.new do
@@ -1348,6 +1348,8 @@ profile = Profile.new(name: 'Rodrigo', address: addr)
 
 profile.address.equal?(addr) # true
 ```
+
+> **Note:** error surfacing through `attributes_errors?` / `attributes_errors` (and the deep-bubble marker) requires the **parent** to also include `:accept`. A parent without `:accept` will still coerce hashes into child instances, but it has no `attributes_errors` machinery to mirror descendant invalidity — `parent.child.attributes_errors?` may be true while the parent looks clean. Walk the tree explicitly in that case, or include `:accept` on the parent.
 
 [⬆️ Back to Top](#table-of-contents-)
 

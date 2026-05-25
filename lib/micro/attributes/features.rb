@@ -73,10 +73,6 @@ module Micro
               'def self.included(base)',
               '  base.send(:include, ::Micro::Attributes)',
               combination.map { |key| "  base.send(:include, ::#{KEYS_TO_FEATURES[key].name})" },
-              # Remember the original `with(...)` module so the block-form
-              # `attribute :foo do ... end` can build inline classes with
-              # the same feature mix (set only once — the outermost include wins).
-              '  base.instance_variable_set(:@__micro_attributes_with_module__, self) unless base.instance_variable_get(:@__micro_attributes_with_module__)',
               'end'
             ].flatten.join("\n")
 
