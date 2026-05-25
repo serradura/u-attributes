@@ -17,19 +17,26 @@ module Micro
       module Coercion
         private
 
+          def __micro_attributes_hash_constructible?(klass)
+            arity = klass.instance_method(:initialize).arity
+            arity == 1 || arity == -1 || arity == -2
+          end
+
           def __attribute_assign(key, init_hash, attribute_data)
             accept = attribute_data[1]
 
-            # Only coerce when the target class actually has a constructor
-            # that takes at least one argument. The arity check covers BOTH
-            # `Features::Initialize` includers AND user-defined constructors
-            # like `def initialize(arg); self.attributes = arg; end`.
-            # `Object#initialize` is arity-0 — those classes are skipped so
-            # we don't fall through to it and raise ArgumentError.
+            # Only coerce when the target class has a constructor that
+            # accepts exactly one positional arg (or one + variadic). The
+            # arity check accepts:
+            #   - `1`        — `def initialize(arg)` (Features::Initialize, custom)
+            #   - `-1`, `-2` — `def initialize(*a)` / `def initialize(a, *b)`
+            # And rejects:
+            #   - `0`        — `Object#initialize`, would crash on hash arg
+            #   - `>= 2`     — `def initialize(a, b)` etc., would crash on hash arg
             if accept[0] == :accept &&
                (klass = accept[1]).is_a?(::Class) &&
                klass.include?(::Micro::Attributes) &&
-               klass.instance_method(:initialize).arity != 0
+               __micro_attributes_hash_constructible?(klass)
               value = init_hash[key]
 
               if value.is_a?(::Hash)

@@ -758,5 +758,150 @@ class Micro::Attributes::CompositionTest < Minitest::Test
       assert_empty(obj.errors.full_messages.grep(/Secret/),
                    'private attr name must not appear in AM full_messages')
     end
+
+    AMInspectHost = Micro::Attributes.new(active_model: :validations) do
+      attribute :child do
+        attribute :pub, accept: String, default: 'p', validates: { presence: true }
+      end
+    end
+
+    def test_inline_inspect_hides_am_internals
+      obj = AMInspectHost.new(child: { pub: 'x' })
+      obj.child.valid?  # populate AM internals
+
+      inspected = obj.child.inspect
+
+      refute_match(/@errors/, inspected, 'AM @errors must not leak')
+      refute_match(/@validation_context/, inspected, 'AM internals must not leak')
+      refute_match(/@context_for_validation/, inspected, 'AM internals must not leak')
+    end
+
+    # Round-3 #7: model_name only defined when AM is included on the inline class
+    HostWithoutAMForModelName = Micro::Attributes.new do
+      attribute :child do
+        attribute :x
+      end
+    end
+
+    HostWithAMForModelName = Micro::Attributes.new(active_model: :validations) do
+      attribute :child do
+        attribute :x
+      end
+    end
+
+    def test_inline_does_not_respond_to_model_name_when_host_lacks_am
+      inline = HostWithoutAMForModelName.__attributes_data__['child'][1][1]
+      refute_respond_to(inline, :model_name,
+                        'no AM in inline → no model_name (duck-typing friendly)')
+    end
+
+    def test_inline_responds_to_model_name_when_host_has_am
+      inline = HostWithAMForModelName.__attributes_data__['child'][1][1]
+      assert_respond_to(inline, :model_name)
+
+      name = inline.model_name
+      assert_kind_of(ActiveModel::Name, name)
+      assert_match(/HostWithAMForModelName\(child\)/, name.name)
+    end
+  end
+
+  # ---- Round-3 #1: arity gate tightened ----
+
+  class TwoArgCtor
+    include Micro::Attributes
+    attribute :a
+    attribute :b
+    def initialize(a, b)
+      self.attributes = { a: a, b: b }
+    end
+  end
+
+  OuterAvoidsCrash = Micro::Attributes.new do
+    attribute :inner, accept: TwoArgCtor
+  end
+
+  def test_arity_gate_skips_multi_required_arg_constructors
+    # Pre-fix: arity 2 != 0 → Coercion fires → klass.new(hash) raises.
+    # Post-fix: arity 2 fails the gate → Coercion skips → KindOf rejects.
+    bad = OuterAvoidsCrash.new(inner: { a: 1, b: 2 })
+
+    assert_predicate(bad, :attributes_errors?,
+                     'Coercion correctly skipped; accept KindOf rejected the Hash')
+    assert_match(/kind of/, bad.attributes_errors['inner'])
+
+    # Already-built instances still pass through.
+    pre = TwoArgCtor.new(1, 2)
+    obj = OuterAvoidsCrash.new(inner: pre)
+    assert_same(pre, obj.inner)
+  end
+
+  class VariadicCtor
+    include Micro::Attributes
+    attribute :a
+    def initialize(*args)
+      self.attributes = args.first || {}
+    end
+  end
+
+  OuterVariadic = Micro::Attributes.new do
+    attribute :inner, accept: VariadicCtor
+  end
+
+  def test_arity_gate_allows_variadic_constructors
+    obj = OuterVariadic.new(inner: { a: 1 })
+    assert_kind_of(VariadicCtor, obj.inner)
+    refute_predicate(obj, :attributes_errors?)
+  end
+
+  # ---- Round-3 #2: strict-accept raises for invalid private attr ----
+
+  class StrictPrivateHost
+    include Micro::Attributes.with(initialize: :strict, accept: :strict)
+    attribute :name,   accept: String
+    attribute :secret, accept: String, private: true
+  end
+
+  def test_strict_accept_raises_for_invalid_private_attr
+    err = assert_raises(ArgumentError) do
+      StrictPrivateHost.new(name: 'X', secret: 42)
+    end
+    assert_match(/One or more attributes were rejected/, err.message)
+    assert_match(/private or protected attribute failed/, err.message,
+                 'raise message notes hidden failure without leaking the name')
+    refute_match(/secret/, err.message,
+                 'private attribute name must NOT appear in raise message')
+  end
+
+  def test_strict_accept_passes_when_private_validation_succeeds
+    obj = StrictPrivateHost.new(name: 'X', secret: 'sssh')
+    assert_equal('X', obj.name)
+  end
+
+  def test_strict_accept_still_raises_for_public_attr_with_named_message
+    err = assert_raises(ArgumentError) do
+      StrictPrivateHost.new(name: :sym, secret: 'sssh')
+    end
+    assert_match(/"name" expected to be a kind of String/, err.message,
+                 'public attr name still appears (only private is hidden)')
+  end
+
+  # ---- Round-3 #3+#4: inline inspect filters to public attrs ----
+
+  HostWithInlineForInspect = Micro::Attributes.new do
+    attribute :child do
+      attribute :pub,    accept: String, default: 'p'
+      attribute :secret, accept: String, default: 'sssh', private: true
+    end
+  end
+
+  def test_inline_inspect_hides_private_attr_values
+    obj = HostWithInlineForInspect.new(child: {})
+    inspected = obj.child.inspect
+
+    assert_match(/@pub="p"/, inspected, 'public attr surfaces in inspect')
+    refute_match(/secret/, inspected,
+                 'private attr name must not appear in inspect')
+    refute_match(/sssh/, inspected,
+                 'private attr value must not leak in inspect')
   end
 end

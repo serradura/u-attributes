@@ -265,30 +265,39 @@ module Micro
           klass.define_singleton_method(:inspect, &label_proc)
 
           # Stop instances from leaking the anonymous class's heap address
-          # via the default `Object#inspect`. We use the class's `to_s`
-          # (already stable via the singleton above) and surface user-
-          # defined ivars while hiding the internal `@__` machinery.
+          # via the default `Object#inspect`. The new inspect:
+          # - uses `self.class.to_s` (stable via the singleton above)
+          # - surfaces ONLY public attribute values — consults
+          #   `attributes_by_visibility[:public]` so private/protected
+          #   values aren't leaked
+          # - which also hides framework ivars like ActiveModel's
+          #   `@errors`, `@validation_context`, etc., since they aren't
+          #   declared attributes
           klass.send(:define_method, :inspect) do
-            ivars = instance_variables.reject { |v| v.to_s.start_with?('@__') }
-            if ivars.empty?
+            public_attrs = self.class.attributes_by_visibility[:public]
+            present = public_attrs.select { |n| instance_variable_defined?("@#{n}") }
+
+            if present.empty?
               "#<#{self.class}>"
             else
-              body = ivars.map { |v| "#{v}=#{instance_variable_get(v).inspect}" }.join(', ')
+              body = present.map { |n| "@#{n}=#{instance_variable_get("@#{n}").inspect}" }.join(', ')
               "#<#{self.class} #{body}>"
             end
           end
 
-          # ActiveModel-aware naming. AM's error renderer reaches for
-          # `klass.model_name`; on anonymous classes that defaults to
-          # `ActiveModel::Name.new(klass)` which raises "Class name cannot
-          # be blank". We always define the singleton, but check AM at
-          # CALL TIME (not build time) so the override still works when
-          # AM is loaded AFTER the inline class is created.
-          klass.define_singleton_method(:model_name) do
-            if defined?(::ActiveModel::Name)
+          # ActiveModel-aware naming — but ONLY when the inline class
+          # actually has AM mixed in. AM's error renderer reaches for
+          # `klass.model_name`, which on an anonymous class defaults to
+          # `ActiveModel::Name.new(klass)` and raises "Class name cannot
+          # be blank". The singleton override provides the explicit name.
+          #
+          # We DO NOT define the override on non-AM inline classes,
+          # because that would flip `respond_to?(:model_name)` from
+          # false → true on AM-less hosts and break any duck-typing
+          # feature-detection (`if klass.respond_to?(:model_name); ...`).
+          if defined?(::ActiveModel::Validations) && klass.include?(::ActiveModel::Validations)
+            klass.define_singleton_method(:model_name) do
               ::ActiveModel::Name.new(self, nil, label_proc.call)
-            else
-              label_proc.call
             end
           end
 

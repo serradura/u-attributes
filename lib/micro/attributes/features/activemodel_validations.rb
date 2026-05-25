@@ -37,7 +37,7 @@ module Micro::Attributes
         include CheckActivemodelValidationErrors
 
         private def __call_after_attributes_assign
-          __raise_error_if_found_attributes_errors if attributes_errors?
+          __raise_error_if_found_attributes_errors if attributes_errors? || @__hidden_validation_failed
 
           run_validations!
 
