@@ -333,4 +333,163 @@ class Micro::EntityTest < Minitest::Test
     refute(host.inline.attributes.key?(:inner),
            'inline child did NOT inherit KeysAsSymbol from host')
   end
+
+  # ---- `Micro::Entity.with(...)` class macro ----
+  # Sugar for `include Micro::Attributes.with(...)`. Must work identically
+  # to the longer form, including the documented "intermediate feature
+  # includes don't propagate to inline children" tradeoff.
+
+  class WithSymbolKeys < Micro::Entity
+    with :keys_as_symbol
+
+    attribute :name, accept: String
+  end
+
+  def test_with_macro_single_symbol_feature
+    obj = WithSymbolKeys.new(name: 'Rodrigo')
+
+    assert_equal('Rodrigo', obj.name)
+    assert(obj.attributes.key?(:name), 'KeysAsSymbol applied via with')
+    refute(obj.attributes.key?('name'), 'no string-key fallback')
+  end
+
+  def test_with_macro_is_equivalent_to_include_long_form
+    long_form = Class.new(Micro::Entity) do
+      include Micro::Attributes.with(:keys_as_symbol)
+      attribute :name, accept: String
+    end
+
+    long_obj = long_form.new(name: 'Rodrigo')
+    short_obj = WithSymbolKeys.new(name: 'Rodrigo')
+
+    assert_equal(long_obj.attributes, short_obj.attributes)
+    assert_equal(long_form.attributes_access, WithSymbolKeys.attributes_access)
+  end
+
+  class WithStrictInit < Micro::Entity
+    with initialize: :strict
+
+    attribute :name, accept: String
+    attribute :age,  accept: Numeric
+  end
+
+  def test_with_macro_hash_form_for_strict_variants
+    err = assert_raises(ArgumentError) { WithStrictInit.new(name: 'X') }
+    assert_match(/missing keyword: :age/, err.message)
+
+    obj = WithStrictInit.new(name: 'X', age: 1)
+    assert_equal('X', obj.name)
+    assert_equal(1, obj.age)
+  end
+
+  class WithMixed < Micro::Entity
+    with :keys_as_symbol, initialize: :strict
+
+    attribute :name, accept: String
+    attribute :age,  accept: Numeric
+  end
+
+  def test_with_macro_combines_positional_and_hash_args
+    err = assert_raises(ArgumentError) { WithMixed.new(name: 'X') }
+    assert_match(/missing keyword: :age/, err.message,
+                 'strict init applied')
+
+    obj = WithMixed.new(name: 'X', age: 1)
+    assert(obj.attributes.key?(:name), 'symbol keys applied')
+  end
+
+  class WithMultipleCalls < Micro::Entity
+    with :keys_as_symbol
+    with initialize: :strict
+
+    attribute :name, accept: String
+    attribute :age,  accept: Numeric
+  end
+
+  def test_with_macro_multiple_calls_accumulate
+    err = assert_raises(ArgumentError) { WithMultipleCalls.new(name: 'X') }
+    assert_match(/missing keyword: :age/, err.message,
+                 'second with call layered strict on top')
+
+    obj = WithMultipleCalls.new(name: 'X', age: 1)
+    assert(obj.attributes.key?(:name), 'first with call still effective')
+  end
+
+  # ---- with + block-form attribute interactions ----
+
+  class WithMacroAndBlockForm < Micro::Entity
+    with :keys_as_symbol
+
+    attribute :outer, accept: String
+
+    attribute :inline do
+      attribute :inner, accept: String
+    end
+  end
+
+  def test_with_macro_then_block_form_does_not_propagate_features
+    host = WithMacroAndBlockForm.new(outer: 'o', inline: { inner: 'i' })
+
+    # Outer reflects KeysAsSymbol (symbol keys).
+    assert(host.attributes.key?(:outer), 'outer uses symbol keys')
+
+    # Inline child does NOT inherit KeysAsSymbol — same documented
+    # tradeoff as the `include Micro::Attributes.with(...)` long form.
+    assert(host.inline.attributes.key?('inner'),
+           'inline child uses string keys despite outer with :keys_as_symbol')
+    refute(host.inline.attributes.key?(:inner))
+  end
+
+  class WithStrictAndBlockForm < Micro::Entity
+    with initialize: :strict
+
+    attribute :name, accept: String
+
+    attribute :inline do
+      attribute :inner, accept: String
+    end
+  end
+
+  def test_with_macro_strict_does_not_propagate_strict_to_block_form_child
+    # Outer is strict — missing :inline raises.
+    err = assert_raises(ArgumentError) { WithStrictAndBlockForm.new(name: 'X') }
+    assert_match(/missing keyword/, err.message)
+
+    # But the inline child is built from `Micro::Entity` (gem base loose),
+    # NOT from `Micro::Entity::Strict`. `with initialize: :strict` includes
+    # the strict variants on `self`, but `__entity_block_parent__` only
+    # routes to Strict when `self <= Micro::Entity::Strict` (class
+    # inheritance, not include).
+    obj = WithStrictAndBlockForm.new(name: 'X', inline: {})
+    refute_nil(obj.inline)
+    assert_nil(obj.inline.inner, 'inline allows missing keys — loose by design')
+  end
+
+  # `class Foo < Micro::Entity::Strict` propagates strict to block-form
+  # children, but `class Foo < Micro::Entity; with initialize: :strict`
+  # does NOT. This asymmetry is the documented tradeoff; pin it here so
+  # nobody accidentally collapses the two paths.
+  def test_subclass_strict_vs_with_strict_have_different_block_form_semantics
+    # Subclass-of-Strict path: inline child IS strict.
+    subclass_form = Class.new(Micro::Entity::Strict) do
+      attribute :inline do
+        attribute :inner, accept: String
+      end
+    end
+    err = assert_raises(ArgumentError) do
+      subclass_form.new(inline: {})
+    end
+    assert_match(/missing keyword/, err.message)
+
+    # with(initialize: :strict) path: inline child is loose.
+    with_form = Class.new(Micro::Entity) do
+      with initialize: :strict
+      attribute :inline do
+        attribute :inner, accept: String
+      end
+    end
+    # Doesn't raise — inline allows missing inner.
+    obj = with_form.new(inline: {})
+    assert_nil(obj.inline.inner)
+  end
 end

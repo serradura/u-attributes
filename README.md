@@ -18,13 +18,14 @@ So, if you change [[1](#with_attribute)] [[2](#with_attributes)] an attribute of
 
 ## Documentation <!-- omit in toc -->
 
-Version    | Documentation
----------- | -------------
-unreleased | https://github.com/serradura/u-attributes/blob/main/README.md
-3.1.0      | https://github.com/serradura/u-attributes/blob/v3.x/README.md
-2.8.0      | https://github.com/serradura/u-attributes/blob/v2.x/README.md
+| Version    | Documentation                                                 |
+| ---------- | ------------------------------------------------------------- |
+| unreleased | https://github.com/serradura/u-attributes/blob/main/README.md |
+| 3.1.0      | https://github.com/serradura/u-attributes/blob/v3.x/README.md |
+| 2.8.0      | https://github.com/serradura/u-attributes/blob/v2.x/README.md |
 
 # Table of contents <!-- omit in toc -->
+
 - [Installation](#installation)
 - [Compatibility](#compatibility)
 - [Usage](#usage)
@@ -61,6 +62,11 @@ unreleased | https://github.com/serradura/u-attributes/blob/main/README.md
   - [Picking all the features](#picking-all-the-features)
   - [Extensions](#extensions)
     - [Accept extension](#accept-extension)
+      - [What can `accept:` / `reject:` receive?](#what-can-accept--reject-receive)
+      - [`allow_nil:` option](#allow_nil-option)
+      - [`rejection_message:` option](#rejection_message-option)
+      - [Strict mode (`accept: :strict`)](#strict-mode-accept-strict)
+      - [Interaction with other features](#interaction-with-other-features)
     - [`ActiveModel::Validation` extension](#activemodelvalidation-extension)
       - [`.attribute()` options](#attribute-options)
     - [Diff extension](#diff-extension)
@@ -87,16 +93,16 @@ gem 'u-attributes', '~> 3.0'
 
 # Compatibility
 
-| u-attributes     | branch | ruby     | activemodel    |
-| ---------------- | ------ | -------- | -------------- |
-| unreleased       | main   | >= 2.7   | >= 6.0         |
-| 3.1.0            | v3.x   | >= 2.7   | >= 6.0         |
-| 2.8.0            | v2.x   | >= 2.2.0 | >= 3.2, <= 8.1 |
+| u-attributes | branch | ruby     | activemodel    |
+| ------------ | ------ | -------- | -------------- |
+| unreleased   | main   | >= 2.7   | >= 6.0         |
+| 3.1.0        | v3.x   | >= 2.7   | >= 6.0         |
+| 2.8.0        | v2.x   | >= 2.2.0 | >= 3.2, <= 8.1 |
 
 This library is tested (CI matrix) against:
 
 | Ruby / Rails | 6.0 | 6.1 | 7.0 | 7.1 | 7.2 | 8.0 | 8.1 | Edge |
-|--------------|-----|-----|-----|-----|-----|-----|-----|------|
+| ------------ | --- | --- | --- | --- | --- | --- | --- | ---- |
 | 2.7          | ✅  | ✅  | ✅  | ✅  |     |     |     |      |
 | 3.0          | ✅  | ✅  | ✅  | ✅  |     |     |     |      |
 | 3.1          |     |     | ✅  | ✅  | ✅  |     |     |      |
@@ -327,10 +333,10 @@ The class-level `attributes_by_visibility` method returns a hash with `:public`,
 Use the `freeze:` option to make sure the value stored in the attribute can't be mutated after
 the object is built. Three modes are supported:
 
-| Value          | Behavior                                                              |
-| -------------- | --------------------------------------------------------------------- |
-| `true`         | Calls `value.freeze` on the incoming value. The original is frozen.   |
-| `:after_dup`   | `value.dup.freeze` — freezes a shallow copy; the original stays free. |
+| Value          | Behavior                                                                                                                 |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `true`         | Calls `value.freeze` on the incoming value. The original is frozen.                                                      |
+| `:after_dup`   | `value.dup.freeze` — freezes a shallow copy; the original stays free.                                                    |
 | `:after_clone` | `value.clone.freeze` — same as above but uses `#clone` (preserves singleton methods, frozen state, tainted state, etc.). |
 
 ```ruby
@@ -438,6 +444,7 @@ another_person.equal?(person) # false
 ### `#with_attributes()`
 
 Use it to assign multiple attributes
+
 ```ruby
 other_person = person.with_attributes(name: 'Serradura', age: 32)
 
@@ -468,6 +475,7 @@ end
 ```
 
 There are two different strategies to define default values.
+
 1. Pass a regular object, like in the previous example.
 2. Pass a `proc`/`lambda`, and if it has an argument you will receive the attribute value to do something before assign it.
 
@@ -501,7 +509,7 @@ StrictPerson.new({}) # ArgumentError (missing keyword: :age)
 
 An attribute with a default value can be omitted.
 
-``` ruby
+```ruby
 person_without_age = StrictPerson.new(age: nil)
 
 person_without_age.age  # nil
@@ -761,7 +769,7 @@ end
 
 ### `Micro::Attributes.without`
 
-Picking *except* one or more features
+Picking _except_ one or more features
 
 ```ruby
 Micro::Attributes.without(:diff) # will load :activemodel_validations, :keys_as_symbol and initialize: :strict
@@ -827,10 +835,10 @@ end
 
 #### What can `accept:` / `reject:` receive?
 
-| Type            | `accept:` means                              | `reject:` means                                  |
-| --------------- | -------------------------------------------- | ------------------------------------------------ |
-| `Class`/`Module`| `value.kind_of?(expected)` must be true      | `value.kind_of?(expected)` must be false         |
-| Predicate `:sym?` (ends with `?`) | `value.public_send(:sym?)` must be true | `value.public_send(:sym?)` must be false |
+| Type                                                           | `accept:` means                                 | `reject:` means                                |
+| -------------------------------------------------------------- | ----------------------------------------------- | ---------------------------------------------- |
+| `Class`/`Module`                                               | `value.kind_of?(expected)` must be true         | `value.kind_of?(expected)` must be false       |
+| Predicate `:sym?` (ends with `?`)                              | `value.public_send(:sym?)` must be true         | `value.public_send(:sym?)` must be false       |
 | Anything callable (proc, lambda, object responding to `#call`) | result of `expected.call(value)` must be truthy | result of `expected.call(value)` must be falsy |
 
 Default rejection messages follow the pattern below; you can override them with
@@ -1283,34 +1291,46 @@ Inline (block-form) nested entities inherit from the immediate `Micro::Entity` s
 
 ## Combining with other extensions
 
-`:initialize`, `:accept`, and `:diff` come bundled — for anything else, opt in by `include`ing the result of [`Micro::Attributes.with`](#microattributeswith) on the subclass. The same feature names you'd pass to a bare `include Micro::Attributes.with(...)` work here:
+`:initialize`, `:accept`, and `:diff` come bundled — for anything else, mix it in with the `with` class macro. It takes the same feature names as [`Micro::Attributes.with`](#microattributeswith):
 
 ```ruby
 class SymbolKeyedUser < Micro::Entity
-  include Micro::Attributes.with(:keys_as_symbol)
+  with :keys_as_symbol
 
   attribute :name, accept: String
 end
 
 class ValidatedUser < Micro::Entity
-  include Micro::Attributes.with(:activemodel_validations)
+  with :activemodel_validations
 
   attribute :name, accept: String, validates: { presence: true }
 end
 ```
 
-A hash entry like `initialize: :strict` / `accept: :strict` enables the strict variant of a bundled feature on a particular subclass — useful when you want strict behavior in one place without subclassing `Micro::Entity::Strict`:
+You can pass multiple features in one call, mix positional names with the hash form (for strict variants), or call `with` more than once — each call layers the requested feature onto the subclass:
 
 ```ruby
 class TightlyValidatedUser < Micro::Entity
-  include Micro::Attributes.with(:keys_as_symbol, initialize: :strict, accept: :strict)
+  with :keys_as_symbol, initialize: :strict, accept: :strict
 
   attribute :name, accept: String
   attribute :age,  accept: Numeric
 end
 ```
 
-(For reference: `Micro::Entity::Strict` is just `Micro::Entity` plus `include Micro::Attributes.with(initialize: :strict, accept: :strict)`.)
+`with(...)` is sugar for `include ::Micro::Attributes.with(...)` — if you'd rather be explicit, both forms work the same way:
+
+```ruby
+class ValidatedUser < Micro::Entity
+  include Micro::Attributes.with(:activemodel_validations)   # equivalent to `with :activemodel_validations`
+
+  attribute :name, accept: String, validates: { presence: true }
+end
+```
+
+> **Note:** features added via `with(...)` (or `include Micro::Attributes.with(...)`) on an Entity subclass do **not** propagate to inline (block-form) nested entities — the inline class always inherits from `Micro::Entity` (or `Micro::Entity::Strict` if you subclassed it directly). To get a nested entity with a custom feature mix, define it as a named class and pass it via `accept:`.
+
+(For reference: `Micro::Entity::Strict` is just `class Strict < Entity; with initialize: :strict, accept: :strict; end`.)
 
 Every combination of `Micro::Entity` / `Micro::Entity::Strict` × default-keys / `KeysAsSymbol` × no-`ActiveModel` / `ActiveModelValidations` is covered by `test/micro/entity_matrix_test.rb`.
 

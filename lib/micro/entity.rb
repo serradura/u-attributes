@@ -7,6 +7,21 @@ module Micro
     include ::Micro::Attributes.with(:initialize, :accept, :diff)
 
     class << self
+      # Mix an extra feature module into this entity subclass. Sugar for
+      # `include ::Micro::Attributes.with(*names)` — accepts every form
+      # the lower-level `with` does:
+      #
+      #   with :keys_as_symbol
+      #   with :keys_as_symbol, :activemodel_validations
+      #   with initialize: :strict
+      #   with :keys_as_symbol, initialize: :strict, accept: :strict
+      #
+      # `:initialize`, `:accept`, and `:diff` are already bundled into
+      # `Micro::Entity`, so re-including them is a no-op.
+      def with(*names)
+        include ::Micro::Attributes.with(*names)
+      end
+
       def attribute(name, options = ::Kind::Empty::HASH, &block)
         super(name, __entity_options__(name, options, block))
       end
