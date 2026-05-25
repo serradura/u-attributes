@@ -73,6 +73,10 @@ module Micro
               'def self.included(base)',
               '  base.send(:include, ::Micro::Attributes)',
               combination.map { |key| "  base.send(:include, ::#{KEYS_TO_FEATURES[key].name})" },
+              # Remember the original `with(...)` module so the block-form
+              # `attribute :foo do ... end` can build inline classes with
+              # the same feature mix (set only once — the outermost include wins).
+              '  base.instance_variable_set(:@__micro_attributes_with_module__, self) unless base.instance_variable_get(:@__micro_attributes_with_module__)',
               'end'
             ].flatten.join("\n")
 
@@ -113,13 +117,71 @@ module Micro
           yield(keys)
         end
 
-        # `fetch_key` returns a single key per call, so `with(initialize: :strict, accept: :strict)`
-        # would silently drop one of them. Expand a multi-key hash into one single-key hash per
-        # entry so each gets its own key.
+        # Normalize a Hash arg passed to `Micro::Attributes.with(...)` into
+        # the per-entry form that `fetch_key` consumes.
+        #
+        # Handles BOTH:
+        #
+        # - The legacy single-key strict form (`{initialize: :strict}`,
+        #   `{accept: :strict}`) — preserved as-is, returned in a single-key
+        #   hash so the existing `fetch_key` branch matches it.
+        # - The new self-documenting hash API:
+        #
+        #     Micro::Attributes.with(
+        #       initialize: true | :strict,
+        #       accept:     true | :strict,
+        #       diff:       true,
+        #       keys_as:    :symbol | :string | :indifferent,
+        #       active_model: :validations
+        #     )
+        #
+        #   Each entry expands into the corresponding legacy feature symbol
+        #   (or single-key strict hash). `false`/`nil`/the no-op variants
+        #   for `keys_as` (`:string`/`:indifferent`) expand to nothing, so
+        #   "omit a key = feature off" reads naturally.
         def self.split_strict_hash(arg)
-          return [arg] unless arg.is_a?(Hash) && arg.size > 1
+          return [arg] unless arg.is_a?(Hash)
 
-          arg.map { |key, value| { key => value } }
+          arg.flat_map { |key, value| expand_hash_entry(key, value) }
+        end
+
+        def self.expand_hash_entry(key, value)
+          case key
+          when :initialize
+            case value
+            when true    then [:initialize]
+            when :strict then [{ initialize: :strict }]
+            when false, nil then []
+            else [{ key => value }]
+            end
+          when :accept
+            case value
+            when true    then [:accept]
+            when :strict then [{ accept: :strict }]
+            when false, nil then []
+            else [{ key => value }]
+            end
+          when :diff
+            case value
+            when true       then [:diff]
+            when false, nil then []
+            else [{ key => value }]
+            end
+          when :keys_as
+            case value
+            when :symbol                                  then [:keys_as_symbol]
+            when :string, :indifferent, nil, false        then []
+            else [{ key => value }]
+            end
+          when :active_model
+            case value
+            when :validations then [:activemodel_validations]
+            when nil, false   then []
+            else [{ key => value }]
+            end
+          else
+            [{ key => value }]
+          end
         end
 
         def self.remove_base_if_has_strict(keys)

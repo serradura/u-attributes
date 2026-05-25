@@ -209,9 +209,53 @@ module Micro
         __attributes_public.member?(key)
       end
 
-      def attribute(name, options = Kind::Empty::HASH)
+      def attribute(name, options = Kind::Empty::HASH, &block)
+        options = __micro_attributes_block_options__(name, options, block) if block
         __attribute_assign(name, false, options)
       end
+
+      # Mix more `Micro::Attributes` features into this class. Sugar for
+      # `include Micro::Attributes.with(*names)` — accepts the same forms,
+      # including the hash-style API (e.g. `with initialize: :strict`).
+      #
+      #   with :keys_as_symbol
+      #   with :keys_as_symbol, :activemodel_validations
+      #   with initialize: :strict, accept: :strict
+      def with(*names)
+        send(:include, ::Micro::Attributes.with(*names))
+      end
+
+      private
+
+        def __micro_attributes_block_options__(name, options, block)
+          options = options.dup
+          options[:accept] = __micro_attributes_build_inline_class__(name, block)
+          options
+        end
+
+        # Build an anonymous nested class for `attribute :foo do ... end`.
+        # Uses the original `with(...)` module the host was created with so
+        # the inline child inherits the same feature mix (KeysAsSymbol,
+        # AM, Strict, etc.). Falls back to bare `Micro::Attributes` when
+        # the host included Attributes directly without `.with(...)`.
+        def __micro_attributes_build_inline_class__(name, block)
+          with_module = instance_variable_get(:@__micro_attributes_with_module__) || ::Micro::Attributes
+
+          klass = Class.new
+          klass.send(:include, with_module)
+          klass.class_eval(&block)
+
+          # Stable name so `Accept::Validate::KindOf.accept_failed` doesn't
+          # leak `#<Class:0x...>` into user-facing rejection messages.
+          outer_label  = self.name || self.to_s
+          inline_label = "#{outer_label}(#{name})"
+          klass.define_singleton_method(:to_s)    { inline_label }
+          klass.define_singleton_method(:inspect) { inline_label }
+
+          klass
+        end
+
+      public
 
       RaiseKindError = ->(expected, given) do
         if (util = Kind.const_get(:KIND, false)) && util.respond_to?(:error!)
@@ -252,7 +296,8 @@ module Micro
       module ForSubclasses
         WRONG_NUMBER_OF_ARGS = 'wrong number of arguments (given 0, expected 1 or more)'.freeze
 
-        def attribute!(name, options = Kind::Empty::HASH)
+        def attribute!(name, options = Kind::Empty::HASH, &block)
+          options = __micro_attributes_block_options__(name, options, block) if block
           __attribute_assign(name, true, options)
         end
 

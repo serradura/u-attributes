@@ -8,10 +8,13 @@ module Micro
     require 'micro/attributes/utils'
     require 'micro/attributes/diff'
     require 'micro/attributes/macros'
+    require 'micro/attributes/composition'
     require 'micro/attributes/features'
 
     def self.included(base)
       base.extend(::Micro::Attributes.const_get(:Macros))
+      base.send(:prepend, ::Micro::Attributes::Composition::Coercion)
+      base.send(:include, ::Micro::Attributes::Composition::Instance)
 
       base.class_eval do
         private_class_method :__attributes, :__attribute_reader
@@ -23,6 +26,11 @@ module Micro
         subclass.__attributes_set_after_inherit__(self.__attributes_data__)
 
         subclass.extend ::Micro::Attributes.const_get('Macros::ForSubclasses'.freeze)
+
+        # Inherit the with-module reference so block-form `attribute :foo do ... end`
+        # in a subclass builds the inline child with the same feature mix.
+        with_module = self.instance_variable_get(:@__micro_attributes_with_module__)
+        subclass.instance_variable_set(:@__micro_attributes_with_module__, with_module) if with_module
       end
     end
 
@@ -36,6 +44,40 @@ module Micro
 
     def self.with_all_features
       Features.all
+    end
+
+    # `Struct.new`-style class factory. Returns a fresh class that includes
+    # `Micro::Attributes.with(...)` with the requested features (merged on
+    # top of the default preset `{ initialize: true, accept: true }`).
+    # The block (if given) is `class_eval`d on the new class so attributes
+    # can be declared inline.
+    #
+    #   User = Micro::Attributes.new do
+    #     attribute :name, accept: String
+    #   end
+    #
+    #   StrictUser = Micro::Attributes.new(initialize: :strict, accept: :strict) do
+    #     attribute :name, accept: String
+    #     attribute :age,  accept: Numeric
+    #   end
+    #
+    # The preset is overridable per-key — pass `initialize: false` to opt
+    # out, or `initialize: :strict` to upgrade. Use the hash API only
+    # (positional symbols are intentionally not accepted here so the
+    # "preset + override" semantics stay unambiguous).
+    NEW_DEFAULTS = { initialize: true, accept: true }.freeze
+    private_constant :NEW_DEFAULTS
+
+    def self.new(options = {}, &block)
+      raise ArgumentError, 'options must be a Hash' unless options.is_a?(Hash)
+
+      effective = NEW_DEFAULTS.merge(options)
+
+      klass = Class.new
+      klass.send(:include, with(effective))
+      klass.class_eval(&block) if block
+
+      klass
     end
 
     def attribute?(name, include_all = false)

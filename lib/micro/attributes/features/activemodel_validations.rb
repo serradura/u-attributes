@@ -67,11 +67,11 @@ module Micro::Attributes
           else base.send(:include, Standard)
           end
 
-          # When AM is mixed into a `Micro::Entity` subclass, auto-register
-          # a validator that recurses through nested-entity attributes so
+          # When AM is mixed into any `Micro::Attributes` includer, auto-register
+          # a validator that recurses through nested-attribute children so
           # `valid?` reflects deep descendant invalidity. The method is
-          # defined on `Micro::Entity` itself.
-          if defined?(::Micro::Entity) && base < ::Micro::Entity
+          # provided by `Composition::Instance`.
+          if base.include?(::Micro::Attributes)
             base.validate(:__validate_nested_entities__)
           end
         rescue LoadError

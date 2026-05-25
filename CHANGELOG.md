@@ -9,10 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [3.1.0] - 2026-05-25
 ### Added
-- `Micro::Entity` — a base class that bundles the `:initialize`, `:accept`, and `:diff` features so subclasses get a hash initializer with attribute-level type checks and `#with_attribute(s)` out of the box. Pass an `Entity` subclass via `accept:` to auto-coerce a nested hash into that entity (instances pass through). Pass a block to `attribute` to define an anonymous nested `Micro::Entity` inline. `Micro::Entity::Strict` layers `Micro::Attributes.with(initialize: :strict, accept: :strict)` so every attribute is required and any accept rejection raises (closes [#9](https://github.com/serradura/u-attributes/issues/9)). Requires `require 'micro/entity'`.
-- `Micro::Entity.with(*names)` class macro — sugar for `include ::Micro::Attributes.with(*names)`. Lets subclasses mix in extra features without leaking the `Features::` path or repeating `include Micro::Attributes.with(...)`. Accepts every form the lower-level method does: `with :keys_as_symbol`, `with :keys_as_symbol, :activemodel_validations`, `with initialize: :strict`, `with :keys_as_symbol, initialize: :strict, accept: :strict`, and can be called more than once to layer features.
-- Deep-nesting validation bubbling — when a nested `Micro::Entity` (class-based or block-form, any depth) has errors, every ancestor now mirrors that invalidity. `parent.attributes_errors?` returns true and `parent.attributes_errors[child_attr]` is the marker `'is invalid'`; the leaf retains the original rejection message. For ActiveModel-included Entity subclasses, a `__validate_nested_entities__` validator is auto-registered so `parent.valid?` and `parent.errors[child_attr]` reflect descendant invalidity. Mixed trees work — an AM root with an accept-only leaf still surfaces deep accept-failures via the validator's `attributes_errors?` fallback.
-- `Micro::Attributes.with(initialize: :strict, accept: :strict)` (and the same hash form on `Micro::Attributes.without`) now honors every key. Previously, `fetch_key` returned the first matching strict variant and silently dropped the others; multi-key strict hashes are now expanded by `split_strict_hash` before lookup.
+- **Composition baked into `Micro::Attributes`** (closes [#9](https://github.com/serradura/u-attributes/issues/9)) — every class that includes `Micro::Attributes` (directly or via `Micro::Attributes.with(...)`) now supports:
+  - **Block-form `attribute :foo do ... end`** that defines an anonymous nested class inline. The inline child inherits the host's full feature mix (strict, symbol keys, ActiveModel, etc.).
+  - **Hash → child-instance coercion** when `accept:` is another `Micro::Attributes` class. Already-built instances pass through unchanged. Nested coercion composes recursively to any depth.
+  - **Deep validation bubbling.** Any descendant's `attributes_errors?` (or AM `valid?`) is mirrored up the chain as a `'is invalid'` marker; the leaf retains the original message. For classes with `:activemodel_validations`, a `__validate_nested_entities__` validator is auto-registered so `parent.valid?` reflects deep descendant invalidity. Mixed trees (AM root + accept-only leaf) work via an `attributes_errors?` fallback.
+- **`Micro::Attributes.new(options = {}, &block)`** — `Struct.new`-style class factory. Returns a fresh class that includes `Micro::Attributes.with(...)` with the requested features merged on top of the preset `{ initialize: true, accept: true }`. The block is `class_eval`d so attributes can be declared inline.
+- **Hash-style configuration for `Micro::Attributes.with`** — alongside the positional symbol API, `with` now accepts a self-documenting hash:
+    ```ruby
+    Micro::Attributes.with(
+      initialize:   true | :strict,
+      accept:       true | :strict,
+      diff:         true,
+      keys_as:      :symbol | :string | :indifferent,
+      active_model: :validations
+    )
+    ```
+    Omit a key (or pass `false` / `nil`) to disable the feature. Both APIs can be mixed; the existing positional form (`with(:initialize, :accept)`, `with(initialize: :strict)`) is fully preserved.
+- **`with(...)` class macro** added to every `Micro::Attributes` includer. Sugar for `include ::Micro::Attributes.with(...)`; layer extra features inline (`with :keys_as_symbol`, `with active_model: :validations`, etc.).
+- **Multi-key hash to `Micro::Attributes.with` / `.without`** — `with(initialize: :strict, accept: :strict)` now honors every key. Previously `fetch_key` returned the first matching strict variant and silently dropped the others.
 
 ### Changed
 - **Heads up — silent behavior shift for downstream consumers:** `Micro::Attributes.with(initialize: :strict, accept: :strict)` and `Micro::Attributes.without(initialize: :strict, accept: :strict)` now resolve to a different feature module than 3.0.x because the multi-key strict hash bug was fixed. Pre-3.1 `with(initialize: :strict, accept: :strict)` returned only `AcceptStrict`; post-3.1 it returns `AcceptStrict_InitializeStrict`. Pre-3.1 `without(initialize: :strict, accept: :strict)` only excluded `AcceptStrict`; post-3.1 it excludes both strict variants. Any code that relied on the silent drop will get a different feature mix on upgrade.

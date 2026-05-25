@@ -73,12 +73,12 @@ So, if you change [[1](#with_attribute)] [[2](#with_attributes)] an attribute of
     - [Initialize extension](#initialize-extension)
       - [Strict mode](#strict-mode)
     - [Keys as symbol extension](#keys-as-symbol-extension)
-- [`Micro::Entity`](#microentity)
-  - [Nested entities](#nested-entities)
-  - [Defining nested entities inline (block form)](#defining-nested-entities-inline-block-form)
+- [Composition](#composition)
+  - [`Micro::Attributes.new`](#microattributesnew)
+  - [Hash-style configuration for `Micro::Attributes.with`](#hash-style-configuration-for-microattributeswith)
+  - [Nested attributes via `accept:`](#nested-attributes-via-accept)
+  - [Defining nested attributes inline (block form)](#defining-nested-attributes-inline-block-form)
   - [Deep nesting & validation bubbling](#deep-nesting--validation-bubbling)
-  - [`Micro::Entity::Strict`](#microentitystrict)
-  - [Combining with other extensions](#combining-with-other-extensions)
 - [Development](#development)
 - [Contributing](#contributing)
 - [License](#license)
@@ -1178,54 +1178,102 @@ This extension also changes the `diff extension` making everything (arguments, o
 
 [⬆️ Back to Top](#table-of-contents-)
 
-# `Micro::Entity`
+# Composition
 
-`Micro::Entity` is a base class that bundles the [`:initialize`](#initialize-extension), [`:accept`](#accept-extension), and [`:diff`](#diff-extension) extensions, so you can define readonly value objects that auto-validate their attributes — like an immutable `ActiveModel` analogue.
+Every `Micro::Attributes` class — whether you reach for `include Micro::Attributes.with(...)`, the [`Micro::Attributes.new`](#microattributesnew) factory, or just `include Micro::Attributes` — composes recursively:
 
-It is not loaded by `require 'micro/attributes'`. Require it explicitly:
+- `attribute :foo, accept: SomeMicroAttributesClass` automatically coerces a hash to that class.
+- `attribute :foo do ... end` defines an anonymous nested class inline; the inline class inherits the outer's feature mix.
+- Nested-attribute errors bubble up as `'is invalid'` markers, while the leaf retains the full rejection message. The same applies to ActiveModel validations.
+
+There's no `Micro::Entity` wrapper — composition lives in `Micro::Attributes` itself.
+
+## `Micro::Attributes.new`
+
+A `Struct.new`-style factory that returns a fresh class wired with the requested features. The preset is `{ initialize: true, accept: true }` — override per-key by passing `false` (off), `true` (on), or a variant symbol (`:strict`):
 
 ```ruby
-require 'micro/entity'
-
-class User < Micro::Entity
+User = Micro::Attributes.new do
   attribute :name, accept: String
   attribute :age,  accept: Numeric
 end
 
 user = User.new(name: 'Rodrigo', age: 34)
-
 user.name # 'Rodrigo'
-user.age  # 34
-
-user.accepted_attributes? # true
-user.attributes_errors    # {}
 
 bad = User.new(name: :rodrigo, age: '34')
-
 bad.attributes_errors
 # {
 #   "name" => "expected to be a kind of String",
 #   "age"  => "expected to be a kind of Numeric"
 # }
 
-# As with every Micro::Attributes object, instances are immutable.
-# `#with_attribute` / `#with_attributes` return new instances.
-user.with_attribute(:age, 35) # => #<User name="Rodrigo" age=35>
+# Strict + symbol keys + AM:
+StrictUser = Micro::Attributes.new(
+  initialize: :strict,
+  accept: :strict,
+  keys_as: :symbol,
+  active_model: :validations
+) do
+  attribute :name, accept: String, validates: { presence: true }
+  attribute :age,  accept: Numeric
+end
+
+StrictUser.new(name: 'X') # ArgumentError: missing keyword: :age
+```
+
+The same options work on `include Micro::Attributes.with(...)` — see [the hash-style configuration](#hash-style-configuration-for-microattributeswith) below.
+
+[⬆️ Back to Top](#table-of-contents-)
+
+## Hash-style configuration for `Micro::Attributes.with`
+
+In addition to the positional symbol API ([`Micro::Attributes.with(:initialize, :accept)`](#microattributeswith)), `with` accepts a single hash describing the whole feature mix:
+
+```ruby
+Micro::Attributes.with(
+  initialize:   true | :strict,
+  accept:       true | :strict,
+  diff:         true,
+  keys_as:      :symbol | :string | :indifferent,
+  active_model: :validations
+)
+```
+
+- Omit a key (or pass `false` / `nil`) to disable a feature.
+- `keys_as: :string` and `keys_as: :indifferent` are no-ops (that's the default behavior); only `:symbol` activates `KeysAsSymbol`.
+- The positional API is fully supported — both forms can be mixed.
+
+```ruby
+class User
+  include Micro::Attributes.with(initialize: true, accept: true, keys_as: :symbol)
+
+  attribute :name, accept: String
+end
+
+# Layer extra features inline with the `with` class macro:
+class StrictUser
+  include Micro::Attributes.with(initialize: :strict, accept: :strict)
+  with active_model: :validations
+
+  attribute :name, accept: String, validates: { presence: true }
+  attribute :age,  accept: Numeric
+end
 ```
 
 [⬆️ Back to Top](#table-of-contents-)
 
-## Nested entities
+## Nested attributes via `accept:`
 
-Pass another `Micro::Entity` subclass via `accept:` and a hash is automatically coerced into an instance of that class. Already-built entity instances pass through unchanged.
+When `accept:` is another class that includes `Micro::Attributes`, hashes assigned to that attribute are auto-coerced into an instance of the target class. Already-built instances pass through unchanged.
 
 ```ruby
-class Address < Micro::Entity
+Address = Micro::Attributes.new do
   attribute :city,   accept: String
   attribute :postal, accept: String
 end
 
-class Profile < Micro::Entity
+Profile = Micro::Attributes.new do
   attribute :name,    accept: String
   attribute :address, accept: Address
 end
@@ -1235,7 +1283,7 @@ profile = Profile.new(name: 'Rodrigo', address: { city: 'Rio', postal: '20000-00
 profile.address.class # Address
 profile.address.city  # 'Rio'
 
-# Already-built entity instances pass through:
+# Already-built instances pass through:
 addr    = Address.new(city: 'Rio', postal: '20000-000')
 profile = Profile.new(name: 'Rodrigo', address: addr)
 
@@ -1244,12 +1292,12 @@ profile.address.equal?(addr) # true
 
 [⬆️ Back to Top](#table-of-contents-)
 
-## Defining nested entities inline (block form)
+## Defining nested attributes inline (block form)
 
-`attribute` accepts a block. The block defines an anonymous nested `Micro::Entity` whose attributes are declared inside it.
+`attribute` accepts a block. The block defines an anonymous nested class with the **same feature mix** as the host — strict/symbol-keys/AM all propagate:
 
 ```ruby
-class Order < Micro::Entity
+Order = Micro::Attributes.new do
   attribute :id, accept: Integer
 
   attribute :customer do
@@ -1259,22 +1307,23 @@ class Order < Micro::Entity
 end
 
 order = Order.new(id: 1, customer: { name: 'Rodrigo', email: 'rodrigo@example.com' })
-
 order.customer.name # 'Rodrigo'
 ```
+
+The inline class uses the host's `Micro::Attributes.with(...)` module, so a `keys_as: :symbol` host yields a symbol-keyed inline child, an `initialize: :strict` host yields a strict inline child, and so on.
 
 [⬆️ Back to Top](#table-of-contents-)
 
 ## Deep nesting & validation bubbling
 
-Both the class-based form (`attribute :foo, accept: SomeEntity`) and the block form (`attribute :foo do ... end`) compose **recursively** — a tree of any depth works. Each entity carries its own `attributes_errors` / `errors`; any descendant invalidity is **mirrored** up the chain as a `'is invalid'` marker, while the leaf retains the original message.
+Both forms (class-based via `accept:` and block-form) compose recursively to any depth. Each level carries its own `attributes_errors` / `errors`; any descendant invalidity is **mirrored** up the chain as a `'is invalid'` marker while the leaf retains the original message.
 
 ### Accept-error bubbling (no ActiveModel needed)
 
 ```ruby
-class City    < Micro::Entity; attribute :name,    accept: String; end
-class Address < Micro::Entity; attribute :city,    accept: City;   end
-class Profile < Micro::Entity; attribute :address, accept: Address; end
+City    = Micro::Attributes.new { attribute :name,    accept: String }
+Address = Micro::Attributes.new { attribute :city,    accept: City    }
+Profile = Micro::Attributes.new { attribute :address, accept: Address }
 
 profile = Profile.new(address: { city: { name: 42 } })
 
@@ -1289,41 +1338,37 @@ profile.address.attributes_errors       # {"city" => "is invalid"}
 
 ### ActiveModel deep validation
 
-When `:activemodel_validations` is mixed into an Entity subclass, a `__validate_nested_entities__` validator is auto-registered. `parent.valid?` therefore reflects deep descendant invalidity:
+When `active_model: :validations` (or `:activemodel_validations` positional) is in the feature mix, a `__validate_nested_entities__` validator is auto-registered. `parent.valid?` reflects deep descendant invalidity:
 
 ```ruby
-class Leaf < Micro::Entity
-  with :activemodel_validations
+Leaf = Micro::Attributes.new(active_model: :validations) do
   attribute :name, accept: String, validates: { presence: true }
 end
 
-class Mid  < Micro::Entity
-  with :activemodel_validations
+Mid = Micro::Attributes.new(active_model: :validations) do
   attribute :leaf, accept: Leaf
 end
 
-class Root < Micro::Entity
-  with :activemodel_validations
+Root = Micro::Attributes.new(active_model: :validations) do
   attribute :mid, accept: Mid
 end
 
 root = Root.new(mid: { leaf: { name: '' } })
 
-root.valid?              # false   — bubbled up
-root.errors[:mid]        # ["is invalid"]
-root.mid.errors[:leaf]   # ["is invalid"]
+root.valid?                  # false   — bubbled up
+root.errors[:mid]            # ["is invalid"]
+root.mid.errors[:leaf]       # ["is invalid"]
 root.mid.leaf.errors[:name]  # ["can't be blank"]   ← detail at the leaf
 ```
 
-Mixed trees work too — if a child is a plain `Micro::Entity` (no AM), the validator falls back to checking its `attributes_errors?`:
+Mixed trees work too — if a child has no AM, the validator falls back to checking its `attributes_errors?`:
 
 ```ruby
-class AcceptLeaf < Micro::Entity                       # no AM
+AcceptLeaf = Micro::Attributes.new do                      # no AM
   attribute :name, accept: String
 end
 
-class AMRoot < Micro::Entity
-  with :activemodel_validations
+AMRoot = Micro::Attributes.new(active_model: :validations) do
   attribute :leaf, accept: AcceptLeaf
 end
 
@@ -1333,74 +1378,6 @@ AMRoot.new(leaf: { name: 42 }).valid?    # false — accept-error on the leaf bu
 The contract: **detail at the leaf, marker at every ancestor.** Walk the tree (`obj.mid.leaf.attributes_errors`) for the message; use `obj.attributes_errors?` / `obj.valid?` at the top to gate flow.
 
 [⬆️ Back to Top](#table-of-contents-)
-
-## `Micro::Entity::Strict`
-
-`Micro::Entity::Strict` layers the strict variants of [`Initialize`](#strict-mode) and [`Accept`](#strict-mode-accept-strict) on top of `Micro::Entity`: every declared attribute becomes required, and any accept rejection raises immediately.
-
-```ruby
-class StrictUser < Micro::Entity::Strict
-  attribute :name, accept: String
-  attribute :age,  accept: Numeric
-end
-
-StrictUser.new(name: 'Rodrigo')
-# ArgumentError: missing keyword: :age
-
-StrictUser.new(name: :rodrigo, age: 34)
-# ArgumentError:
-# One or more attributes were rejected. Errors:
-# * "name" expected to be a kind of String
-```
-
-Inline (block-form) nested entities inherit from the immediate `Micro::Entity` superclass, so a `Strict` parent produces a `Strict` inline child.
-
-> **Note:** a `Micro::Entity::Strict` nested type used inside a non-strict outer raises at construction the moment a hash is coerced and rejected — that raise interrupts the outer's construction, so the outer never gets to collect errors from sibling attributes. If you want the outer to collect every error, use a non-strict nested type and inspect [the deep-nesting bubbling described above](#deep-nesting--validation-bubbling).
-
-[⬆️ Back to Top](#table-of-contents-)
-
-## Combining with other extensions
-
-`:initialize`, `:accept`, and `:diff` come bundled — for anything else, mix it in with the `with` class macro. It takes the same feature names as [`Micro::Attributes.with`](#microattributeswith):
-
-```ruby
-class SymbolKeyedUser < Micro::Entity
-  with :keys_as_symbol
-
-  attribute :name, accept: String
-end
-
-class ValidatedUser < Micro::Entity
-  with :activemodel_validations
-
-  attribute :name, accept: String, validates: { presence: true }
-end
-```
-
-You can pass multiple features in one call, mix positional names with the hash form (for strict variants), or call `with` more than once — each call layers the requested feature onto the subclass:
-
-```ruby
-class TightlyValidatedUser < Micro::Entity
-  with :keys_as_symbol, initialize: :strict, accept: :strict
-
-  attribute :name, accept: String
-  attribute :age,  accept: Numeric
-end
-```
-
-`with(...)` is sugar for `include ::Micro::Attributes.with(...)` — if you'd rather be explicit, both forms work the same way:
-
-```ruby
-class ValidatedUser < Micro::Entity
-  include Micro::Attributes.with(:activemodel_validations)   # equivalent to `with :activemodel_validations`
-
-  attribute :name, accept: String, validates: { presence: true }
-end
-```
-
-> **Note:** features added via `with(...)` (or `include Micro::Attributes.with(...)`) on an Entity subclass do **not** propagate to inline (block-form) nested entities — the inline class always inherits from `Micro::Entity` (or `Micro::Entity::Strict` if you subclassed it directly). To get a nested entity with a custom feature mix, define it as a named class and pass it via `accept:`.
-
-(For reference: `Micro::Entity::Strict` is just `class Strict < Entity; with initialize: :strict, accept: :strict; end`.)
 
 Every combination of `Micro::Entity` / `Micro::Entity::Strict` × default-keys / `KeysAsSymbol` × no-`ActiveModel` / `ActiveModelValidations` is covered by `test/micro/entity_matrix_test.rb`.
 
