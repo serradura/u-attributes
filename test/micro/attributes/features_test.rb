@@ -50,6 +50,20 @@ class Micro::Attributes::FeaturesTest < Minitest::Test
     ) { Micro::Attributes.with(initialize: :strict) }
   end
 
+  def test_with_StrictInitialize_StrictAccept_via_multi_key_hash
+    check_micro_attributes_features(
+      assert: [Features::Initialize, Features::Initialize::Strict, Features::Accept, Features::Accept::Strict],
+      refute: [Features::Diff, Features::ActiveModelValidations, Features::KeysAsSymbol]
+    ) { Micro::Attributes.with(initialize: :strict, accept: :strict) }
+  end
+
+  def test_with_KeysAsSym_and_StrictInitialize_StrictAccept_via_multi_key_hash
+    check_micro_attributes_features(
+      assert: [Features::Initialize, Features::Initialize::Strict, Features::Accept, Features::Accept::Strict, Features::KeysAsSymbol],
+      refute: [Features::Diff, Features::ActiveModelValidations]
+    ) { Micro::Attributes.with(:keys_as_symbol, initialize: :strict, accept: :strict) }
+  end
+
   def test_with_KeysAsSym
     check_micro_attributes_features(
       assert: [Features::KeysAsSymbol],

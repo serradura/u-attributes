@@ -29,15 +29,15 @@ class Micro::EntityMatrixTest < Minitest::Test
   ].freeze
 
   KEYS_AXIS = [
-    [:string, nil,                                              ->(name) { name.to_s }],
-    [:symbol, Micro::Attributes::Features::KeysAsSymbol,        ->(name) { name.to_sym }],
+    [:string, nil,                                            ->(name) { name.to_s }],
+    [:symbol, Micro::Attributes.with(:keys_as_symbol),        ->(name) { name.to_sym }],
   ].freeze
 
   AM_AXIS =
     if ENTITY_MATRIX_HAS_ACTIVEMODEL
       [
         [:no_am, nil],
-        [:am,    Micro::Attributes::Features::ActiveModelValidations],
+        [:am,    Micro::Attributes.with(:activemodel_validations)],
       ].freeze
     else
       [[:no_am, nil]].freeze

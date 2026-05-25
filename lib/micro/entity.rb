@@ -65,8 +65,7 @@ module Micro
     prepend Coercion
 
     class Strict < Entity
-      include ::Micro::Attributes::Features::Accept::Strict
-      include ::Micro::Attributes::Features::Initialize::Strict
+      include ::Micro::Attributes.with(initialize: :strict, accept: :strict)
     end
   end
 end

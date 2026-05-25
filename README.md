@@ -1281,21 +1281,34 @@ Inline (block-form) nested entities inherit from the immediate `Micro::Entity` s
 
 ## Combining with other extensions
 
-Mix any of the other feature modules into a `Micro::Entity` subclass to opt in to extra behavior:
+`:initialize`, `:accept`, and `:diff` come bundled — for anything else, opt in by `include`ing the result of [`Micro::Attributes.with`](#microattributeswith) on the subclass. The same feature names you'd pass to a bare `include Micro::Attributes.with(...)` work here:
 
 ```ruby
 class SymbolKeyedUser < Micro::Entity
-  include Micro::Attributes::Features::KeysAsSymbol
+  include Micro::Attributes.with(:keys_as_symbol)
 
   attribute :name, accept: String
 end
 
 class ValidatedUser < Micro::Entity
-  include Micro::Attributes::Features::ActiveModelValidations
+  include Micro::Attributes.with(:activemodel_validations)
 
   attribute :name, accept: String, validates: { presence: true }
 end
 ```
+
+A hash entry like `initialize: :strict` / `accept: :strict` enables the strict variant of a bundled feature on a particular subclass — useful when you want strict behavior in one place without subclassing `Micro::Entity::Strict`:
+
+```ruby
+class TightlyValidatedUser < Micro::Entity
+  include Micro::Attributes.with(:keys_as_symbol, initialize: :strict, accept: :strict)
+
+  attribute :name, accept: String
+  attribute :age,  accept: Numeric
+end
+```
+
+(For reference: `Micro::Entity::Strict` is just `Micro::Entity` plus `include Micro::Attributes.with(initialize: :strict, accept: :strict)`.)
 
 Every combination of `Micro::Entity` / `Micro::Entity::Strict` × default-keys / `KeysAsSymbol` × no-`ActiveModel` / `ActiveModelValidations` is covered by `test/micro/entity_matrix_test.rb`.
 

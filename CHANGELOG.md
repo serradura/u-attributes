@@ -9,7 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
-- `Micro::Entity` — a base class that bundles the `:initialize`, `:accept`, and `:diff` features so subclasses get a hash initializer with attribute-level type checks and `#with_attribute(s)` out of the box. Pass an `Entity` subclass via `accept:` to auto-coerce a nested hash into that entity (instances pass through). Pass a block to `attribute` to define an anonymous nested `Micro::Entity` inline. `Micro::Entity::Strict` mixes in `Accept::Strict` + `Initialize::Strict` so every attribute is required and any accept rejection raises (closes [#9](https://github.com/serradura/u-attributes/issues/9)). Requires `require 'micro/entity'`.
+- `Micro::Entity` — a base class that bundles the `:initialize`, `:accept`, and `:diff` features so subclasses get a hash initializer with attribute-level type checks and `#with_attribute(s)` out of the box. Pass an `Entity` subclass via `accept:` to auto-coerce a nested hash into that entity (instances pass through). Pass a block to `attribute` to define an anonymous nested `Micro::Entity` inline. `Micro::Entity::Strict` layers `Micro::Attributes.with(initialize: :strict, accept: :strict)` so every attribute is required and any accept rejection raises (closes [#9](https://github.com/serradura/u-attributes/issues/9)). Requires `require 'micro/entity'`.
+
+### Fixed
+- `Micro::Attributes.with(initialize: :strict, accept: :strict)` (a hash arg with more than one strict key) used to silently drop all but one entry — only the first matched variant was applied. Multi-key strict hashes now expand into every requested strict variant.
 
 ## [3.0.2] - 2026-05-24
 ### Added

@@ -106,11 +106,20 @@ module Micro
         ].join
 
         def self.fetch_keys(args)
-          keys = Array(args).dup.map { |name| fetch_key(name) }
+          keys = Array(args).flat_map { |name| split_strict_hash(name) }.map { |name| fetch_key(name) }
 
           raise ArgumentError, INVALID_NAME if keys.empty? || !(keys - KEYS).empty?
 
           yield(keys)
+        end
+
+        # `fetch_key` returns a single key per call, so `with(initialize: :strict, accept: :strict)`
+        # would silently drop one of them. Expand a multi-key hash into one single-key hash per
+        # entry so each gets its own key.
+        def self.split_strict_hash(arg)
+          return [arg] unless arg.is_a?(Hash) && arg.size > 1
+
+          arg.map { |key, value| { key => value } }
         end
 
         def self.remove_base_if_has_strict(keys)
