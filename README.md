@@ -1440,7 +1440,7 @@ The contract: **detail at the leaf, marker at every ancestor.** Walk the tree (`
 
 [⬆️ Back to Top](#table-of-contents-)
 
-Every combination of `Micro::Entity` / `Micro::Entity::Strict` × default-keys / `KeysAsSymbol` × no-`ActiveModel` / `ActiveModelValidations` is covered by `test/micro/entity_matrix_test.rb`.
+Every combination of `Micro::Attributes.with(...)` features — default-keys / `KeysAsSymbol`, no-`ActiveModel` / `ActiveModelValidations`, strict / non-strict — is covered by `test/micro/attributes/composition_matrix_test.rb`, `with_matrix_test.rb`, and `projection_matrix_test.rb`.
 
 [⬆️ Back to Top](#table-of-contents-)
 
