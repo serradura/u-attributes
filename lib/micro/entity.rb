@@ -103,10 +103,48 @@ module Micro
           end
 
           super(key, init_hash, attribute_data)
+
+          # Deep nesting: bubble a marker up so any descendant's
+          # `attributes_errors?` is visible from the parent. The detail
+          # stays at the leaf — walk the tree (`obj.mid.leaf.attributes_errors`)
+          # to inspect the actual rejection message.
+          child = instance_variable_get("@#{key}")
+          if child.is_a?(::Micro::Entity) && child.attributes_errors? &&
+             @__attributes_errors && !@__attributes_errors.key?(key)
+            @__attributes_errors[key] = 'is invalid'
+          end
         end
     end
 
     prepend Coercion
+
+    # ActiveModel-aware deep validator: when an Entity subclass includes
+    # `:activemodel_validations`, this method is auto-registered via
+    # `Features::ActiveModelValidations.included` so `parent.valid?`
+    # reflects deep descendant invalidity.
+    #
+    # Falls back to `attributes_errors?` for nested entities that don't
+    # have AM themselves (mixed trees).
+    def __validate_nested_entities__
+      return unless respond_to?(:errors)
+
+      self.class.attributes.each do |attr_name|
+        child = instance_variable_get("@#{attr_name}")
+
+        next unless child.is_a?(::Micro::Entity)
+
+        child_invalid =
+          if child.respond_to?(:valid?)
+            !child.valid?
+          elsif child.respond_to?(:attributes_errors?)
+            child.attributes_errors?
+          else
+            false
+          end
+
+        errors.add(attr_name.to_sym, 'is invalid') if child_invalid
+      end
+    end
 
     class Strict < Entity
       include ::Micro::Attributes.with(initialize: :strict, accept: :strict)

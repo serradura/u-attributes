@@ -492,4 +492,135 @@ class Micro::EntityTest < Minitest::Test
     obj = with_form.new(inline: {})
     assert_nil(obj.inline.inner)
   end
+
+  # ---- Deep nesting (3 levels) ----
+  # Both class-based and block-based composition must work recursively.
+  # Errors are mirrored as a `'is invalid'` marker at each ancestor;
+  # the leaf retains the detail. ActiveModel `valid?` also bubbles.
+
+  class AcceptLeaf < Micro::Entity
+    attribute :city, accept: String
+  end
+
+  class AcceptMid < Micro::Entity
+    attribute :leaf, accept: AcceptLeaf
+  end
+
+  class AcceptRoot < Micro::Entity
+    attribute :mid, accept: AcceptMid
+  end
+
+  def test_class_based_deep_nesting_happy_path
+    root = AcceptRoot.new(mid: { leaf: { city: 'Rio' } })
+
+    assert_kind_of(AcceptMid,  root.mid)
+    assert_kind_of(AcceptLeaf, root.mid.leaf)
+    assert_equal('Rio', root.mid.leaf.city)
+    refute_predicate(root, :attributes_errors?)
+    refute_predicate(root.mid, :attributes_errors?)
+    refute_predicate(root.mid.leaf, :attributes_errors?)
+  end
+
+  def test_class_based_deep_nesting_bubbles_accept_errors_to_root
+    root = AcceptRoot.new(mid: { leaf: { city: 42 } })
+
+    # Detail lives at the leaf.
+    assert_predicate(root.mid.leaf, :attributes_errors?)
+    assert_match(/kind of String/, root.mid.leaf.attributes_errors['city'])
+
+    # Markers bubble up.
+    assert_predicate(root.mid, :attributes_errors?, 'mid mirrors child invalidity')
+    assert_equal('is invalid', root.mid.attributes_errors['leaf'])
+
+    assert_predicate(root, :attributes_errors?, 'root mirrors grandchild invalidity')
+    assert_equal('is invalid', root.attributes_errors['mid'])
+  end
+
+  class BlockDeepRoot < Micro::Entity
+    attribute :mid do
+      attribute :leaf do
+        attribute :city, accept: String
+      end
+    end
+  end
+
+  def test_block_based_deep_nesting_happy_path
+    root = BlockDeepRoot.new(mid: { leaf: { city: 'Rio' } })
+
+    assert_equal('Rio', root.mid.leaf.city)
+    refute_predicate(root, :attributes_errors?)
+  end
+
+  def test_block_based_deep_nesting_bubbles_accept_errors_to_root
+    root = BlockDeepRoot.new(mid: { leaf: { city: 42 } })
+
+    assert_predicate(root.mid.leaf, :attributes_errors?, 'leaf has the detail')
+    assert_match(/kind of String/, root.mid.leaf.attributes_errors['city'])
+
+    assert_predicate(root.mid, :attributes_errors?, 'mid mirrors child')
+    assert_predicate(root, :attributes_errors?, 'root mirrors grandchild')
+  end
+
+  if ENTITY_TEST_HAS_ACTIVEMODEL = (begin; require 'active_model'; true; rescue LoadError; false; end)
+    class AMDeepLeaf < Micro::Entity
+      with :activemodel_validations
+      attribute :name, accept: String, validates: { presence: true }
+    end
+
+    class AMDeepMid < Micro::Entity
+      with :activemodel_validations
+      attribute :leaf, accept: AMDeepLeaf
+    end
+
+    class AMDeepRoot < Micro::Entity
+      with :activemodel_validations
+      attribute :mid, accept: AMDeepMid
+    end
+
+    def test_am_deep_nesting_valid_for_well_formed_tree
+      root = AMDeepRoot.new(mid: { leaf: { name: 'Rodrigo' } })
+
+      assert_predicate(root, :valid?)
+      assert_predicate(root.mid, :valid?)
+      assert_predicate(root.mid.leaf, :valid?)
+    end
+
+    def test_am_deep_nesting_root_valid_returns_false_when_leaf_fails_presence
+      root = AMDeepRoot.new(mid: { leaf: { name: '' } })
+
+      # Leaf has the detail.
+      refute_predicate(root.mid.leaf, :valid?, 'leaf is invalid')
+      assert_includes(root.mid.leaf.errors[:name].map(&:to_s).join, "can't be blank")
+
+      # Mid mirrors leaf invalidity.
+      refute_predicate(root.mid, :valid?, 'mid mirrors leaf invalidity')
+      assert_includes(root.mid.errors[:leaf].map(&:to_s).join, 'is invalid')
+
+      # Root mirrors grandchild invalidity.
+      refute_predicate(root, :valid?, 'root mirrors grandchild invalidity')
+      assert_includes(root.errors[:mid].map(&:to_s).join, 'is invalid')
+    end
+
+    # Mixed tree: AM on root, accept-only on mid/leaf. The AM root's
+    # validator must still detect descendant invalidity by falling back
+    # to `attributes_errors?` for children without `valid?`.
+    class MixedLeafAccept < Micro::Entity
+      attribute :name, accept: String
+    end
+
+    class MixedRootAM < Micro::Entity
+      with :activemodel_validations
+      attribute :leaf, accept: MixedLeafAccept
+    end
+
+    def test_am_root_with_accept_only_leaf_propagates
+      good = MixedRootAM.new(leaf: { name: 'OK' })
+      assert_predicate(good, :valid?)
+
+      bad = MixedRootAM.new(leaf: { name: 42 })
+      refute_predicate(bad, :valid?,
+                       'AM-only root must still bubble accept-error leaves')
+      assert_includes(bad.errors[:leaf].map(&:to_s).join, 'is invalid')
+    end
+  end
 end

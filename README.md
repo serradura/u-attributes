@@ -76,6 +76,7 @@ So, if you change [[1](#with_attribute)] [[2](#with_attributes)] an attribute of
 - [`Micro::Entity`](#microentity)
   - [Nested entities](#nested-entities)
   - [Defining nested entities inline (block form)](#defining-nested-entities-inline-block-form)
+  - [Deep nesting & validation bubbling](#deep-nesting--validation-bubbling)
   - [`Micro::Entity::Strict`](#microentitystrict)
   - [Combining with other extensions](#combining-with-other-extensions)
 - [Development](#development)
@@ -1264,6 +1265,75 @@ order.customer.name # 'Rodrigo'
 
 [⬆️ Back to Top](#table-of-contents-)
 
+## Deep nesting & validation bubbling
+
+Both the class-based form (`attribute :foo, accept: SomeEntity`) and the block form (`attribute :foo do ... end`) compose **recursively** — a tree of any depth works. Each entity carries its own `attributes_errors` / `errors`; any descendant invalidity is **mirrored** up the chain as a `'is invalid'` marker, while the leaf retains the original message.
+
+### Accept-error bubbling (no ActiveModel needed)
+
+```ruby
+class City    < Micro::Entity; attribute :name,    accept: String; end
+class Address < Micro::Entity; attribute :city,    accept: City;   end
+class Profile < Micro::Entity; attribute :address, accept: Address; end
+
+profile = Profile.new(address: { city: { name: 42 } })
+
+# Leaf has the detail
+profile.address.city.attributes_errors  # {"name" => "expected to be a kind of String"}
+
+# Every ancestor mirrors the invalidity
+profile.attributes_errors?              # true
+profile.attributes_errors               # {"address" => "is invalid"}
+profile.address.attributes_errors       # {"city" => "is invalid"}
+```
+
+### ActiveModel deep validation
+
+When `:activemodel_validations` is mixed into an Entity subclass, a `__validate_nested_entities__` validator is auto-registered. `parent.valid?` therefore reflects deep descendant invalidity:
+
+```ruby
+class Leaf < Micro::Entity
+  with :activemodel_validations
+  attribute :name, accept: String, validates: { presence: true }
+end
+
+class Mid  < Micro::Entity
+  with :activemodel_validations
+  attribute :leaf, accept: Leaf
+end
+
+class Root < Micro::Entity
+  with :activemodel_validations
+  attribute :mid, accept: Mid
+end
+
+root = Root.new(mid: { leaf: { name: '' } })
+
+root.valid?              # false   — bubbled up
+root.errors[:mid]        # ["is invalid"]
+root.mid.errors[:leaf]   # ["is invalid"]
+root.mid.leaf.errors[:name]  # ["can't be blank"]   ← detail at the leaf
+```
+
+Mixed trees work too — if a child is a plain `Micro::Entity` (no AM), the validator falls back to checking its `attributes_errors?`:
+
+```ruby
+class AcceptLeaf < Micro::Entity                       # no AM
+  attribute :name, accept: String
+end
+
+class AMRoot < Micro::Entity
+  with :activemodel_validations
+  attribute :leaf, accept: AcceptLeaf
+end
+
+AMRoot.new(leaf: { name: 42 }).valid?    # false — accept-error on the leaf bubbles to AM on root
+```
+
+The contract: **detail at the leaf, marker at every ancestor.** Walk the tree (`obj.mid.leaf.attributes_errors`) for the message; use `obj.attributes_errors?` / `obj.valid?` at the top to gate flow.
+
+[⬆️ Back to Top](#table-of-contents-)
+
 ## `Micro::Entity::Strict`
 
 `Micro::Entity::Strict` layers the strict variants of [`Initialize`](#strict-mode) and [`Accept`](#strict-mode-accept-strict) on top of `Micro::Entity`: every declared attribute becomes required, and any accept rejection raises immediately.
@@ -1285,7 +1355,7 @@ StrictUser.new(name: :rodrigo, age: 34)
 
 Inline (block-form) nested entities inherit from the immediate `Micro::Entity` superclass, so a `Strict` parent produces a `Strict` inline child.
 
-> **Note:** strict semantics are **per-entity**. A `Micro::Entity::Strict` nested type used inside a non-strict `Micro::Entity` outer (`attribute :inner, accept: SomeStrictInner`) will raise at construction the moment a hash is coerced and rejected — it does **not** participate in the outer's `attributes_errors` collect-all-errors flow. If you want the outer to collect every error, use a non-strict nested type.
+> **Note:** a `Micro::Entity::Strict` nested type used inside a non-strict outer raises at construction the moment a hash is coerced and rejected — that raise interrupts the outer's construction, so the outer never gets to collect errors from sibling attributes. If you want the outer to collect every error, use a non-strict nested type and inspect [the deep-nesting bubbling described above](#deep-nesting--validation-bubbling).
 
 [⬆️ Back to Top](#table-of-contents-)
 

@@ -153,8 +153,14 @@ class Micro::EntityMatrixTest < Minitest::Test
           nested: { value: 1 },
           inline: { label: :not_a_string },
         )
-        assert_predicate(obj.inline, :attributes_errors?, "inline errors (#{cell[:label]})")
-        refute_predicate(obj, :attributes_errors?, "outer has no errors (#{cell[:label]})")
+        assert_predicate(obj.inline, :attributes_errors?, "inline has the detail (#{cell[:label]})")
+
+        # Deep-nesting bubble: the outer mirrors descendant invalidity via
+        # a `'is invalid'` marker (the leaf retains the full message).
+        assert_predicate(obj, :attributes_errors?, "outer mirrors inline invalidity (#{cell[:label]})")
+        key_for_inline = cell[:key_for].call(:inline)
+        assert_equal('is invalid', obj.attributes_errors[key_for_inline],
+                     "outer carries the marker (#{cell[:label]})")
       end
     end
   end
