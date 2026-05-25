@@ -7,15 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Note:** This gem was originally published as `micro-attributes` (`0.1.0`) and renamed to `u-attributes` starting with `0.2.0` on 2019-07-02.
 
-## [Unreleased]
+## [3.1.0] - 2026-05-25
 ### Added
 - `Micro::Entity` — a base class that bundles the `:initialize`, `:accept`, and `:diff` features so subclasses get a hash initializer with attribute-level type checks and `#with_attribute(s)` out of the box. Pass an `Entity` subclass via `accept:` to auto-coerce a nested hash into that entity (instances pass through). Pass a block to `attribute` to define an anonymous nested `Micro::Entity` inline. `Micro::Entity::Strict` layers `Micro::Attributes.with(initialize: :strict, accept: :strict)` so every attribute is required and any accept rejection raises (closes [#9](https://github.com/serradura/u-attributes/issues/9)). Requires `require 'micro/entity'`.
+- `Micro::Attributes.with(initialize: :strict, accept: :strict)` (and the same hash form on `Micro::Attributes.without`) now honors every key. Previously, `fetch_key` returned the first matching strict variant and silently dropped the others; multi-key strict hashes are now expanded by `split_strict_hash` before lookup.
+
+### Changed
+- **Heads up — silent behavior shift for downstream consumers:** `Micro::Attributes.with(initialize: :strict, accept: :strict)` and `Micro::Attributes.without(initialize: :strict, accept: :strict)` now resolve to a different feature module than 3.0.x because the multi-key strict hash bug was fixed. Pre-3.1 `with(initialize: :strict, accept: :strict)` returned only `AcceptStrict`; post-3.1 it returns `AcceptStrict_InitializeStrict`. Pre-3.1 `without(initialize: :strict, accept: :strict)` only excluded `AcceptStrict`; post-3.1 it excludes both strict variants. Any code that relied on the silent drop will get a different feature mix on upgrade.
+- **Heads up — silent behavior shift for `Features::Accept` consumers with private/protected attributes:** the `:accept` feature used to leak `private:` / `protected:` attributes into the public `#attributes` hash (a divergence from the base `Micro::Attributes` behavior). The fix aligns Accept with the base, but it changes two user-visible flows: `#with_attribute(s)` round-trips no longer carry private/protected values (they revert to defaults on the new instance), and `Diff::Changes` no longer reports changes for private/protected attributes. Code that depended on the leaked behavior will need to switch to explicit accessors or to public visibility.
 
 ### Fixed
-- `Micro::Attributes.with(initialize: :strict, accept: :strict)` (a hash arg with more than one strict key) used to silently drop all but one entry — only the first matched variant was applied. Multi-key strict hashes now expand into every requested strict variant.
-- `Features::Accept` was leaking `private:` / `protected:` attributes into the public `#attributes` hash. The base `__attribute_assign` correctly gates the `__attributes` write on `attribute_data[3] == :public`, but the Accept override wrote unconditionally. Now matches the base behavior.
+- `attribute!` (subclass overwrite) with a `default:` did not clear the inherited `__attributes_required__` entry when the parent had `Initialize::Strict`. `Child.new({})` raised `ArgumentError: missing keyword: ...` even though the child gave the attribute a default. `__attributes_required_add` is now an add-or-remove sync (always called from `__attributes_data_to_assign`) so the required set always reflects the current options.
 - `attribute!` (subclass overwrite) couldn't change an attribute's Ruby visibility back from `private`/`protected` to `public` — it updated `__attributes_data__` (and so the `#attributes` hash reflected the new visibility), but the inherited reader method retained its original Ruby visibility. `__attribute_assign` now re-applies visibility for already-defined attributes when overwriting.
-- `Micro::Entity`'s block-form nested attribute (`attribute :foo do ... end`) used to leak the immediate superclass's user-defined attributes into the inline nested class. The inline class now always inherits from a gem-provided base (`Micro::Entity` or `Micro::Entity::Strict`), preventing both ancestor-attribute leaks and sibling-attribute leaks via dynamic dispatch. Tradeoff: user-added feature includes (`KeysAsSymbol`, `ActiveModelValidations`) on intermediate classes don't propagate to inline children — define those nested entities explicitly and pass via `accept:`.
+- `Features::Accept` was leaking `private:` / `protected:` attributes into the public `#attributes` hash. The base `__attribute_assign` correctly gates the write on `attribute_data[3] == :public`, but the Accept override wrote unconditionally. Now matches the base behavior. (See also the `Changed` section above — this is the source of the round-trip and diff shifts.)
+- `Micro::Entity`'s block-form nested attribute (`attribute :foo do ... end`) used to leak the immediate superclass's user-defined attributes into the inline nested class, and after that fix it still leaked sibling attributes added to the same class body AFTER the block ran (via Ruby's dynamic dispatch on inherited `attr_reader`s). The inline class now always inherits from a gem-provided base (`Micro::Entity` or `Micro::Entity::Strict`), preventing both leaks. Tradeoff: user-added feature includes (`KeysAsSymbol`, `ActiveModelValidations`) on intermediate classes don't propagate to inline children — define those nested entities explicitly and pass via `accept:`.
+- `Micro::Entity` block-form rejection messages no longer leak the anonymous class's object address (e.g. `#<Class:0x000000012345>`). Inline classes now expose a stable `to_s` / `inspect` like `Outer(attr_name)`.
 
 ## [3.0.2] - 2026-05-24
 ### Added
@@ -270,6 +276,7 @@ First stable release.
 - `Micro::Attributes` mixin with the `.attribute` / `.attributes` macros for declaring attributes on a plain Ruby object.
 - Generated reader methods plus the `with_attribute` / `with_attributes` constructors that return a new instance with the updated values (no setters).
 
+[3.1.0]: https://github.com/serradura/u-attributes/compare/v3.0.2...v3.1.0
 [3.0.2]: https://github.com/serradura/u-attributes/compare/v3.0.1...v3.0.2
 [3.0.1]: https://github.com/serradura/u-attributes/compare/v3.0.0...v3.0.1
 [3.0.0]: https://github.com/serradura/u-attributes/compare/v2.8.0...v3.0.0

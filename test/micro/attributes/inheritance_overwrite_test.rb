@@ -190,6 +190,37 @@ class Micro::Attributes::InheritanceOverwriteTest < Minitest::Test
     assert_equal('fallback', obj.name, 'default makes it optional')
   end
 
+  # Regression for M1: under `Initialize::Strict` the parent marks every
+  # attribute as required via `attributes_are_all_required?`. The child
+  # must be able to relax that by giving an attribute a default — pre-fix,
+  # the inherited entry in `__attributes_required__` was never removed and
+  # `Child.new({})` raised "missing keyword".
+  class BaseStrictRequired
+    include Micro::Attributes.with(initialize: :strict)
+    attribute :name
+    attribute :age
+  end
+
+  class ChildRelaxesUnderStrict < BaseStrictRequired
+    attribute! :name, default: 'fallback'
+  end
+
+  def test_attribute_bang_with_default_clears_inherited_strict_required
+    # Parent: both required.
+    assert_raises(ArgumentError) { BaseStrictRequired.new(name: 'x') }
+    assert_raises(ArgumentError) { BaseStrictRequired.new(age: 1) }
+
+    # Child: `name` now has a default and is no longer required;
+    # `age` still inherits the strict requirement.
+    obj = ChildRelaxesUnderStrict.new(age: 1)
+    assert_equal('fallback', obj.name, 'default makes :name optional')
+    assert_equal(1, obj.age)
+
+    err = assert_raises(ArgumentError) { ChildRelaxesUnderStrict.new({}) }
+    assert_match(/missing keyword: :age/, err.message,
+                 ':age must still be required after the relaxation of :name')
+  end
+
   # ---------- adding brand-new attribute via attribute! -------------------
 
   class BaseAddNew

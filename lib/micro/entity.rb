@@ -8,21 +8,40 @@ module Micro
 
     class << self
       def attribute(name, options = ::Kind::Empty::HASH, &block)
-        super(name, __entity_options__(options, block))
+        super(name, __entity_options__(name, options, block))
       end
 
       def attribute!(name, options = ::Kind::Empty::HASH, &block)
-        super(name, __entity_options__(options, block))
+        super(name, __entity_options__(name, options, block))
       end
 
       private
 
-        def __entity_options__(options, block)
+        def __entity_options__(name, options, block)
           return options unless block
 
           options = options.dup
-          options[:accept] = Class.new(__entity_block_parent__).tap { |klass| klass.class_eval(&block) }
+          options[:accept] = __build_inline_entity__(name, block)
           options
+        end
+
+        # Build the anonymous nested entity AND give it a stable `to_s` /
+        # `inspect`. Without this, `Accept`'s `Validate::KindOf.accept_failed`
+        # interpolates the class with `#{exp}`, which on an anonymous class
+        # renders `#<Class:0x000000012345>` — leaking the object id into
+        # user-facing error messages. Naming it via singleton methods keeps
+        # rejection messages deterministic and readable.
+        def __build_inline_entity__(name, block)
+          klass = Class.new(__entity_block_parent__)
+          klass.class_eval(&block)
+
+          outer_label = self.name || self.to_s
+          inline_label = "#{outer_label}(#{name})"
+
+          klass.define_singleton_method(:to_s)    { inline_label }
+          klass.define_singleton_method(:inspect) { inline_label }
+
+          klass
         end
 
         # Pick the parent class for an inline (block-form) nested entity.

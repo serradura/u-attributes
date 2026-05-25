@@ -281,4 +281,56 @@ class Micro::EntityTest < Minitest::Test
     refute_respond_to(child.nested, :gp_attr, 'no grandparent leak')
     refute_respond_to(child.nested, :p_attr,  'no parent leak')
   end
+
+  # Regression for E4: anonymous inline classes used to render as
+  # `#<Class:0x000000012345>` in `attributes_errors` because Accept's
+  # `KindOf.accept_failed` interpolates the class directly. The new
+  # singleton `to_s` makes the rejection message stable and readable.
+  class HostForInlineNaming < Micro::Entity
+    attribute :customer do
+      attribute :name, accept: String
+    end
+  end
+
+  def test_inline_block_form_class_has_stable_name_in_error_messages
+    obj = HostForInlineNaming.new(customer: 'not a hash')
+
+    assert_predicate(obj, :attributes_errors?)
+    error = obj.attributes_errors['customer']
+
+    refute_match(/0x[0-9a-f]+/, error,
+                 'rejection message must not leak object address')
+    assert_match(/HostForInlineNaming\(customer\)/, error,
+                 'rejection message names the outer class and attribute')
+  end
+
+  # Regression for E1: when a user mixes `Micro::Attributes.with(:keys_as_symbol)`
+  # (or similar feature includes) onto an Entity subclass, the inline (block-form)
+  # nested entity does NOT inherit that mix — the parent picker only
+  # propagates Strict-ness. Documented tradeoff; this test pins the contract
+  # so a refactor of `__entity_block_parent__` can't silently regress it.
+  class HostWithSymbolKeys < Micro::Entity
+    include Micro::Attributes.with(:keys_as_symbol)
+
+    attribute :outer, accept: String
+
+    attribute :inline do
+      attribute :inner, accept: String
+    end
+  end
+
+  def test_block_form_does_not_inherit_intermediate_feature_includes
+    host = HostWithSymbolKeys.new(outer: 'a', inline: { inner: 'b' })
+
+    # The host class has KeysAsSymbol → its own attributes hash uses symbols.
+    assert(host.attributes.key?(:outer), 'outer uses symbol key')
+    refute(host.attributes.key?('outer'), 'outer does NOT use string key')
+
+    # The inline class is rebuilt from `Micro::Entity` (gem base) and does
+    # NOT receive KeysAsSymbol — its attributes hash uses string keys.
+    assert(host.inline.attributes.key?('inner'),
+           'inline child uses default (string) keys')
+    refute(host.inline.attributes.key?(:inner),
+           'inline child did NOT inherit KeysAsSymbol from host')
+  end
 end

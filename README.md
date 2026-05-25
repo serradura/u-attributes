@@ -21,7 +21,7 @@ So, if you change [[1](#with_attribute)] [[2](#with_attributes)] an attribute of
 Version    | Documentation
 ---------- | -------------
 unreleased | https://github.com/serradura/u-attributes/blob/main/README.md
-3.0.2      | https://github.com/serradura/u-attributes/blob/v3.x/README.md
+3.1.0      | https://github.com/serradura/u-attributes/blob/v3.x/README.md
 2.8.0      | https://github.com/serradura/u-attributes/blob/v2.x/README.md
 
 # Table of contents <!-- omit in toc -->
@@ -90,7 +90,7 @@ gem 'u-attributes', '~> 3.0'
 | u-attributes     | branch | ruby     | activemodel    |
 | ---------------- | ------ | -------- | -------------- |
 | unreleased       | main   | >= 2.7   | >= 6.0         |
-| 3.0.2            | v3.x   | >= 2.7   | >= 6.0         |
+| 3.1.0            | v3.x   | >= 2.7   | >= 6.0         |
 | 2.8.0            | v2.x   | >= 2.2.0 | >= 3.2, <= 8.1 |
 
 This library is tested (CI matrix) against:
@@ -1276,6 +1276,8 @@ StrictUser.new(name: :rodrigo, age: 34)
 ```
 
 Inline (block-form) nested entities inherit from the immediate `Micro::Entity` superclass, so a `Strict` parent produces a `Strict` inline child.
+
+> **Note:** strict semantics are **per-entity**. A `Micro::Entity::Strict` nested type used inside a non-strict `Micro::Entity` outer (`attribute :inner, accept: SomeStrictInner`) will raise at construction the moment a hash is coerced and rejected — it does **not** participate in the outer's `attributes_errors` collect-all-errors flow. If you want the outer to collect every error, use a non-strict nested type.
 
 [⬆️ Back to Top](#table-of-contents-)
 

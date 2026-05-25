@@ -113,6 +113,12 @@ module Micro
       # parent attribute back to public (or change visibility in either
       # direction). Without this, `__attributes_data__` would say one
       # thing while the actual reader's Ruby visibility said another.
+      #
+      # Note — `attribute!` is authoritative here: if the user defined a
+      # custom reader method (`def name; ...; end`) between the parent's
+      # `attribute` and the child's `attribute!`, this call will adjust
+      # that custom method's Ruby visibility too. That matches the
+      # documented "redefine these attributes" contract of `attribute!`.
       def __attribute_reapply_visibility(name, visibility_index)
         [Options::PUBLIC, Options::PRIVATE, Options::PROTECTED].each do |idx|
           __attributes_groups[idx].delete(name)
@@ -128,9 +134,16 @@ module Micro
         end
       end
 
+      # Sync the required set with the new options. Name kept for backwards
+      # compat with downstream gems (u-case v4) that may introspect it —
+      # the method is now add-or-remove rather than add-only so that
+      # `attribute!` on a child can relax a parent's required attribute
+      # by giving it a default (or vice-versa).
       def __attributes_required_add(name, opt, hasnt_default)
         if opt[:required] || (attributes_are_all_required? && hasnt_default)
           __attributes_required__.add(name)
+        else
+          __attributes_required__.delete(name)
         end
 
         nil
@@ -139,10 +152,10 @@ module Micro
       def __attributes_data_to_assign(name, opt, visibility_index)
         hasnt_default = !opt.key?(:default)
 
-        default = hasnt_default ? __attributes_required_add(name, opt, hasnt_default) : opt[:default]
+        __attributes_required_add(name, opt, hasnt_default)
 
         [
-          default,
+          hasnt_default ? nil : opt[:default],
           Options.for_accept(opt),
           opt[:freeze],
           Options.visibility_name_from_index(visibility_index)

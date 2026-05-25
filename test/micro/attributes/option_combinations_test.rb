@@ -235,6 +235,47 @@ class Micro::Attributes::OptionCombinationsTest < Minitest::Test
     end
   end
 
+  # Regression for AC2: the Accept fix gates `__attributes[key] = value` on
+  # `attribute_data[3] == :public`. A consequence is that `Initialize#with_attributes`
+  # (which is `self.class.new(attributes.merge(arg))`) carries ONLY public attrs
+  # across the round-trip. Pin this so a future "undo the gate" doesn't silently
+  # restore the round-trip but break the visibility contract.
+  class AcceptPrivateRoundTrip
+    include Micro::Attributes.with(:initialize, :accept, :diff)
+
+    attribute :name,   accept: String, default: 'parent'
+    attribute :secret, accept: String, default: 'sssh', private: true
+  end
+
+  def test_with_attribute_round_trip_under_accept_carries_only_public_attrs
+    obj = AcceptPrivateRoundTrip.new({})
+
+    # Original obj: secret IS set on the instance (private reader works
+    # internally), but it's not in the public attributes hash.
+    refute(obj.attributes.key?('secret'),
+           'private attr excluded from public attributes hash')
+
+    # with_attribute round-trips through `attributes.merge(...)`, so secret
+    # never makes it to the new instance's init hash; it falls back to its
+    # default 'sssh'.
+    copy = obj.with_attribute(:name, 'updated')
+    assert_equal('updated', copy.name)
+    assert_equal('sssh', copy.send(:secret),
+                 'private attr reverts to default after round-trip')
+  end
+
+  def test_diff_under_accept_only_sees_public_attrs
+    a = AcceptPrivateRoundTrip.new({})
+    b = a.with_attribute(:name, 'changed')
+
+    # name changed → diff sees it
+    # secret cannot be differentiated through the public surface
+    diff = a.diff_attributes(b)
+    assert(diff.changed?('name'))
+    refute(diff.changed?('secret'),
+           'private attr changes are not surfaced through diff_attributes')
+  end
+
   # ---------- accept: allow_nil: ------------------------------------------
 
   def test_accept_allow_nil_lets_nil_through
