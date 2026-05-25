@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - `Micro::Attributes.with(initialize: :strict, accept: :strict)` (a hash arg with more than one strict key) used to silently drop all but one entry — only the first matched variant was applied. Multi-key strict hashes now expand into every requested strict variant.
+- `Micro::Entity`'s block-form nested attribute (`attribute :foo do ... end`) used to leak the immediate superclass's user-defined attributes into the inline nested class when defined on a multi-level subclass (e.g. `Bar < Foo < Micro::Entity` where `Foo` had its own attributes). The inline parent is now resolved by walking up to the nearest ancestor with no user attributes, so the feature mix (including `Strict`) still propagates but no foreign attributes leak in.
 
 ## [3.0.2] - 2026-05-24
 ### Added

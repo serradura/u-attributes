@@ -156,4 +156,56 @@ class Micro::EntityTest < Minitest::Test
     assert_equal('Rodrigo', user.name)
     assert_equal(34, user.age)
   end
+
+  # Regression: in a multi-level subclass, the inline (block-form) nested
+  # entity must NOT inherit parent classes' user-defined attributes.
+  class ParentEntity < Micro::Entity
+    attribute :shared, accept: String
+  end
+
+  class ChildEntity < ParentEntity
+    attribute :nested do
+      attribute :only_here, accept: String
+    end
+  end
+
+  def test_block_form_does_not_inherit_parent_user_attributes
+    nested_class = ChildEntity.__attributes_data__['nested'][1][1]
+
+    assert_equal(['only_here'], nested_class.attributes,
+                 'inline nested class must contain only its own block attributes')
+
+    child = ChildEntity.new(shared: 'top', nested: { only_here: 'leaf' })
+
+    assert_equal('top', child.shared)
+    assert_equal('leaf', child.nested.only_here)
+    refute_respond_to(child.nested, :shared, 'inline nested must not expose parent reader')
+  end
+
+  # Regression: even through a multi-level Strict chain, the inline nested
+  # entity must remain Strict (feature-mix propagates) — but still without
+  # the parent's user attributes (no leak).
+  class StrictParentEntity < Micro::Entity::Strict
+    attribute :shared, accept: String
+  end
+
+  class StrictChildEntity < StrictParentEntity
+    attribute :nested do
+      attribute :only_here, accept: String
+    end
+  end
+
+  def test_block_form_propagates_strict_through_multi_level_chain
+    nested_class = StrictChildEntity.__attributes_data__['nested'][1][1]
+
+    assert_operator(nested_class, :<, Micro::Entity::Strict,
+                    'inline child must inherit Strict feature-mix')
+    assert_equal(['only_here'], nested_class.attributes,
+                 'inline nested class must contain only its own block attributes')
+
+    error = assert_raises(ArgumentError) do
+      StrictChildEntity.new(shared: 'top', nested: {})
+    end
+    assert_match(/missing keyword: :only_here/, error.message)
+  end
 end

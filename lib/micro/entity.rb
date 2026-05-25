@@ -25,13 +25,22 @@ module Micro
           options
         end
 
-        # Inline (block-form) nested entities inherit from the immediate
-        # superclass when it's a Micro::Entity descendant — so a Strict
-        # parent yields a Strict inline child. Falls back to the plain
-        # `Micro::Entity` base otherwise.
+        # Pick the parent class for an inline (block-form) nested entity.
+        # We want the nested class to inherit the feature mix of `self`
+        # (so a Strict subclass yields a Strict inline child) — but NOT
+        # `self`'s user-defined attributes, which would leak via the
+        # `inherited` hook into the nested entity.
+        #
+        # Walk up the ancestry until we find a class with no user
+        # attributes: that's the closest "feature base" carrying the
+        # right modules without any data. Falls back to `Micro::Entity`.
         def __entity_block_parent__
-          parent = superclass
-          parent <= ::Micro::Entity ? parent : ::Micro::Entity
+          klass = self
+          while klass && klass <= ::Micro::Entity
+            return klass if klass.__attributes_data__.empty?
+            klass = klass.superclass
+          end
+          ::Micro::Entity
         end
     end
 
