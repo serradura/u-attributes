@@ -28,6 +28,9 @@ So, if you change [[1](#with_attribute)] [[2](#with_attributes)] an attribute of
 
 - [Installation](#installation)
 - [Compatibility](#compatibility)
+- [Features at a glance](#features-at-a-glance)
+  - [What you get by default](#what-you-get-by-default)
+  - [Opt-in extensions](#opt-in-extensions)
 - [Usage](#usage)
   - [How to define attributes?](#how-to-define-attributes)
     - [`Micro::Attributes#attributes=`](#microattributesattributes)
@@ -114,6 +117,62 @@ This library is tested (CI matrix) against:
 | Head         |     |     |     |     |     |     | ✅  | ✅   |
 
 > **Note**: The activemodel is an optional dependency, this module [can be enabled](#activemodelvalidation-extension) to validate the attributes.
+
+[⬆️ Back to Top](#table-of-contents-)
+
+# Features at a glance
+
+## What you get by default
+
+Everything in this table is available the moment you `include Micro::Attributes` — no `.with(...)` required.
+
+| Capability | Example | Notes |
+| ---------- | ------- | ----- |
+| Define an attribute | `attribute :name` | Public reader; no setter |
+| Define many at once | `attributes :a, :b, default: 0` | Trailing options apply to every name |
+| Override in a subclass | `attribute! :name, default: 'X'` | Subclass-only |
+| Default value | `attribute :name, default: 'X'` | Static value or `proc { ... }` / `->(v) { ... }` |
+| Required (without strict) | `attribute :name, required: true` | Raises on missing key if `attributes=` is invoked with one |
+| Freeze the value | `attribute :name, freeze: true` | Also `:after_dup`, `:after_clone` |
+| Visibility | `attribute :secret, private: true` | Or `protected: true`; hidden from `#attributes` hash |
+| Layer extensions inline | `with :keys_as_symbol` | Class macro — see [Extensions](#opt-in-extensions) |
+| Block-form nested | `attribute :foo do ... end` | Anonymous inline class; inherits the host's feature mix |
+| Hash → child coercion | `attribute :child, accept: Other` | When `Other` includes `Micro::Attributes`, a hash auto-builds an instance |
+| Deep-error bubble marker | `parent.attributes_errors['child']` | Descendant errors mirror up as `'is invalid'` (requires `accept` to be enabled for the parent so the error hash exists) |
+| Struct-style factory | `User = Micro::Attributes.new { attribute :name }` | Returns a class; preset is `initialize: true, accept: true` |
+
+## Opt-in extensions
+
+Mix any combination via `Micro::Attributes.with(...)` — hash-style and positional-symbol APIs both work and can be combined.
+
+| Extension                   | Hash API                       | Positional API                | What it adds                                                                                                                                                       |
+| --------------------------- | ------------------------------ | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Initialize**              | `initialize: true`             | `:initialize`                 | Auto-generated `new(hash)` constructor + immutable `#with_attribute(s)`                                                                                            |
+| **Initialize (strict)**     | `initialize: :strict`          | (hash only)                   | All attributes without a default become **required**; missing keys raise `ArgumentError`. Implies `Initialize`.                                                    |
+| **Accept**                  | `accept: true`                 | `:accept`                     | `accept:` / `reject:` / `allow_nil:` / `rejection_message:` validation; `#attributes_errors`, `#attributes_errors?`, `#accepted_attributes`, `#rejected_attributes` |
+| **Accept (strict)**         | `accept: :strict`              | (hash only)                   | Any rejection raises `ArgumentError` immediately. Implies `Accept`.                                                                                                |
+| **Diff**                    | `diff: true`                   | `:diff`                       | `#diff_attributes(other)` returns a `Diff::Changes` (`#changed?`, `#differences`, etc.)                                                                            |
+| **Keys as Symbol**          | `keys_as: :symbol`             | `:keys_as_symbol`             | Symbol-keyed storage; disables indifferent access for performance/strictness                                                                                       |
+| **ActiveModel Validations** | `active_model: :validations`   | `:activemodel_validations`    | Mixes `ActiveModel::Validations` (`valid?`, `errors`, `validates :x, presence: true`, the `validates:` / `validate:` attribute options); auto-registers a `__validate_nested_entities__` validator that bubbles **deep** descendant invalidity into `errors`. Requires the `activemodel` gem. |
+
+### Picking a combination
+
+Two equivalent ways to enable Initialize + Accept + Diff + symbol keys:
+
+```ruby
+# Hash style — self-documenting; great when you're enabling several
+include Micro::Attributes.with(
+  initialize: true,
+  accept:     true,
+  diff:       true,
+  keys_as:    :symbol
+)
+
+# Positional style — terser when you're just turning things on
+include Micro::Attributes.with(:initialize, :accept, :diff, :keys_as_symbol)
+```
+
+For strict variants, the hash form is unavoidable: `Micro::Attributes.with(initialize: :strict, accept: :strict)`.
 
 [⬆️ Back to Top](#table-of-contents-)
 
