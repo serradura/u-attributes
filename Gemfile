@@ -7,7 +7,7 @@ gemspec
 
 gem "rake", "~> 13.0"
 
-gem "u-case", "~> 4.5", ">= 4.5.1"
+gem "u-case", "~> 5.7"
 
 group :test do
   gem "logger"

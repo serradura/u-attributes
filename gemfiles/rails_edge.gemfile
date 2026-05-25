@@ -3,12 +3,14 @@
 source "https://rubygems.org"
 
 gem "rake", "~> 13.0"
-gem "u-case", "~> 4.5", ">= 4.5.1"
+gem "u-case", "~> 5.7"
 
 group :test do
+  gem "logger"
+  gem "stringio"
   gem "minitest", "~> 6.0"
-  gem "simplecov", "~> 0.22.0", require: false
   gem "ostruct", "~> 0.6.3"
+  gem "simplecov", "~> 0.22.0", require: false
   gem "activemodel", branch: "main", git: "https://github.com/rails/rails"
 end
 
