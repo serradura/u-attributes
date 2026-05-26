@@ -79,6 +79,7 @@ So, if you change [[1](#with_attribute)] [[2](#with_attributes)] an attribute of
     - [Keys as symbol extension](#keys-as-symbol-extension)
 - [Composition](#composition)
   - [`Micro::Attributes.new`](#microattributesnew)
+    - [Enabling extensions](#enabling-extensions)
   - [Hash-style configuration for `Micro::Attributes.with`](#hash-style-configuration-for-microattributeswith)
   - [Nested attributes via `accept:`](#nested-attributes-via-accept)
   - [Defining nested attributes inline (block form)](#defining-nested-attributes-inline-block-form)
@@ -1270,22 +1271,59 @@ bad.attributes_errors
 #   "name" => "expected to be a kind of String",
 #   "age"  => "expected to be a kind of Numeric"
 # }
+```
 
-# Strict + symbol keys + AM:
-StrictUser = Micro::Attributes.new(
-  initialize: :strict,
-  accept: :strict,
-  keys_as: :symbol,
+### Enabling extensions
+
+The factory accepts every key the [hash-style `Micro::Attributes.with(...)`](#hash-style-configuration-for-microattributeswith) accepts. Drop in any combination:
+
+```ruby
+# Add Diff on top of the preset:
+Counter = Micro::Attributes.new(diff: true) do
+  attribute :n
+end
+
+a = Counter.new(n: 1)
+b = Counter.new(n: 2)
+a.diff_attributes(b).changed?(:n) # true
+
+# Upgrade Initialize and/or Accept to :strict:
+Strict = Micro::Attributes.new(initialize: :strict, accept: :strict) do
+  attribute :n, accept: Integer
+end
+
+Strict.new({})        # ArgumentError: missing keyword: :n
+Strict.new(n: 'x')    # ArgumentError: One or more attributes were rejected. ...
+
+# Symbol-keyed storage:
+Sym = Micro::Attributes.new(keys_as: :symbol) do
+  attribute :n
+end
+Sym.new(n: 1).attributes # { n: 1 }
+
+# ActiveModel:
+Person = Micro::Attributes.new(active_model: :validations) do
+  attribute :name, validates: { presence: true }
+end
+Person.new(name: nil).valid?               # false
+Person.new(name: nil).errors.full_messages # ["Name can't be blank"]
+
+# All together:
+StrictPerson = Micro::Attributes.new(
+  initialize:   :strict,
+  accept:       true,
+  diff:         true,
+  keys_as:      :symbol,
   active_model: :validations
 ) do
   attribute :name, accept: String, validates: { presence: true }
   attribute :age,  accept: Numeric
 end
 
-StrictUser.new(name: 'X') # ArgumentError: missing keyword: :age
+StrictPerson.new(name: 'X') # ArgumentError: missing keyword: :age
 ```
 
-The same options work on `include Micro::Attributes.with(...)` — see [the hash-style configuration](#hash-style-configuration-for-microattributeswith) below.
+Each key is overridable per-call: the preset is `{ initialize: true, accept: true }`, so passing `accept: false` (or `nil`) opts out of `:accept` and the returned class has no `attributes_errors` surface. `initialize:` must resolve to `true` or `:strict` — passing `false` raises, because a factory-built class without a hash constructor is almost always a mistake.
 
 [⬆️ Back to Top](#table-of-contents-)
 
