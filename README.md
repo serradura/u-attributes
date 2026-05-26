@@ -83,6 +83,7 @@ So, if you change [[1](#with_attribute)] [[2](#with_attributes)] an attribute of
   - [Hash-style configuration for `Micro::Attributes.with`](#hash-style-configuration-for-microattributeswith)
   - [Nested attributes via `accept:`](#nested-attributes-via-accept)
   - [Defining nested attributes inline (block form)](#defining-nested-attributes-inline-block-form)
+    - [Per-block extensions](#per-block-extensions)
   - [Deep nesting \& validation bubbling](#deep-nesting--validation-bubbling)
     - [Accept-error bubbling (no ActiveModel needed)](#accept-error-bubbling-no-activemodel-needed)
     - [ActiveModel deep validation](#activemodel-deep-validation)
@@ -1414,6 +1415,39 @@ order.customer.name # 'Rodrigo'
 ```
 
 The inline class uses the host's `Micro::Attributes.with(...)` module, so a `keys_as: :symbol` host yields a symbol-keyed inline child, an `initialize: :strict` host yields a strict inline child, and so on.
+
+### Per-block extensions
+
+The block also accepts the `with(...)` class macro — the same one used to layer features at the top of a class body. Calling it as the first thing inside the block layers **additional** features onto just that inline child, on top of whatever the host already provides:
+
+```ruby
+class Order
+  include Micro::Attributes.with(:initialize, :accept)
+
+  attribute :customer do
+    with diff: true, active_model: :validations
+
+    attribute :name, accept: String, validates: { presence: true }
+  end
+
+  attribute :address do          # ← this one stays minimal
+    attribute :city, accept: String
+  end
+end
+
+order = Order.new(
+  customer: { name: 'Rodrigo' },
+  address:  { city: 'Lisbon' }
+)
+
+order.customer.respond_to?(:diff_attributes) # true   — Diff layered just here
+order.customer.valid?                        # true
+order.address.respond_to?(:diff_attributes)  # false  — sibling block did not bleed across
+```
+
+Sibling blocks are independent — `with(...)` only affects the block it appears in. Positional symbols work too (`with :diff, :keys_as_symbol`), mirroring the [hash-style configuration](#hash-style-configuration-for-microattributeswith) options.
+
+You can only **add** features inside a block, not remove ones the host already enabled. If a specific nested entity needs to opt OUT of an extension the host has, define it as a separate class via [`Micro::Attributes.new(...)`](#microattributesnew) (or `include Micro::Attributes.with(...)`) and reference it through `accept: TheOtherClass` instead of using the block form.
 
 [⬆️ Back to Top](#table-of-contents-)
 

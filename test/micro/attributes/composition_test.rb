@@ -690,6 +690,91 @@ class Micro::Attributes::CompositionTest < Minitest::Test
                      'with-macro layered Accept reaches the inline child too')
   end
 
+  # ---- the `with` class macro INSIDE an `attribute :foo do ... end` block ----
+  #
+  # `with(...)` is a class macro the inline class also extends (via
+  # `include Micro::Attributes`). Calling it inside the block layers
+  # additional features onto JUST that inline child — the host stays
+  # at its declared mix.
+
+  class HostInBlockExtensionMinimal
+    include Micro::Attributes.with(:initialize, :accept)
+
+    attribute :child do
+      with :diff
+      attribute :n
+    end
+  end
+
+  def test_in_block_with_adds_extension_not_present_on_host
+    inline = HostInBlockExtensionMinimal.__attributes_data__['child'][1][1]
+
+    refute(HostInBlockExtensionMinimal.ancestors.any? { |a| a.to_s.include?('Features::Diff') },
+           'host itself does NOT have Diff (sanity)')
+    assert(inline.ancestors.any? { |a| a.to_s.include?('Features::Diff') },
+           'inline class layered Diff via the in-block `with(...)`')
+
+    a = HostInBlockExtensionMinimal.new(child: { n: 1 }).child
+    b = HostInBlockExtensionMinimal.new(child: { n: 2 }).child
+    assert_respond_to(a, :diff_attributes, 'inline child instance gets `#diff_attributes`')
+    assert(a.diff_attributes(b).changed?(:n))
+  end
+
+  class HostInBlockExtensionCombo
+    include Micro::Attributes.with(:initialize, :accept)
+
+    attribute :child do
+      with diff: true, keys_as: :symbol
+      attribute :n
+    end
+  end
+
+  def test_in_block_with_combines_host_inheritance_and_extra_features
+    inline = HostInBlockExtensionCombo.__attributes_data__['child'][1][1]
+
+    # Host inheritance: Accept (from the host's `with(...)`) reaches the inline.
+    assert(inline.ancestors.any? { |a| a.to_s == 'Micro::Attributes::Features::Accept' },
+           'inline still inherits Accept from the host (host-inheritance path)')
+
+    # In-block layering: Diff + KeysAsSymbol added only here.
+    assert(inline.ancestors.any? { |a| a.to_s.include?('Features::Diff') },
+           'in-block `with(...)` adds Diff')
+    assert(inline.ancestors.any? { |a| a.to_s.include?('KeysAsSymbol') },
+           'in-block `with(...)` adds KeysAsSymbol — keys flip to symbols on the inline only')
+
+    child = HostInBlockExtensionCombo.new(child: { n: 1 }).child
+    assert(child.attributes.key?(:n), 'inline uses symbol keys')
+    refute(child.attributes.key?('n'))
+  end
+
+  class HostInBlockExtensionSiblings
+    include Micro::Attributes.with(:initialize, :accept)
+
+    attribute :enhanced do
+      with :diff
+      attribute :n
+    end
+
+    attribute :plain do
+      attribute :n
+    end
+  end
+
+  def test_in_block_with_is_scoped_to_its_own_inline_class
+    enhanced_inline = HostInBlockExtensionSiblings.__attributes_data__['enhanced'][1][1]
+    plain_inline    = HostInBlockExtensionSiblings.__attributes_data__['plain'][1][1]
+
+    assert(enhanced_inline.ancestors.any? { |a| a.to_s.include?('Features::Diff') },
+           '`enhanced` inline has Diff (it asked for it)')
+    refute(plain_inline.ancestors.any? { |a| a.to_s.include?('Features::Diff') },
+           '`plain` inline does NOT have Diff — sibling block does not bleed across')
+
+    # Runtime check the same way: only the enhanced child responds to `#diff_attributes`.
+    obj = HostInBlockExtensionSiblings.new(enhanced: { n: 1 }, plain: { n: 1 })
+    assert_respond_to(obj.enhanced, :diff_attributes)
+    refute_respond_to(obj.plain,    :diff_attributes)
+  end
+
   # ---- Regression M1: anonymous host class — inline label resolves lazily ----
 
   def test_inline_label_resolves_after_constant_assignment
