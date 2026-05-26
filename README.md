@@ -55,6 +55,22 @@ Person = Micro::Attributes.new do
 end
 ```
 
+Need nested attributes? Define them inline with a [block](#defining-nested-attributes-inline-block-form) — child blocks inherit the host's feature mix and [compose to any depth](#deep-nesting--validation-bubbling):
+
+```ruby
+Order = Micro::Attributes.new do
+  attribute :id, accept: Integer
+
+  attribute :customer do
+    attribute :name,  accept: String
+    attribute :email, accept: String
+  end
+end
+
+order = Order.new(id: 1, customer: { name: 'Rodrigo', email: 'rodrigo@example.com' })
+order.customer.name # "Rodrigo"
+```
+
 See [Feature overview](#feature-overview) for what else the gem can do.
 
 ## Documentation <!-- omit in toc -->
