@@ -75,7 +75,6 @@ So, if you change [[1](#with_attribute)] [[2](#with_attributes)] an attribute of
 - [Composition](#composition)
   - [`Micro::Attributes.new`](#microattributesnew)
     - [Enabling extensions](#enabling-extensions)
-  - [Hash-style configuration for `Micro::Attributes.with`](#hash-style-configuration-for-microattributeswith)
   - [Nested attributes via `accept:`](#nested-attributes-via-accept)
   - [Defining nested attributes inline (block form)](#defining-nested-attributes-inline-block-form)
     - [Per-block extensions](#per-block-extensions)
@@ -788,7 +787,12 @@ Micro::Attributes.with(
 include Micro::Attributes.with(:initialize, :accept, :diff, :keys_as_symbol)
 ```
 
-For strict variants, the hash form is unavoidable: `Micro::Attributes.with(initialize: :strict, accept: :strict)`.
+Rules:
+
+- Omit a key (or pass `false` / `nil`) to disable a feature.
+- `keys_as: :string` and `keys_as: :indifferent` are no-ops (the default); only `:symbol` activates `KeysAsSymbol`.
+- The two forms can be mixed in a single call: `Micro::Attributes.with(:initialize, accept: :strict)`.
+- Strict variants are hash-only: `Micro::Attributes.with(initialize: :strict, accept: :strict)`.
 
 Calling `with` with no arguments raises:
 
@@ -808,6 +812,8 @@ Micro::Attributes.with(:accept, :activemodel_validations, :diff, :keys_as_symbol
 ```
 
 Use `Micro::Attributes.without(:feature, ...)` to exclude features from the full set (e.g. `Micro::Attributes.without(:diff)` loads everything except Diff).
+
+The same `with(...)` is also a class macro — `class X; include Micro::Attributes.with(:initialize); with diff: true; end` layers more features on top of an existing include. It's also callable inside an `attribute :foo do ... end` block to layer features onto just that inline child; see [Per-block extensions](#per-block-extensions).
 
 [⬆️ Back to Top](#table-of-contents-)
 
@@ -954,10 +960,13 @@ class User::SignUpParams
 
   TrimString = ->(value) { String(value).strip }
 
-  attribute  :email,                                              default: TrimString,
-             accept: ->(s) { s =~ /\A.+@.+\..+\z/ }, freeze: :after_dup
-  attributes :password, :password_confirmation, default: TrimString,
-             reject: :empty?, private: true
+  attribute  :email, accept: ->(s) { s =~ /\A.+@.+\..+\z/ },
+                     default: TrimString,
+                     freeze: :after_dup
+
+  attributes :password, :password_confirmation, reject: :empty?
+                                                default: TrimString,
+                                                private: true
 
   def password_digest
     Digest::SHA256.hexdigest(password) if password == password_confirmation
@@ -1219,7 +1228,7 @@ bad.attributes_errors
 
 ### Enabling extensions
 
-The factory accepts every key the [hash-style `Micro::Attributes.with(...)`](#hash-style-configuration-for-microattributeswith) accepts. Drop in any combination:
+The factory accepts every key the [hash-style `Micro::Attributes.with(...)`](#picking-a-combination) accepts. Drop in any combination:
 
 ```ruby
 # Add Diff on top of the preset:
@@ -1268,43 +1277,6 @@ StrictPerson.new(name: 'X') # ArgumentError: missing keyword: :age
 ```
 
 Each key is overridable per-call: the preset is `{ initialize: true, accept: true }`, so passing `accept: false` (or `nil`) opts out of `:accept` and the returned class has no `attributes_errors` surface. `initialize:` must resolve to `true` or `:strict` — passing `false` raises, because a factory-built class without a hash constructor is almost always a mistake.
-
-[⬆️ Back to Top](#table-of-contents-)
-
-## Hash-style configuration for `Micro::Attributes.with`
-
-In addition to the positional symbol API ([`Micro::Attributes.with(:initialize, :accept)`](#picking-a-combination)), `with` accepts a single hash describing the whole feature mix:
-
-```ruby
-Micro::Attributes.with(
-  initialize:   true | :strict,
-  accept:       true | :strict,
-  diff:         true,
-  keys_as:      :symbol | :string | :indifferent,
-  active_model: :validations
-)
-```
-
-- Omit a key (or pass `false` / `nil`) to disable a feature.
-- `keys_as: :string` and `keys_as: :indifferent` are no-ops (that's the default behavior); only `:symbol` activates `KeysAsSymbol`.
-- The positional API is fully supported — both forms can be mixed.
-
-```ruby
-class User
-  include Micro::Attributes.with(initialize: true, accept: true, keys_as: :symbol)
-
-  attribute :name, accept: String
-end
-
-# Layer extra features inline with the `with` class macro:
-class StrictUser
-  include Micro::Attributes.with(initialize: :strict, accept: :strict)
-  with active_model: :validations
-
-  attribute :name, accept: String, validates: { presence: true }
-  attribute :age,  accept: Numeric
-end
-```
 
 [⬆️ Back to Top](#table-of-contents-)
 
@@ -1388,7 +1360,7 @@ order.customer.valid?                        # true
 order.address.respond_to?(:diff_attributes)  # false  — sibling block did not bleed across
 ```
 
-Sibling blocks are independent — `with(...)` only affects the block it appears in. Positional symbols work too (`with :diff, :keys_as_symbol`), mirroring the [hash-style configuration](#hash-style-configuration-for-microattributeswith) options.
+Sibling blocks are independent — `with(...)` only affects the block it appears in. Positional symbols work too (`with :diff, :keys_as_symbol`), mirroring the [hash-style options](#picking-a-combination).
 
 You can only **add** features inside a block, not remove ones the host already enabled. If a specific nested entity needs to opt OUT of an extension the host has, define it as a separate class via [`Micro::Attributes.new(...)`](#microattributesnew) (or `include Micro::Attributes.with(...)`) and reference it through `accept: TheOtherClass` instead of using the block form.
 
