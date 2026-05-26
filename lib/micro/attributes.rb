@@ -185,20 +185,6 @@ module Micro
         @__attributes ||= {}
       end
 
-      # Build a fresh hash containing every declared attribute (public,
-      # private, AND protected) by reading their ivars directly. Used by
-      # `Initialize#with_attributes` for round-tripping — the public
-      # `#attributes` hash intentionally excludes private/protected
-      # values, but `with_attribute(s)` must rebuild the new instance
-      # with the full attribute set so private/protected values aren't
-      # silently reset to defaults.
-      def __all_attributes
-        self.class.__attributes_data__.each_with_object({}) do |(name, _), memo|
-          ivar = "@#{name}"
-          memo[name] = instance_variable_get(ivar) if instance_variable_defined?(ivar)
-        end
-      end
-
       FetchValueToAssign = -> (init_hash, value, attribute_data, keep_proc = false) do
         default = attribute_data[0]
 

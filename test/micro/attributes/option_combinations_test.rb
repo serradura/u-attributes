@@ -197,7 +197,7 @@ class Micro::Attributes::OptionCombinationsTest < Minitest::Test
     end
   end
 
-  def test_private_attribute_hidden_from_attributes_hash_but_visible_in_introspection
+  def test_private_attribute_visibility_in_attributes_hash_depends_on_accept
     CELLS.each do |cell|
       klass = self.class.cell_klass(cell[:init], cell[:accept], cell[:keys]) do
         attribute :public_one, accept: String
@@ -206,11 +206,22 @@ class Micro::Attributes::OptionCombinationsTest < Minitest::Test
 
       obj = klass.new(public_one: 'p', secret: 'sssh')
 
-      # `#attributes` only includes public attrs
-      refute(obj.attributes.key?(key_for(cell, :secret)), "hidden from #attributes (#{cell[:label]})")
       assert(obj.attributes.key?(key_for(cell, :public_one)), "public visible (#{cell[:label]})")
 
-      # `#defined_attributes` includes all
+      # `#attributes` shape depends on whether Accept is in the mix:
+      #   - Accept (base or strict): writes EVERY attr, regardless of visibility
+      #     (3.0.x behavior; the PR briefly hid private but it was reverted).
+      #   - No Accept: the base `___attribute_assign` writes only public attrs,
+      #     so private stays out.
+      if cell[:accept] == :none
+        refute(obj.attributes.key?(key_for(cell, :secret)),
+               "hidden from #attributes (no Accept) (#{cell[:label]})")
+      else
+        assert(obj.attributes.key?(key_for(cell, :secret)),
+               "Accept writes private into #attributes (#{cell[:label]})")
+      end
+
+      # `#defined_attributes` introspection always includes all visibilities.
       assert_includes(obj.defined_attributes, key_for(cell, :secret), "in defined (#{cell[:label]})")
       assert_includes(obj.defined_attributes(:by_visibility)[:private], key_for(cell, :secret), cell[:label])
     end
@@ -235,11 +246,12 @@ class Micro::Attributes::OptionCombinationsTest < Minitest::Test
     end
   end
 
-  # Regression for AC2: the Accept fix gates `__attributes[key] = value` on
-  # `attribute_data[3] == :public`. A consequence is that `Initialize#with_attributes`
-  # (which is `self.class.new(attributes.merge(arg))`) carries ONLY public attrs
-  # across the round-trip. Pin this so a future "undo the gate" doesn't silently
-  # restore the round-trip but break the visibility contract.
+  # 3.0.x behavior preserved: when Accept is in the feature mix, every
+  # attribute (including private/protected) appears in `#attributes`, so
+  # `with_attribute(s)` round-trips them via the standard
+  # `attributes.merge(arg)` and `Diff::Changes` sees them too. The PR
+  # experimented with gating Accept's write on visibility (G4) but that
+  # compromised pre-existing behavior; reverted.
   class AcceptPrivateRoundTrip
     include Micro::Attributes.with(:initialize, :accept, :diff)
 
@@ -247,33 +259,26 @@ class Micro::Attributes::OptionCombinationsTest < Minitest::Test
     attribute :secret, accept: String, default: 'sssh', private: true
   end
 
-  def test_with_attribute_round_trip_under_accept_carries_only_public_attrs
-    obj = AcceptPrivateRoundTrip.new({})
+  def test_with_attribute_round_trip_under_accept_preserves_private_value
+    obj = AcceptPrivateRoundTrip.new(secret: 'real-value')
 
-    # Original obj: secret IS set on the instance (private reader works
-    # internally), but it's not in the public attributes hash.
-    refute(obj.attributes.key?('secret'),
-           'private attr excluded from public attributes hash')
+    assert(obj.attributes.key?('secret'),
+           'Accept includes private attr in #attributes (3.0.x)')
+    assert_equal('real-value', obj.attributes['secret'])
 
-    # with_attribute round-trips through `attributes.merge(...)`, so secret
-    # never makes it to the new instance's init hash; it falls back to its
-    # default 'sssh'.
     copy = obj.with_attribute(:name, 'updated')
     assert_equal('updated', copy.name)
-    assert_equal('sssh', copy.send(:secret),
-                 'private attr reverts to default after round-trip')
+    assert_equal('real-value', copy.send(:secret),
+                 'private attr preserved across with_attribute round-trip (3.0.x)')
   end
 
-  def test_diff_under_accept_only_sees_public_attrs
-    a = AcceptPrivateRoundTrip.new({})
-    b = a.with_attribute(:name, 'changed')
+  def test_diff_under_accept_sees_private_attr_changes
+    a = AcceptPrivateRoundTrip.new(secret: 'a')
+    b = a.with_attribute(:secret, 'b')
 
-    # name changed → diff sees it
-    # secret cannot be differentiated through the public surface
     diff = a.diff_attributes(b)
-    assert(diff.changed?('name'))
-    refute(diff.changed?('secret'),
-           'private attr changes are not surfaced through diff_attributes')
+    assert(diff.changed?('secret'),
+           'Diff::Changes sees private attr changes when Accept is in the mix (3.0.x)')
   end
 
   # ---------- accept: allow_nil: ------------------------------------------

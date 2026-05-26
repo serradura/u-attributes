@@ -31,7 +31,6 @@ module Micro::Attributes
 
         def __call_before_attributes_assign
           @__attributes_errors = {}
-          @__hidden_validation_failed = false
         end
 
         KeepProc = -> validation_data { validation_data[0] == :accept && validation_data[1] == Proc }
@@ -41,35 +40,17 @@ module Micro::Attributes
 
           value_to_assign = FetchValueToAssign.(init_hash, init_hash[key], attribute_data, KeepProc.(validation_data))
 
-          value = instance_variable_set("@#{key}", value_to_assign)
+          value = __attributes[key] = instance_variable_set("@#{key}", value_to_assign)
 
-          # Match the base `___attribute_assign`: private/protected attributes
-          # set their ivar but don't appear in the public `#attributes`
-          # hash. Accept-validation still runs for them — but failures
-          # are flagged via `@__hidden_validation_failed` instead of
-          # being added to `@__attributes_errors`, so the attribute NAME
-          # doesn't leak through the public error surface while Strict
-          # mode (`Accept::Strict`) still gets to raise on bad data.
-          if attribute_data[3] == :public
-            __attributes[key] = value
-            __attribute_accept_or_reject(key, value, validation_data, :public) if !validation_data.empty?
-          else
-            __attribute_accept_or_reject(key, value, validation_data, :hidden) if !validation_data.empty?
-          end
+          __attribute_accept_or_reject(key, value, validation_data) if !validation_data.empty?
         end
 
-        def __attribute_accept_or_reject(key, value, validation_data, visibility)
+        def __attribute_accept_or_reject(key, value, validation_data)
           context = Context.with(key, value, validation_data)
 
           error_msg = context.rejection_message(Validate.call(context))
 
-          return unless error_msg
-
-          if visibility == :public
-            @__attributes_errors[key] = error_msg
-          else
-            @__hidden_validation_failed = true
-          end
+          @__attributes_errors[key] = error_msg if error_msg
         end
 
         Context = Struct.new(:key, :value, :validation, :expected, :allow_nil, :rejection) do

@@ -626,23 +626,24 @@ class Micro::Attributes::CompositionTest < Minitest::Test
     end
   end
 
-  # Round-2 regression for Accept's reject path: private/protected
-  # attribute names must NOT leak through `attributes_errors` even when
-  # Accept's own reject (not the Coercion bubble) is what would write.
+  # Pre-3.1 behavior preserved: `Features::Accept` writes private/
+  # protected attribute reject errors into `attributes_errors` just like
+  # public ones. (The PR experimented with hiding them — see G4 — but
+  # that compromised pre-existing behavior; the hide was reverted.)
+  # The NEW Coercion bubble path (Composition feature) still gates on
+  # visibility so the new surface doesn't expand the visibility leak.
   class PrivateAcceptHost
     include Micro::Attributes.with(:initialize, :accept)
     attribute :secret, accept: String, private: true
   end
 
-  def test_accept_reject_does_not_leak_private_attr_key
+  def test_accept_reject_for_private_attr_preserves_3_0_x_behavior
     obj = PrivateAcceptHost.new(secret: 42)
 
-    refute(obj.attributes_errors.key?('secret'),
-           'Accept reject must not leak private attr key (string)')
-    refute(obj.attributes_errors.key?(:secret),
-           'Accept reject must not leak private attr key (symbol)')
-    refute_predicate(obj, :attributes_errors?,
-                     'private attr never contributes to attributes_errors')
+    assert_predicate(obj, :attributes_errors?,
+                     'private attr accept-reject still populates attributes_errors (3.0.x)')
+    assert_match(/kind of String/, obj.attributes_errors['secret'],
+                 'private attr key visible in attributes_errors (3.0.x)')
   end
 
   # ---- Regression F1: layered with(...) reaches inline child ----
@@ -931,10 +932,12 @@ class Micro::Attributes::CompositionTest < Minitest::Test
       StrictPrivateHost.new(name: 'X', secret: 42)
     end
     assert_match(/One or more attributes were rejected/, err.message)
-    assert_match(/private or protected attribute failed/, err.message,
-                 'raise message notes hidden failure without leaking the name')
-    refute_match(/secret/, err.message,
-                 'private attribute name must NOT appear in raise message')
+    # 3.0.x behavior preserved: strict raise message includes the attr
+    # name for any failed accept-validation, regardless of visibility.
+    # The PR experimented with hiding private names (G4) but that
+    # compromised pre-existing behavior; reverted.
+    assert_match(/"secret" expected to be a kind of String/, err.message,
+                 '3.0.x: private attr name appears in strict raise message')
   end
 
   def test_strict_accept_passes_when_private_validation_succeeds
@@ -1024,10 +1027,10 @@ class Micro::Attributes::CompositionTest < Minitest::Test
                  'child default still relaxes parent strict required')
   end
 
-  # B2: `with_attribute` / `with_attributes` must round-trip private and
-  # protected values. The Accept-vs-base alignment cut them out of the
-  # public `#attributes` hash; the round-trip now reads ivars directly
-  # via `__all_attributes` so private/protected values survive.
+  # 3.0.x behavior preserved: `#attributes` includes private/protected
+  # values when Accept is in the feature mix (Accept writes them all
+  # unconditionally). `with_attribute(s)` round-trips them via the
+  # standard `attributes.merge(arg)` path.
   class PrivateRoundTripHost
     include Micro::Attributes.with(:initialize, :accept)
     attribute :name
@@ -1056,13 +1059,11 @@ class Micro::Attributes::CompositionTest < Minitest::Test
     assert_equal('s', b.send(:secret))
   end
 
-  # B2 corollary: the public `#attributes` hash STILL filters private/
-  # protected — only `with_attribute(s)` sees the full set.
-  def test_public_attributes_still_filters_private
+  def test_accept_host_attributes_includes_private_values
     obj = PrivateRoundTripHost.new(name: 'a', secret: 's')
 
-    assert_equal({ 'name' => 'a' }, obj.attributes,
-                 'public attributes hash remains public-only')
+    assert_equal({ 'name' => 'a', 'secret' => 's' }, obj.attributes,
+                 '3.0.x: Accept includes private/protected values in #attributes')
   end
 
   # B4: Coercion catches `ArgumentError` from `klass.new(value)` and lets
