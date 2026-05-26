@@ -81,6 +81,37 @@ See [Feature overview](#feature-overview) for what else the gem can do.
 | 3.1.0      | https://github.com/serradura/u-attributes/blob/v3.x/README.md |
 | 2.8.0      | https://github.com/serradura/u-attributes/blob/v2.x/README.md |
 
+## A note on syntax <!-- omit in toc -->
+
+Examples in this README use two modern Ruby features. The gem itself supports Ruby `>= 2.7`, so if you're on an older runtime, here's how to read them back to the classic form.
+
+**[`it` block parameter](https://docs.ruby-lang.org/en/3.4/syntax/methods_rdoc.html#label-Numbered+parameters)** — Ruby 3.4+
+
+```ruby
+# Modern (Ruby >= 3.4) — what you'll see throughout this README
+attribute :age,  default: -> { it&.to_i }
+attribute :name, accept:  -> { it.is_a?(String) && !it.empty? }
+
+# Classic — equivalent on every supported Ruby
+attribute :age,  default: ->(value) { value&.to_i }
+attribute :name, accept:  ->(value) { value.is_a?(String) && !value.empty? }
+```
+
+**[Hash value omission](https://docs.ruby-lang.org/en/3.1/syntax/literals_rdoc.html#label-Hash+Literals)** — Ruby 3.1+
+
+When a hash key matches an in-scope local variable (or method) name, you can drop the value:
+
+```ruby
+name = 'Ada'
+age  = 21
+
+# Modern (Ruby >= 3.1)
+Person.new(name:, age:)
+
+# Classic — equivalent on every supported Ruby
+Person.new(name: name, age: age)
+```
+
 # Table of contents <!-- omit in toc -->
 
 - [Installation](#installation)
@@ -183,7 +214,7 @@ Everything in this table is available the moment you `include Micro::Attributes`
 | Define an attribute       | `attribute :name`                                  | Public reader; no setter                                                                                  |
 | Define many at once       | `attributes :a, :b, default: 0`                    | Trailing options apply to every name                                                                      |
 | Override in a subclass    | `attribute! :name, default: 'X'`                   | Subclass-only                                                                                             |
-| Default value             | `attribute :name, default: 'X'`                    | Static value or `proc { ... }` / `->(v) { ... }`                                                          |
+| Default value             | `attribute :name, default: 'X'`                    | Static value or `proc { it... }` / `-> { it... }`                                                         |
 | Required (without strict) | `attribute :name, required: true`                  | Raises on missing key if `attributes=` is invoked with one                                                |
 | Freeze the value          | `attribute :name, freeze: true`                    | Also `:after_dup`, `:after_clone`                                                                         |
 | Visibility                | `attribute :secret, private: true`                 | Or `protected: true`; hidden from `#attributes` hash                                                      |
@@ -283,8 +314,8 @@ Pass `default:` with either a static value or a callable.
 class Person
   include Micro::Attributes.with(:initialize)
 
-  attribute :age,  default: -> v { v&.to_i }
-  attribute :name, default: ->(name) { String(name || 'John Doe').strip }
+  attribute :age,  default: -> { it&.to_i }
+  attribute :name, default: -> { String(it || 'John Doe').strip }
 end
 ```
 
@@ -319,7 +350,7 @@ require 'digest'
 class User::SignUpParams
   include Micro::Attributes.with(:initialize)
 
-  TrimString = ->(value) { String(value).strip }
+  TrimString = -> { String(it).strip }
 
   attribute :email, default: TrimString
 
@@ -606,8 +637,8 @@ person.attribute('age')        # 20
 person.attribute(:first_name)  # "John"
 person.attribute('foo')        # nil
 
-person.attribute('age') { |value| puts value } # prints 20
-person.attribute('foo') { |value| puts value } # nothing — name doesn't exist
+person.attribute('age') { puts it } # prints 20
+person.attribute('foo') { puts it } # nothing — name doesn't exist
 ```
 
 `#attribute!(name)` does the same but raises on an unknown name:
@@ -685,7 +716,7 @@ class User
   include Micro::Attributes.with(:initialize, :accept)
 
   attribute :age,   accept: Integer, allow_nil: true
-  attribute :name,  accept: -> v { v.is_a?(String) && !v.empty? }, default: 'John Doe'
+  attribute :name,  accept: -> { it.is_a?(String) && !it.empty? }, default: 'John Doe'
   attribute :email, accept: :present?
 end
 
@@ -717,7 +748,7 @@ attribute :name, accept: :present?    # "expected to be present?"
 attribute :name, reject: :empty?      # "expected to not be empty?"
 attribute :name, accept: String       # "expected to be a kind of String"
 attribute :name, reject: String       # "expected to not be a kind of String"
-attribute :name, accept: ->(v) { v }  # "is invalid"
+attribute :name, accept: -> { it } # "is invalid"
 ```
 
 ### `allow_nil:` option
@@ -745,7 +776,7 @@ class User
   include Micro::Attributes.with(:initialize, :accept)
 
   attribute :name, accept: String,  rejection_message: 'must be a string'
-  attribute :age,  accept: Integer, rejection_message: ->(key) { "#{key} must be an integer" }
+  attribute :age,  accept: Integer, rejection_message: -> { "#{it} must be an integer" }
 end
 
 User.new(name: 1, age: 'x').attributes_errors
@@ -761,7 +792,7 @@ class FilledString
   end
 
   def rejection_message
-    ->(key) { "#{key} can't be an empty string" }
+    -> { "#{it} can't be an empty string" }
   end
 end
 
@@ -781,7 +812,7 @@ class User
   include Micro::Attributes.with(initialize: :strict, accept: :strict)
 
   attribute :age,  accept: Integer
-  attribute :name, accept: ->(v) { v.is_a?(String) && !v.empty? }, default: 'John doe'
+  attribute :name, accept: -> { it.is_a?(String) && !it.empty? }, default: 'John doe'
 end
 
 User.new(age: 'x', name: nil)
@@ -803,9 +834,9 @@ require 'digest'
 class User::SignUpParams
   include Micro::Attributes.with(:initialize, accept: :strict)
 
-  TrimString = ->(value) { String(value).strip }
+  TrimString = -> { String(it).strip }
 
-  attribute  :email, accept: ->(s) { s =~ /\A.+@.+\..+\z/ },
+  attribute  :email, accept: -> { it =~ /\A.+@.+\..+\z/ },
                      default: TrimString,
                      freeze: :after_dup
 
