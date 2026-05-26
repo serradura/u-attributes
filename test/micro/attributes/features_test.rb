@@ -50,6 +50,20 @@ class Micro::Attributes::FeaturesTest < Minitest::Test
     ) { Micro::Attributes.with(initialize: :strict) }
   end
 
+  def test_with_StrictInitialize_StrictAccept_via_multi_key_hash
+    check_micro_attributes_features(
+      assert: [Features::Initialize, Features::Initialize::Strict, Features::Accept, Features::Accept::Strict],
+      refute: [Features::Diff, Features::ActiveModelValidations, Features::KeysAsSymbol]
+    ) { Micro::Attributes.with(initialize: :strict, accept: :strict) }
+  end
+
+  def test_with_KeysAsSym_and_StrictInitialize_StrictAccept_via_multi_key_hash
+    check_micro_attributes_features(
+      assert: [Features::Initialize, Features::Initialize::Strict, Features::Accept, Features::Accept::Strict, Features::KeysAsSymbol],
+      refute: [Features::Diff, Features::ActiveModelValidations]
+    ) { Micro::Attributes.with(:keys_as_symbol, initialize: :strict, accept: :strict) }
+  end
+
   def test_with_KeysAsSym
     check_micro_attributes_features(
       assert: [Features::KeysAsSymbol],
@@ -235,5 +249,29 @@ class Micro::Attributes::FeaturesTest < Minitest::Test
     # --
 
     assert_equal(Micro::Attributes.without(:keys_as_symbol, initialize: :strict), With::AcceptStrict_ActiveModelValidations_Diff_Initialize)
+  end
+
+  # Regression for F3: pre-3.1, `without(initialize: :strict, accept: :strict)`
+  # silently dropped one of the two strict keys (only :accept won because of
+  # short-circuit in `fetch_key`). Post-3.1, multi-key strict hashes are
+  # expanded by `split_strict_hash` so BOTH strict variants are excluded.
+  # Pre-3.1 returned `Accept_ActiveModelValidations_Diff_Initialize_InitializeStrict_KeysAsSymbol`
+  # (only AcceptStrict gone); post-3.1 returns the module without either
+  # strict variant.
+  def test_without_multi_key_strict_hash_excludes_both_strict_variants
+    assert_equal(
+      With::Accept_ActiveModelValidations_Diff_Initialize_KeysAsSymbol,
+      Micro::Attributes.without(initialize: :strict, accept: :strict)
+    )
+  end
+
+  def test_with_multi_key_strict_hash_includes_both_strict_variants_and_their_bases
+    # Symmetric assertion for `with`: this used to be silently single-feature.
+    klass = Class.new { include Micro::Attributes.with(initialize: :strict, accept: :strict) }
+
+    assert_includes(klass.ancestors, Features::Initialize)
+    assert_includes(klass.ancestors, Features::Initialize::Strict)
+    assert_includes(klass.ancestors, Features::Accept)
+    assert_includes(klass.ancestors, Features::Accept::Strict)
   end
 end

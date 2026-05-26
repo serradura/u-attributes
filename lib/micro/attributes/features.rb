@@ -106,11 +106,78 @@ module Micro
         ].join
 
         def self.fetch_keys(args)
-          keys = Array(args).dup.map { |name| fetch_key(name) }
+          keys = Array(args).flat_map { |name| split_strict_hash(name) }.map { |name| fetch_key(name) }
 
           raise ArgumentError, INVALID_NAME if keys.empty? || !(keys - KEYS).empty?
 
           yield(keys)
+        end
+
+        # Normalize a Hash arg passed to `Micro::Attributes.with(...)` into
+        # the per-entry form that `fetch_key` consumes.
+        #
+        # Handles BOTH:
+        #
+        # - The legacy single-key strict form (`{initialize: :strict}`,
+        #   `{accept: :strict}`) — preserved as-is, returned in a single-key
+        #   hash so the existing `fetch_key` branch matches it.
+        # - The new self-documenting hash API:
+        #
+        #     Micro::Attributes.with(
+        #       initialize: true | :strict,
+        #       accept:     true | :strict,
+        #       diff:       true,
+        #       keys_as:    :symbol | :string | :indifferent,
+        #       active_model: :validations
+        #     )
+        #
+        #   Each entry expands into the corresponding legacy feature symbol
+        #   (or single-key strict hash). `false`/`nil`/the no-op variants
+        #   for `keys_as` (`:string`/`:indifferent`) expand to nothing, so
+        #   "omit a key = feature off" reads naturally.
+        def self.split_strict_hash(arg)
+          return [arg] unless arg.is_a?(Hash)
+
+          arg.flat_map { |key, value| expand_hash_entry(key, value) }
+        end
+
+        def self.expand_hash_entry(key, value)
+          case key
+          when :initialize
+            case value
+            when true    then [:initialize]
+            when :strict then [{ initialize: :strict }]
+            when false, nil then []
+            else [{ key => value }]
+            end
+          when :accept
+            case value
+            when true    then [:accept]
+            when :strict then [{ accept: :strict }]
+            when false, nil then []
+            else [{ key => value }]
+            end
+          when :diff
+            case value
+            when true       then [:diff]
+            when false, nil then []
+            else [{ key => value }]
+            end
+          when :keys_as
+            case value
+            when :symbol                                  then [:keys_as_symbol]
+            when :string, :indifferent, nil, false        then []
+            else [{ key => value }]
+            end
+          when :active_model
+            case value
+            when :validations then [:activemodel_validations]
+            when nil, false   then []
+            else [{ key => value }]
+            end
+          else
+            [{ key => value }]
+          end
         end
 
         def self.remove_base_if_has_strict(keys)

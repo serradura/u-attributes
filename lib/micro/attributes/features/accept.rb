@@ -35,7 +35,7 @@ module Micro::Attributes
 
         KeepProc = -> validation_data { validation_data[0] == :accept && validation_data[1] == Proc }
 
-        def __attribute_assign(key, init_hash, attribute_data)
+        def ___attribute_assign(key, init_hash, attribute_data)
           validation_data = attribute_data[1]
 
           value_to_assign = FetchValueToAssign.(init_hash, init_hash[key], attribute_data, KeepProc.(validation_data))

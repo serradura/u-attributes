@@ -8,15 +8,19 @@ module Micro
     require 'micro/attributes/utils'
     require 'micro/attributes/diff'
     require 'micro/attributes/macros'
+    require 'micro/attributes/composition'
     require 'micro/attributes/features'
 
     def self.included(base)
       base.extend(::Micro::Attributes.const_get(:Macros))
+      base.send(:prepend, ::Micro::Attributes::Composition::Coercion)
+      base.send(:include, ::Micro::Attributes::Composition::Instance)
 
       base.class_eval do
         private_class_method :__attributes, :__attribute_reader
         private_class_method :__attribute_assign, :__attributes_groups
         private_class_method :__attributes_required_add, :__attributes_data_to_assign
+        private_class_method :__attribute_reapply_visibility
       end
 
       def base.inherited(subclass)
@@ -36,6 +40,64 @@ module Micro
 
     def self.with_all_features
       Features.all
+    end
+
+    # `Struct.new`-style class factory. Returns a fresh class that includes
+    # `Micro::Attributes.with(...)` with the requested features (merged on
+    # top of the default preset `{ initialize: true, accept: true }`).
+    # The block (if given) is `class_eval`d on the new class so attributes
+    # can be declared inline.
+    #
+    #   User = Micro::Attributes.new do
+    #     attribute :name, accept: String
+    #   end
+    #
+    #   StrictUser = Micro::Attributes.new(initialize: :strict, accept: :strict) do
+    #     attribute :name, accept: String
+    #     attribute :age,  accept: Numeric
+    #   end
+    #
+    # The preset is overridable per-key — pass `initialize: false` to opt
+    # out, or `initialize: :strict` to upgrade. Use the hash API only
+    # (positional symbols are intentionally not accepted here so the
+    # "preset + override" semantics stay unambiguous).
+    NEW_DEFAULTS = { initialize: true, accept: true }.freeze
+    private_constant :NEW_DEFAULTS
+
+    def self.new(options = {}, &block)
+      raise ArgumentError, 'options must be a Hash' unless options.is_a?(Hash)
+
+      effective = NEW_DEFAULTS.merge(options)
+
+      # `:initialize` must resolve to one of the allowed "on" values.
+      # Catches `false`, `nil`, garbage values like `'wrong'`, etc. —
+      # without it the returned class has no hash constructor and the
+      # next `klass.new(hash)` raises an opaque `ArgumentError` from
+      # `Object#initialize`.
+      unless [true, :strict].include?(effective[:initialize])
+        raise ArgumentError,
+              '`Micro::Attributes.new` requires the :initialize feature ' \
+              '(omit the key or pass `true` / `:strict`)'
+      end
+
+      klass = Class.new
+      klass.send(:include, with(effective))
+      klass.class_eval(&block) if block
+
+      # ActiveModel-aware naming for the anonymous factory class. Without
+      # this, the first call to `errors.full_messages` raises "Class name
+      # cannot be blank" because AM's `model_name` is invoked on a still-
+      # anonymous class (the user may never assign the result to a
+      # constant). `self.name` resolves lazily — Ruby fills it in if/when
+      # the constant is assigned later. Mirrors the inline-child fix in
+      # `Macros#__micro_attributes_build_inline_class__`.
+      if defined?(::ActiveModel::Validations) && klass.include?(::ActiveModel::Validations)
+        klass.define_singleton_method(:model_name) do
+          ::ActiveModel::Name.new(self, nil, self.name || self.inspect)
+        end
+      end
+
+      klass
     end
 
     def attribute?(name, include_all = false)
@@ -147,13 +209,21 @@ module Micro
 
       def __attributes_assign(hash)
         self.class.__attributes_data__.each do |name, attribute_data|
-          __attribute_assign(name, hash, attribute_data) if attribute?(name, true)
+          ___attribute_assign(name, hash, attribute_data) if attribute?(name, true)
         end
 
         __attributes.freeze
       end
 
-      def __attribute_assign(name, init_hash, attribute_data)
+      # Renamed from `__attribute_assign` (3 underscores) to put the per-attribute
+      # instance-level assignment hook deeper into the "internal" naming convention
+      # than the class-method macro of the same prior name in `Macros`. Coercion is
+      # prepended to every host class, so this method's MRO position is now ahead of
+      # the host class itself — a user who defined `def __attribute_assign(...)`
+      # directly on their class would have been silently intercepted. The 3-underscore
+      # name is intentionally less inviting and avoids any conceivable collision with
+      # the class-method version still named `__attribute_assign` in `Macros`.
+      def ___attribute_assign(name, init_hash, attribute_data)
         value_to_assign = FetchValueToAssign.(init_hash, init_hash[name], attribute_data)
 
         ivar_value = instance_variable_set("@#{name}", value_to_assign)

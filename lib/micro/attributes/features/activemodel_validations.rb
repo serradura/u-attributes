@@ -66,6 +66,14 @@ module Micro::Attributes
           when base <= Features::Accept then base.send(:include, WithAccept)
           else base.send(:include, Standard)
           end
+
+          # When AM is mixed into any `Micro::Attributes` includer, auto-register
+          # a validator that recurses through nested-attribute children so
+          # `valid?` reflects deep descendant invalidity. The method is
+          # provided by `Composition::Instance`.
+          if base.include?(::Micro::Attributes)
+            base.validate(:__validate_nested_entities__)
+          end
         rescue LoadError
         end
       end
