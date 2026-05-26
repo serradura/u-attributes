@@ -2,6 +2,14 @@
 
 Notes for AI assistants working in `u-attributes`.
 
+## Golden rule: no breaking API changes — ever
+
+`u-attributes` is a runtime dependency of [`u-case`](https://github.com/serradura/u-case), whose own public API is frozen. **The same compromise applies here:** the public API and runtime contracts of `u-attributes` won't break. Every change must keep existing code working — both for direct users of the gem and for `u-case` (and everything that transitively depends on it).
+
+Major version bumps are reserved for dependency-floor changes (dropping a Ruby or `activemodel` version from the supported matrix) per SemVer. They do **not** signal a behavior break.
+
+If a task as stated would require a breaking change to honor it, stop and surface that — propose a backward-compatible path, or flag that the request can't be satisfied without violating this rule. Don't ship the break.
+
 ## How to work in this repo
 
 ### 1. Think before coding

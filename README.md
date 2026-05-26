@@ -13,6 +13,11 @@
   </p>
 </p>
 
+> [!IMPORTANT]
+> **No breaking API changes — ever.** `u-attributes` is a runtime dependency of [`u-case`](https://github.com/serradura/u-case), whose own public API is frozen — so the same compromise applies here. The gem's role is to remain a stable, backward-compatible foundation for every project (directly or transitively) that depends on it.
+>
+> Major version bumps signal only that a Ruby or `activemodel` version was dropped from the supported matrix — per SemVer, a dependency-floor change. Your code keeps working.
+
 `u-attributes` lets you define classes whose instances expose attribute readers but no setters. Mutation goes through [`#with_attribute`](#with_attribute) / [`#with_attributes`](#with_attributes), which return a new instance — you transform the object instead of modifying it.
 
 ## Why u-attributes? <!-- omit in toc -->
