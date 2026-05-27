@@ -1,5 +1,5 @@
 <p align="center">
-  <h1 align="center" id="-attributes"><img src="./assets/u-attributes_logo_v2.png" alt="μ-attributes" height="250"></h1>
+  <h1 align="center" id="-attributes"><img src="./assets/u-attributes-logo-v3.png" alt="μ-attributes" height="250"></h1>
   <p align="center"><i>Create "immutable" objects with no setters, just getters.</i></p>
   <p align="center">
     <a href="https://badge.fury.io/rb/u-attributes"><img src="https://badge.fury.io/rb/u-attributes.svg" alt="Gem Version" height="18"></a>
